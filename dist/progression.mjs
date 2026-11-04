@@ -1,3 +1,4 @@
+import {focusTables} from './tables.mjs';
 import {localDay,questionPool,factSecure} from './engine.mjs';
 import {competency,probeIds} from './adaptive.mjs';
 
@@ -38,16 +39,16 @@ export function academyPath(profile,now=Date.now()){
 export function tableFacts(profile,table,now=Date.now()){
  return questionPool(`table${table}`).map(q=>{
   const fact=profile.facts[q.key];
-  const status=!fact?'new':fact.due<=now?'due':factSecure(fact)?'secure':'training';
+  const status=!fact?'new':fact.due<=now?'due':factSecure(fact)&&fact.forms?.multiply&&fact.forms?.[`divide:${table}`]?'secure':'training';
   return {a:q.a,b:q.b,answer:q.answer,key:q.key,status};
  });
 }
 
-export function tableChoices(profile){return profile.year>=5?[3,4,8,2,5,10,6,7,9,11,12,1]:[3,4,8];}
+export function tableChoices(profile){return focusTables(profile.year||1);}
 
 export function warmupProgress(profile){return Math.max(0,Math.min(probeIds(profile).length,Math.floor(profile.placementProgress||0)));}
 export function clockDelta(session,seconds){
  if(session.paused||!Number.isFinite(seconds)||seconds<=0)return 0;
- // Old drafts retain their old timing. New records have a separate v3 comparison key.
+ // Old drafts retain their old timing. Current records have separate versioned comparison keys.
  return session.schema==='football-v2'||session.phase==='question'?seconds:0;
 }

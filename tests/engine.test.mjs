@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SKILLS,DAY,questionPool,poolForSkills,newProfile,initialData,recordFact,factSecure,selectQuestion,hasRegroup,columnSteps,skillStats,validateImport,dailySkills,profileSummary} from '../dist/engine.mjs';
 
-test('the original 36 arithmetic activities have unique, correct questions',()=>{
- assert.equal(SKILLS.filter(s=>!s.extra).length,36);
+test('the 38 core arithmetic activities have unique, correct questions',()=>{
+ assert.equal(SKILLS.filter(s=>!s.extra).length,38);
  for(const s of SKILLS.filter(s=>!s.extra)){const pool=questionPool(s.id);assert.ok(pool.length>0,s.id);assert.equal(new Set(pool.map(q=>q.key)).size,pool.length,s.id);
   for(const q of pool){assert.ok(Number.isInteger(q.answer)&&q.answer>=0,s.id);if(q.op==='+')assert.equal(q.answer,q.a+q.b);if(q.op==='−')assert.equal(q.answer,q.a-q.b);if(q.op==='×')assert.equal(q.answer,q.a*q.b);if(q.op==='÷')assert.equal(q.answer,q.a/q.b);if(q.op==='bond')assert.equal(q.a+q.answer,q.total);if(q.op==='missing+')assert.equal(q.answer+q.b,q.total);if(q.op==='missing−')assert.equal(q.a-q.answer,q.total);if(q.op==='double')assert.equal(q.answer,2*q.a);if(q.op==='half')assert.equal(q.answer,q.a/2);if(q.op==='place')assert.equal(q.answer,Math.floor(q.a/q.power)%10*q.power);}
  }
@@ -55,7 +55,7 @@ test('daily route includes a number foundation and a focus table',()=>{
  const p=newProfile('A',3);const ids=dailySkills(p);assert.equal(ids.length,3);assert.ok(ids.includes('add10'));assert.ok(ids.includes('table3'));
 });
 test('valid backups round trip, malformed and duplicate profiles are rejected',()=>{
- const d=initialData();assert.equal(validateImport(JSON.parse(JSON.stringify(d))).profiles.length,3);
+ const d=initialData();d.profiles=[newProfile('Player A',1),newProfile('Player B',6)];assert.equal(validateImport(JSON.parse(JSON.stringify(d))).profiles.length,2);
  assert.throws(()=>validateImport({version:99,profiles:[]}));
  const dup=structuredClone(d);dup.profiles[1].id=dup.profiles[0].id;assert.throws(()=>validateImport(dup));
  const broken=structuredClone(d);broken.profiles[0].facts.bad={attempts:3,correct:8,stage:0,due:0,days:[],history:[]};assert.throws(()=>validateImport(broken));

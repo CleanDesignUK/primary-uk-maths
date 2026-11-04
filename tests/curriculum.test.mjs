@@ -3,12 +3,10 @@ import assert from 'node:assert/strict';
 import {SKILLS,initialData,questionPool,skillById} from '../dist/engine.mjs';
 import {EXTRA_SKILLS,DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber,roman} from '../dist/curriculum.mjs';
 
-test('named squad is Ace and Carter in Year 3, Cruz in Year 5',()=>{
- assert.deepEqual(initialData().profiles.map(p=>[p.name,p.year]),[['Ace',3],['Carter',3],['Cruz',5]]);
-});
-test('both syllabus maps have working exercises across every maths domain',()=>{
+test('a fresh academy has no pupil names, accounts or invented scores',()=>{assert.deepEqual(initialData().profiles,[]);assert.equal(initialData().activeId,null);});
+test('all six syllabus maps contain the age-appropriate maths domains',()=>{
  assert.equal(new Set(SKILLS.map(s=>s.id)).size,SKILLS.length,'Each exercise has its own unique id');
- for(const year of [3,5]){const ids=syllabusIds(year);assert.equal(ids.length,new Set(ids).size);for(const d of DOMAINS)assert.ok(ids.some(id=>domainFor(skillById(id))===d.id),`${year}: ${d.id}`);for(const id of ids)assert.ok(questionPool(id).length>0,id);for(const s of EXTRA_SKILLS.filter(s=>s.year===year))assert.ok(ids.includes(s.id));}
+ for(const year of [1,2,3,4,5,6]){const ids=syllabusIds(year);assert.equal(ids.length,new Set(ids).size);for(const d of DOMAINS.filter(d=>!(d.id==='reasoning'&&year<6)&&!(d.id==='statistics'&&year===1)))assert.ok(ids.some(id=>domainFor(skillById(id))===d.id),`${year}: ${d.id}`);for(const id of ids)assert.ok(questionPool(id).length>0,id);for(const s of EXTRA_SKILLS.filter(s=>s.year===year))assert.ok(ids.includes(s.id));}
  assert.ok(syllabusIds(3).includes('table3')&&syllabusIds(3).includes('table4')&&syllabusIds(3).includes('table8'));
  for(let t=1;t<=12;t++)assert.ok(syllabusIds(5).includes(`table${t}`));
 });

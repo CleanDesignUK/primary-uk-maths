@@ -1,13 +1,16 @@
 import {SKILLS,skillById,questionPool,selectQuestion,recordFact,localDay,DAY,skillStats} from './engine.mjs';
-import {syllabusIds} from './curriculum.mjs';
+import {syllabusIds,domainFor} from './curriculum.mjs';
+import {focusTables,tableEvidence,tableQuestion} from './tables.mjs';
 
 export const REQUIREMENTS={
+ mix2510:['table2','table5','table10'],div2510:['mix2510'],add20:['add10','bonds10'],sub20:['sub10','bonds10'],missing20:['add20','sub20'],place2:['count1'],mental2:['place2','bridgeAdd','bridgeSub'],related2:['bonds10'],frac2:['fraction1'],place4:['place3'],place7:['place6'],round4:['place4'],round6:['place7'],mul4:['mulWritten3'],longMul6:['mul5'],longDiv6:['division5'],ratio6:['fracOf3'],share6:['ratio6'],percent6:['percent5'],fracMul6:['fracOf4'],fracDiv6:['fracMul6'],fracCalc6:['fracCalc5'],
  bonds10:['add10'],bridgeAdd:['add10','bonds10'],bridgeSub:['sub10','bonds10'],bonds20:['bonds10'],missing:['add10','sub10'],
- table4:['table2'],table8:['table4'],table6:['table3'],table9:['table3'],table12:['table6'],mix348:['table3','table4','table8'],mixAll:['table3','table4','table8','table6','table7','table9','table12'],div348:['table3','table4','table8'],divAll:['mixAll'],
+ table4:['table2'],table8:['table4'],table6:['table3'],table9:['table3'],table12:['table6'],mix348:['table3','table4','table8'],mixAll:Array.from({length:12},(_,i)=>`table${i+1}`),div348:['table3','table4','table8'],divAll:['mixAll'],
  colAdd0:['add10'],colSub0:['sub10'],colAdd1:['colAdd0','bridgeAdd'],colSub1:['colSub0','bridgeSub'],colAdd2:['colAdd1','place3'],colSub2:['colSub1','place3'],colAdd3:['colAdd2'],colSub3:['colSub2'],colAdd4:['colAdd3','place6'],colSub4:['colSub3','place6'],
 };
 export const requirements=id=>REQUIREMENTS[id]||skillById(id)?.requires||[];
 export function initLearning(p){
+ if(!p.familyVersion){for(const [key,f] of Object.entries(p.facts||{})){f.forms||={};if(key.startsWith('×:')&&f.history?.some(h=>h.correct))f.forms.multiply=true;const m=key.match(/^÷:(\d+):(\d+)/);if(m&&f.lastCorrect){const a=Number(m[1]),b=Number(m[2]),other=a/b,k=`×:${Math.min(b,other)}:${Math.max(b,other)}`;if(p.facts[k]){p.facts[k].forms||={};p.facts[k].forms[`divide:${b}`]=true;}}}p.familyVersion=4;}
  if(p.learning)return p;
  p.learning={};
  for(const s of p.sessions||[])for(const r of s.rows||[])if(r.q?.skillId&&skillById(r.q.skillId))updateLearning(p,r.q,r.correct,!!r.assisted,r.ms||0,s.id,s.endedAt||Date.now(),false);
@@ -17,14 +20,16 @@ export function initLearning(p){
 function updateLearning(p,q,correct,help,ms,sessionId,now,probe){
  const st=p.learning[q.skillId]||{n:0,correct:0,recent:[],keys:[],days:[],probes:[],firstAt:now};
  st.n++;st.correct+=correct&&!help?1:0;st.lastAt=now;
- st.recent=[...st.recent.slice(-19),{key:q.key,correct:correct&&!help,help,ms,at:now,variant:q.variant??q.op,sessionId,probe}];
+ st.recent=[...st.recent.slice(-19),{key:q.key,correct:correct&&!help,help,ms,at:now,variant:q.factFormat??q.variant??q.op,sessionId,probe}];
  if(!st.keys.includes(q.key))st.keys.push(q.key);
  if(correct&&!help&&!st.days.includes(localDay(now)))st.days.push(localDay(now));
  if(probe&&correct&&!help&&!st.probes.includes(q.key))st.probes.push(q.key);
  p.learning[q.skillId]=st;return st;
 }
 export function recordLearning(p,q,correct,help,ms,sessionId,now=Date.now(),probe=false){
- initLearning(p);recordFact(p,q,correct,help,ms,now);return updateLearning(p,q,correct,help,ms,sessionId,now,probe);
+ initLearning(p);recordFact(p,q,correct,help,ms,now);const result=updateLearning(p,q,correct,help,ms,sessionId,now,probe);
+ if(q.factFamily&&q.tableFocus&&q.skillId!==`table${q.tableFocus}`)updateLearning(p,{...q,skillId:`table${q.tableFocus}`},correct,help,ms,sessionId,now,probe);
+ return result;
 }
 export function competency(p,id,now=Date.now()){
  initLearning(p);const st=p.learning[id];if(!st)return {ready:false,secure:false,accuracy:null,n:0,coverage:0,level:'New'};
@@ -32,17 +37,20 @@ export function competency(p,id,now=Date.now()){
  const ready=(last.length>=6&&accuracy>=.83&&st.keys.length>=Math.min(5,questionPool(id).length))||(st.probes.length>=3&&accuracy>=.9);
  const days=st.days.length,span=now-st.firstAt,independentSessions=new Set(last.filter(r=>r.correct).map(r=>r.sessionId)).size;
  const exact=skillById(id)?.category==='tables'||['add10','sub10','bonds10','bonds20','bridgeAdd','bridgeSub'].includes(id);
- const secure=ready&&days>=3&&span>=4*DAY&&independentSessions>=3&&accuracy>=.9&&(exact?skillStats(p,id,now).status==='Secure':st.keys.length>=Math.min(8,questionPool(id).length)&&new Set(last.map(r=>r.variant)).size>=Math.min(2,new Set(questionPool(id).map(q=>q.variant??q.op)).size));
+ let secure=ready&&days>=3&&span>=4*DAY&&independentSessions>=3&&accuracy>=.9&&(exact?skillStats(p,id,now).status==='Secure':st.keys.length>=Math.min(8,questionPool(id).length)&&new Set(last.map(r=>r.variant)).size>=Math.min(2,new Set(questionPool(id).map(q=>q.variant??q.op)).size));
+ if(/^table\d+$/.test(id))secure=ready&&tableEvidence(p,Number(id.slice(5)),now).matchFit;
+ if(skillById(id)?.kind==='div')secure=ready&&days>=3&&span>=4*DAY&&independentSessions>=3&&focusTables(p.year||1).every(t=>tableEvidence(p,t,now).matchFit);
  return {ready,secure,accuracy:Math.round(accuracy*100),n:st.n,coverage:Math.round(coverage*100),level:secure?'Match fit':ready?'Improving':'Training',lastAt:st.lastAt};
 }
 export function resolvePrerequisite(p,id,visited=new Set()){
  if(visited.has(id))return id;visited.add(id);
- for(const req of requirements(id))if(!competency(p,req).ready)return resolvePrerequisite(p,req,visited);
+ for(const req of requirements(id)){const c=competency(p,req);if(!c.ready&&!(c.n>=3&&c.accuracy>=95))return resolvePrerequisite(p,req,visited);}
  return id;
 }
 const PROBES3=['add10','sub10','table3','bonds10','table4','bridgeAdd','table8','bridgeSub','place3','colAdd0','colSub0','div348'];
 const PROBES5=['add10','sub10','table3','bridgeAdd','table4','bridgeSub','table8','table6','table7','table9','colAdd2','colSub2'];
-export const probeIds=p=>p.year>=5?PROBES5:PROBES3;
+const PROBE_YEARS={1:['objects1','more1','add10','sub10','bonds10','add20','sub20','groups1','fraction1','clock1','shape1','position1'],2:['place2','add20','sub20','mental2','table2','table5','table10','frac2','money2','clock2','shape2','data2'],3:PROBES3,4:['add10','sub10','place4','table6','table7','table9','table12','colAdd3','colSub3','decimal4','coordinate4','chart4'],5:PROBES5,6:['place7','negative6','table7','longMul6','longDiv6','fracCalc6','decimalMul6','ratio6','equation6','area6','coordinate6','mean6']};
+export const probeIds=p=>PROBE_YEARS[p.year]||PROBES3;
 function weakest(p,ids){
  return [...new Set(ids)].sort((a,b)=>{
    const x=competency(p,a),y=competency(p,b);
@@ -51,23 +59,26 @@ function weakest(p,ids){
  })[0];
 }
 export function laneFocus(p,lane){
- initLearning(p);
+ initLearning(p);const year=p.year||1;
  if(lane==='foundation'){
-  const targets=['bridgeAdd','bridgeSub','bonds20','missing'];
+  const weakBasics=['add10','sub10','bonds10'].filter(id=>{const c=competency(p,id);return c.n>0&&c.accuracy<80;});
+  const targets=weakBasics.length?weakBasics:year<=2?['add20','sub20','missing20','bonds20']:year===3?['bridgeAdd','bridgeSub','bonds20','missing']:year===4?['round4','decimal4']:year===5?['mental5','decimalCalc5']:['mental6','order6'];
   const gaps=targets.filter(id=>!competency(p,id).ready);return weakest(p,(gaps.length?gaps:targets).map(id=>resolvePrerequisite(p,id)));
  }
  if(lane==='tables'){
-  const tables=(p.year>=5?[3,4,8,6,7,9,12,2,5,10,11,1]:[3,4,8]).map(n=>`table${n}`);
-  const notReady=tables.filter(id=>!competency(p,id).ready);
-  if(!notReady.length)return p.year>=5?'mixAll':'mix348';
-  // A pupil is assessed on the focus tables directly. Prerequisite table work is used after repeated errors.
-  return weakest(p,notReady);
+  const tables=focusTables(year).map(n=>`table${n}`);if(!tables.length)return 'groups1';
+  const gaps=tables.filter(id=>!tableEvidence(p,Number(id.slice(5))).complete);
+  if(!gaps.length)return year===2?'mix2510':year===3?'mix348':'mixAll';
+  const preferred=year===3?['table3','table4','table8',...tables]:tables;
+  return weakest(p,[...new Set(preferred)].filter(id=>gaps.includes(id)));
  }
- if(lane==='written')return weakest(p,(p.year>=5?['colAdd4','colSub4']:['colAdd2','colSub2']).map(id=>resolvePrerequisite(p,id)));
- const candidates=p.year>=5?['place6','negative5','round5','fracRead3','fracEq5','decimalFrac5','metric5','angles5','lineGraph5','time5','factors5','percent5','transform5']:['place3','fracRead3','tenths3','clock3','metric3','angle3','chart3','perimeter3','solids3','count3'];
- const all=[...new Set([...candidates,...syllabusIds(p.year>=5?5:3).filter(id=>skillById(id).extra)])];
- const available=all.map(id=>resolvePrerequisite(p,id));
- return [...new Set(available)].sort((a,b)=>(p.learning[a]?.n||0)-(p.learning[b]?.n||0))[0];
+ if(lane==='written'){
+  const targets=year===1?['stories1','missing20']:year===2?['mental2','inverse2','threeAdd2']:year===3?['colAdd2','colSub2']:year===4?['colAdd3','colSub3','mul4']:year===5?['colAdd4','colSub4','mul5','division5']:['longMul6','longDiv6'];
+  return weakest(p,targets.map(id=>resolvePrerequisite(p,id)));
+ }
+ const candidates=syllabusIds(year).filter(id=>skillById(id).extra);
+ const available=candidates.map(id=>resolvePrerequisite(p,id));
+ return [...new Set(available)].sort((a,b)=>(p.learning[a]?.n||0)-(p.learning[b]?.n||0)||(p.learning[a]?.lastAt||0)-(p.learning[b]?.lastAt||0))[0]||laneFocus(p,'foundation');
 }
 export function planSummary(p){return ['foundation','tables','written','curriculum'].map(lane=>({lane,id:laneFocus(p,lane),why:lane==='foundation'?'Close a prerequisite gap':lane==='tables'?'Build individual recall before mixing':lane==='written'?'Use facts in a written method':'Keep the wider curriculum in practice'}));}
 
@@ -75,7 +86,8 @@ export function nextAdaptive(p,s,now=Date.now(),rng=Math.random){
  initLearning(p);const seen=s.seen||[],rows=s.rows||[],recent=new Set(seen.slice(-3));
  const retry=(s.retries||[]).find(r=>r.at<=rows.length&&!recent.has(r.q.key));
  if(retry&&!s.placement)return {q:{...retry.q},reason:'repair',label:'Replay',detail:'A previous mistake, revisited after other questions.',retryKey:retry.q.key};
- if(s.manual)return {q:selectQuestion(p,[s.manual],seen,now,rng),reason:'chosen',label:'Training',detail:'The exercise selected on the syllabus page.'};
+ if(s.promotion){const ids=syllabusIds(s.curriculumYear||p.year),domains=[...new Set(ids.map(id=>domainFor(skillById(id))))],domain=domains[rows.length%domains.length],candidates=ids.filter(id=>domainFor(skillById(id))===domain),id=candidates[Math.floor(rows.length/domains.length)%candidates.length],sk=skillById(id),q=sk.category==='tables'?tableQuestion(p,[id],seen,now,rng,'mixed',s):selectQuestion(p,[id],seen,now,rng);return {q,reason:'promotion',label:'Promotion match',detail:'Independent mixed retrieval after practice and practical checks.'};}
+ if(s.manual){const q=skillById(s.manual).category==='tables'?tableQuestion(p,[s.manual],seen,now,rng,s.tableMode||'auto',s):selectQuestion(p,[s.manual],seen,now,rng);return {q,newFact:!p.facts[q.key],reason:'chosen',label:'Training',detail:'The exercise selected on the syllabus page.'};}
  if(s.placement){
   const ids=probeIds(p),index=s.probeIndex||0;
   if(index<ids.length){
@@ -90,19 +102,20 @@ export function nextAdaptive(p,s,now=Date.now(),rng=Math.random){
   }
  }
  const last=rows.at(-1),prev=rows.at(-2);
- if(last&&!last.correct&&prev&&!prev.correct){const target=requirements(last.q.skillId)[0]||(['table8','table4'].includes(last.q.skillId)?'table2':last.q.skillId==='bridgeSub'?'sub10':last.q.skillId==='bridgeAdd'?'bonds10':'add10');return {q:selectQuestion(p,[resolvePrerequisite(p,target)],seen,now,rng),reason:'support',label:'Build-up',detail:'Two difficult answers: practise the supporting skill before returning.'};}
+ if(last&&!last.correct&&prev&&!prev.correct){const target=requirements(last.q.skillId)[0]||(['table8','table4'].includes(last.q.skillId)?'table2':last.q.skillId);return {q:selectQuestion(p,[resolvePrerequisite(p,target)],seen,now,rng),reason:'support',label:'Build-up',detail:'Two difficult answers: practise the supporting skill before returning.'};}
  const reviewCount=rows.filter(r=>r.reason==='review').length;
  if(reviewCount<2&&(rows.length%4===3||rows.length%7===5)){
-  const ids=[...new Set([...syllabusIds(p.year>=5?5:3),...Object.keys(p.learning)])];
+  const ids=[...new Set([...syllabusIds(p.year||1),...Object.keys(p.learning)])];
   const due=ids.flatMap(questionPool).filter(q=>{const f=p.facts[q.key];return f&&f.due<=now&&!seen.includes(q.key)&&!recent.has(q.key);});
   const unique=[...new Map(due.map(q=>[q.key,q])).values()];
   unique.sort((a,b)=>p.facts[a.key].due-p.facts[b.key].due);
   if(unique.length)return {q:{...unique[0]},reason:'review',label:'Match recall',detail:'This fact is due for spaced retrieval.'};
  }
- const coreReady=['bridgeAdd','bridgeSub',p.year>=5?'mixAll':'mix348'].filter(id=>competency(p,id).ready).length;
- const lanes=coreReady>=2?['foundation','tables','written','curriculum','tables','foundation','curriculum','written','tables','curriculum']:['foundation','tables','foundation','tables','written','foundation','tables','curriculum','written','tables'];
- const lane=lanes[rows.length%lanes.length],id=laneFocus(p,lane);
+ const year=p.year||1;
+ const lanes=year===1?['foundation','curriculum','foundation','tables','curriculum','foundation','written','curriculum','foundation','curriculum']:['foundation','tables','curriculum','tables','written','tables','foundation','curriculum','tables','curriculum'];
+ const lane=lanes[rows.length%lanes.length],id=lane==='tables'&&s.focusTable?s.focusTable:laneFocus(p,lane);
  const targeted=skillById(id),reason=competency(p,id).n?'weakness':'new';
- return {q:selectQuestion(p,[id],seen,now,rng),reason,label:lane==='tables'?'Ball control':lane==='written'?'Set piece':reason==='new'?'New move':'Training',detail:`${lane}: ${targeted.title}. ${reason==='new'?'Not yet sampled.':'Selected from recent accuracy and prerequisite evidence.'}`};
+ const q=targeted.category==='tables'?tableQuestion(p,[id],seen,now,rng,s.tableMode||'auto',s):selectQuestion(p,[id],seen,now,rng);
+ return {q,newFact:!p.facts[q.key],reason,label:lane==='tables'?'Ball control':lane==='written'?'Set piece':reason==='new'?'New move':'Training',detail:`${lane}: ${targeted.title}. ${reason==='new'?'Not yet sampled.':'Selected from recent accuracy and prerequisite evidence.'}`};
 }
 export function validateLearningGraph(){for(const skill of SKILLS){const walk=(id,path=[])=>{if(path.includes(id))throw new Error(`Prerequisite cycle: ${[...path,id].join(' → ')}`);for(const req of requirements(id)){if(!skillById(req))throw new Error(`Unknown prerequisite ${req}`);walk(req,[...path,id]);}};walk(skill.id);}return true;}

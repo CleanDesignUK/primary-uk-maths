@@ -16,7 +16,7 @@ test('a fact must be recalled over spaced days and still shows when it is due',(
  const p=newProfile('Ace',3),q=questionPool('table3')[6],now=Date.now();initLearning(p);
  assert.equal(tableFacts(p,3,now)[6].status,'new');
  recordLearning(p,q,true,false,1000,'a',now);assert.equal(tableFacts(p,3,now)[6].status,'training');
- recordLearning(p,q,true,false,1000,'b',now+DAY);recordLearning(p,q,true,false,1000,'c',now+4*DAY);
+ recordLearning(p,q,true,false,1000,'b',now+DAY);recordLearning(p,{...q,a:q.answer,b:3,answer:7,op:'÷',factFamily:true,tableFocus:3,factFormat:'divide'},true,false,1000,'c',now+4*DAY);
  assert.equal(tableFacts(p,3,now+4*DAY)[6].status,'secure');assert.equal(tableFacts(p,3,now+12*DAY)[6].status,'due');
  recordLearning(p,q,false,false,1000,'d',now+12*DAY);assert.equal(tableFacts(p,3,now+12*DAY)[6].status,'due');
 });
@@ -27,7 +27,7 @@ test('same-day success cannot unlock captain and the next stage stays explicit',
 });
 test('the new clock counts answer time and gives feedback time without mixing legacy records',()=>{
  assert.equal(clockDelta({schema:'football-v3',phase:'question'},2),2);
- assert.equal(clockDelta({schema:'football-v3',phase:'feedback'},90),0);
+ assert.equal(clockDelta({schema:'football-v4',phase:'feedback'},90),0);
  assert.equal(clockDelta({schema:'football-v3',phase:'question',paused:true},20),0);
  assert.equal(clockDelta({schema:'football-v2',phase:'feedback'},2),2);
  assert.equal(clockDelta({schema:'football-v3',phase:'question'},NaN),0);
@@ -36,7 +36,7 @@ test('warm-up progress is bounded and can be resumed for each player',()=>{
  assert.equal(warmupProgress(newProfile('Ace',3)),0);assert.equal(warmupProgress({year:3,placementProgress:5}),5);assert.equal(warmupProgress({year:5,placementProgress:99}),12);
 });
 test('reloading an unselected squad never silently logs in the first child',()=>{
- const data=initialData();assert.equal(validateImport(JSON.parse(JSON.stringify(data))).activeId,null);
+ const data=initialData();data.profiles=[newProfile('Player A',1),newProfile('Player B',3),newProfile('Player C',6)];assert.equal(validateImport(JSON.parse(JSON.stringify(data))).activeId,null);
  data.activeId=data.profiles[2].id;assert.equal(validateImport(JSON.parse(JSON.stringify(data))).activeId,data.profiles[2].id);
  data.profiles[2].trainingSeconds=180;data.profiles[2].placementProgress=5;
  const restored=validateImport(JSON.parse(JSON.stringify(data)));assert.equal(restored.profiles[2].placementProgress,5);assert.equal(restored.profiles[2].trainingSeconds,180);

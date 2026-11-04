@@ -1,7 +1,8 @@
+import {PRIMARY_SKILLS,makePrimaryPool,yearIds} from './primary.mjs';
 // Topic families mapped to the England Year 3 and Year 5 programmes of study.
 // Each family has several reproducible question variants; this is not an exhaustive exam bank.
 const topic=(id,title,year,domain,requires=[],priority=60)=>({id,title,year,domain,category:domain,requires,priority,extra:true,kind:'curriculum',icon:({number:'blocks',calculation:'plus',multiplication:'times',fractions:'bond',measure:'clock',geometry:'shape',statistics:'chart'})[domain]||'ball',color:'mint'});
-export const EXTRA_SKILLS=[
+export const EXTRA_SKILLS=[...PRIMARY_SKILLS,
  topic('count3','Counting & steps',3,'number',['place3']),topic('words3','Numbers & words',3,'number'),topic('compare3','Compare & order',3,'number',['place3']),topic('estimate3','Number lines',3,'number',['place3']),
  topic('mental3','Mental + and −',3,'calculation',['bridgeAdd','bridgeSub','place3']),topic('mulWritten3','Written multiplication',3,'multiplication',['table3','table4']),topic('divWritten3','Written division',3,'multiplication',['div348']),topic('scaling3','Groups & scaling',3,'multiplication',['table3']),
  topic('tenths3','Tenths & counting',3,'fractions'),topic('fracRead3','See a fraction',3,'fractions'),topic('fracOf3','Fractions of amounts',3,'fractions',['div348']),topic('fracEq3','Equivalent fractions',3,'fractions',['fracRead3']),topic('fracCalc3','Fraction + and −',3,'fractions',['fracRead3']),topic('fracOrder3','Compare fractions',3,'fractions',['fracRead3']),
@@ -15,10 +16,10 @@ export const EXTRA_SKILLS=[
  topic('solid5','3D shapes from pictures',5,'geometry'),topic('angles5','Read & classify angles',5,'geometry'),topic('drawAngle5','Draw an angle',5,'geometry'),topic('angleFacts5','Missing angles & lengths',5,'geometry'),topic('polygon5','Regular & irregular shapes',5,'geometry'),topic('transform5','Reflect & translate',5,'geometry'),
  topic('lineGraph5','Read line graphs',5,'statistics'),topic('timetable5','Tables & timetables',5,'statistics'),
 ];
-export const DOMAINS=[{id:'number',title:'Number',symbol:'123'},{id:'calculation',title:'Add & subtract',symbol:'+ −'},{id:'multiplication',title:'Times & divide',symbol:'× ÷'},{id:'fractions',title:'Fractions & decimals',symbol:'½'},{id:'measure',title:'Measure & time',symbol:'cm'},{id:'geometry',title:'Shapes & space',symbol:'△'},{id:'statistics',title:'Charts & tables',symbol:'▥'}];
+export const DOMAINS=[{id:'number',title:'Number',symbol:'123'},{id:'calculation',title:'Add & subtract',symbol:'+ −'},{id:'multiplication',title:'Times & divide',symbol:'× ÷'},{id:'fractions',title:'Fractions & decimals',symbol:'½'},{id:'measure',title:'Measure & time',symbol:'cm'},{id:'geometry',title:'Shapes & space',symbol:'△'},{id:'statistics',title:'Charts & tables',symbol:'▥'},{id:'reasoning',title:'Ratio & algebra',symbol:'x'}];
 export const CORE_YEAR3=['add10','sub10','bonds10','bridgeAdd','bridgeSub','bonds20','doubles','missing','place3','table2','table3','table4','table5','table8','table10','mix348','div348','colAdd0','colAdd1','colAdd2','colSub0','colSub1','colSub2'];
 export const CORE_YEAR5=[...CORE_YEAR3,'place6',...Array.from({length:12},(_,i)=>`table${i+1}`),'mixAll','divAll','colAdd3','colAdd4','colSub3','colSub4'];
-export const syllabusIds=year=>[...new Set([...(year===5?CORE_YEAR5:CORE_YEAR3),...EXTRA_SKILLS.filter(s=>s.year===year).map(s=>s.id)])];
+export const syllabusIds=year=>yearIds(Number(year),EXTRA_SKILLS);
 export const domainFor=s=>s.domain||(['tables'].includes(s.category)?'multiplication':['columns'].includes(s.category)?'calculation':s.kind==='place'?'number':'calculation');
 const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
 export function fraction(n,d){const g=gcd(n,d);return d/g===1?String(n/g):`${n/g}/${d/g}`;}
@@ -29,6 +30,7 @@ function rngFor(id){let s=17;for(const c of id)s=(s*31+c.charCodeAt(0))>>>0;retu
 function shuffled(arr,rng){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function numericChoices(answer,rng,step=1){const values=new Set([String(answer)]);for(const d of [-step,step,2*step,-2*step,3*step])if(answer+d>=0)values.add(String(Math.round((answer+d)*1000)/1000));return shuffled([...values].slice(0,4),rng);}
 export function makeExtraPool(id){
+ const primary=makePrimaryPool(id);if(primary)return primary;
  const rnd=rngFor(id),int=(a,b)=>Math.floor(rnd()*(b-a+1))+a,pick=a=>a[int(0,a.length-1)],out=[];
  for(let i=0;i<36;i++){
   let q={skillId:id,key:`syllabus:${id}:${i}`,prompt:'',expression:'',answer:0,format:'number',hint:[],variant:i%3};
@@ -114,8 +116,10 @@ export function parseNumber(value){
 }
 export function answerMatches(q,value){
  if(q.format==='drawing')return value===true;
+ if(q.format==='clock'){const parts=Array.isArray(value)?value:String(value).split(':');return parts.length===2&&parts.every(n=>String(n).trim()!==''&&Number.isInteger(Number(n)))&&Number(parts[0])>=1&&Number(parts[0])<=12&&Number(parts[1])>=0&&Number(parts[1])<60&&Number(parts[0])%12===q.answer[0]%12&&Number(parts[1])===q.answer[1];}
+ if(q.format==='plot'){if(!Array.isArray(value)||value.length!==q.answer.length||value.some(p=>!Array.isArray(p)||p.length!==2||p.some(n=>!Number.isFinite(Number(n)))))return false;const keys=value.map(p=>p.map(Number).join(','));return new Set(keys).size===keys.length&&q.answer.every(p=>keys.includes(p.join(',')));}
  if(q.format==='bars')return Array.isArray(value)&&value.length===q.answer.length&&value.every((n,i)=>Number(n)===q.answer[i]);
- if(q.format==='pair'){const parts=String(value).replace(/[()\s]/g,'').split(',');return parts.length===2&&parts.every((n,i)=>Number(n)===Number(q.answer.split(',')[i]));}
+ if(q.format==='pair'){const parts=String(value).replace(/[()\s]/g,'').split(',');if(parts.length!==2||parts.some(n=>!/^−?-?\d+(?:\.\d+)?$/.test(n)))return false;const numbers=parts.map(n=>Number(n.replace('−','-')));if(q.pairRule)return numbers.every(n=>Number.isInteger(n)&&n>=0)&&numbers[0]*(q.pairRule.xCoefficient||1)+numbers[1]===q.pairRule.total;const target=Array.isArray(q.answer)?q.answer:String(q.answer).split(',');return numbers.every((n,i)=>n===Number(target[i]));}
  if(q.format==='choice')return String(value).trim().toLowerCase()===String(q.answer).trim().toLowerCase();
  if(['fraction','mixed'].includes(q.format)&&String(q.answer).includes('/')&&!String(value).includes('/'))return false;
  const given=parseNumber(value),expected=parseNumber(q.answer);return Number.isFinite(given)&&Number.isFinite(expected)&&Math.abs(given-expected)<(q.format==='angle'?.6:1e-7);

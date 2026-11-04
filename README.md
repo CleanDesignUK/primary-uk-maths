@@ -1,87 +1,89 @@
-# Matchday Maths
+# Matchday Maths Academy
 
-Football-themed primary maths training for **Ace and Carter (Year 3)** and **Cruz (Year 5)**. Select a player and start answering. The main route chooses questions from learning evidence; the syllabus route offers teacher-directed drills.
+A free football-themed supplementary learning resource for the basics of **England’s primary maths curriculum, Years 1–6**. Players create their own nickname profile. There are no preloaded pupil names, scores or fake opponents.
 
-[Working preview](https://numbergrove-maths.cleandesign-uk.chatgpt.site) · GitHub repository: [CleanDesignUK/primary-uk-maths](https://github.com/CleanDesignUK/primary-uk-maths)
+This repository contains the Year 1–6 expansion, a custom player and earned-credit shop, curriculum promotion, adaptive retrieval, a stronger times-table coach, local squad leagues, reading access options and 30 marketing/resource pages.
 
-## Proof and screenshots
+## Start locally
 
-The screenshots in `docs/` show browser QA sessions with test answers, not student assessment results. Fresh profiles start at zero. The automated test log is in `docs/test-results.txt`.
-
-## Run
-
-No installation, build, database or paid API is needed.
+No dependencies, accounts, database or paid API are needed.
 
 ```sh
 python3 -m http.server 8080 --directory dist
-node --test tests/*.test.mjs
+npm run check
+npm test
 ```
 
-Open the served URL. ES modules need HTTP rather than opening `index.html` directly as a local file. `package.json` also provides `npm test` and `npm run check`, without dependencies.
+Open the served homepage, then Play. Serve over HTTP because the app uses ES modules. The root repository `index.html` also opens `dist/` for project-based static hosting.
 
-## Main experience
+`npm run build` regenerates the marketing pages. Set `SITE_ORIGIN` to the exact public origin plus any hosting subdirectory before building a public deployment. It controls canonical URLs and the sitemap. The checked-in default currently targets the existing Sites preview. Public search indexing requires a publicly accessible host and correctly configured canonical URLs.
 
-- Ace, Carter and Cruz have separate local profiles, scores, recall evidence and personal records. Add other players from the opening screen or Coach.
-- Selecting a player starts questions immediately. A new player gets a 12-question starting-point sample that resumes after an early finish; later training matches have 10 shots. Reloading an unselected squad keeps the player picker open.
-- Coach selects supporting prerequisites, weak facts, due recall, written methods and wider-curriculum samples. Pupils do not need to select the next topic.
-- Correct answers animate a penalty shot and score goals and XP. Daily hat-trick goals, six academy milestones, medals, levels, personal records and faster-record tie-breaks provide rewards.
-- A table tracker shows every fact as new, training, replay due or match fit. The status comes from each player’s real retrieval history.
-- Coach feedback includes partitioned jumps through 10, equal groups, counters, part-whole bars and worked column steps. The clock counts answer time and stops during feedback. Each player can have a 1, 2 or 3 minute auto-training clock.
-- Short labels, large answer controls, an on-screen keypad and optional question read-aloud support limited reading. Detailed explanations stay behind Coach or appear after a mistake.
-- A separate Year 3/Year 5 syllabus has 105 exercise families across number, calculation, multiplication/division, fractions/decimals, measure/time, geometry and statistics. See [the curriculum map](docs/CURRICULUM_MAP.md).
-- Visual interactions include minute-accurate and Roman clocks, rulers, fractions, coordinate diagrams, shape drawing, angle construction and bar-chart construction.
-- Written addition/subtraction has five difficulty levels, interactive digit boxes, optional working notes, and carrying/exchanging feedback, including exchange through zeros.
-- Coach reports expose the selection reason for recent questions. CSV scores and JSON backup/restore are available.
+## Learning, rather than topic-by-topic clicking
 
-## Practice decisions
+- A year-specific 12-question warm-up samples a starting point. Choosing a player starts questions immediately; a paused or unfinished round keeps its player.
+- Coach balances prerequisites, weaknesses, a focus table, written methods, the wider curriculum and due recall. Mistakes return after intervening questions.
+- The syllabus provides direct teacher-led access to **247 named exercise families**, with scope descriptions, search and six year maps. This is a finite practice bank, not every possible curriculum question.
+- Times tables cover each fact through ×12, direct multiplication, inverse division and missing factors. Multiplication evidence does not invent inverse evidence. A short match introduces at most three new table families before revisiting earlier facts.
+- Year 2 focuses on 2/5/10; Year 3 on 3/4/8 and earlier tables; Year 4 onwards consolidates all tables through 12. Year 1 uses pictures, equal groups and sharing.
+- Independent recall advances through 1, 3, 7, 14, 30 and 60-day intervals, at most once a day. Mistakes or mathematical help reset the interval. One perfect run cannot manufacture long-term mastery.
+- Practical measuring, drawing, constructions and reasoning are recorded separately by a grown-up. Match-fit families plus those checks unlock a 12-shot promotion match requiring at least 90% independent accuracy. XP alone never completes a year. Year 6 graduates remain in Year 6 for review.
 
-`dist/adaptive.mjs` contains the policy, independently of the interface:
+Academy promotion is a game milestone, not an official school placement or a validated attainment judgement. These selection and progression thresholds are product heuristics, not guarantees of permanent retention. See [the complete skills map](docs/CURRICULUM_MAP.md).
 
-1. **Placement sample:** 12 distinct skill probes. Errors do not replace the remaining probes. This is calibration, not a pass/fail judgement.
-2. **Prerequisite graph:** weak supporting skills are selected before harder targets. For example, addition across 10 depends on addition facts and bonds to 10. Column levels build on earlier columns, place value and crossing-10 facts.
-3. **Lane balance:** early training concentrates on foundations and tables, with written methods and a wider-curriculum sample. As the core becomes ready, wider curriculum practice increases.
-4. **Error replay:** mistakes return after other questions. Consecutive difficult answers trigger a supporting skill in the automatic route. Manual drills stay within their chosen topic.
-5. **Useful sampling:** zero/one identities remain in the bank, with less weight for new or not-yet-due facts. Mistakes and due reviews keep their priority, even for easy identities.
-6. **Spaced retrieval:** due facts receive review slots. Successful independent recall advances intervals of 1, 3, 7, 14, 30 and 60 days, at most once per calendar day. Help or an error resets the interval.
-7. **Readiness versus mastery:** recent independent accuracy and question coverage can allow progression. Long-term “match fit” status requires spaced evidence and repeated independent sessions. Exact fact families also need broad secure-fact coverage. A same-day run cannot establish mastery.
+## Football career and meaningful rewards
 
-The rules are product heuristics, not guarantees of permanent memory, a validated diagnostic test or a replacement for a teacher. Reading/typing speed affects response times. Physical measuring, model making and discussion remain valuable.
+Players choose a kit number, position, skin tone and hair colour. Twenty-seven clothing/equipment choices include kits, shorts, boots, hair, accessories, balls and trails. The artwork is original 2D block-style SVG, not Roblox assets.
 
-## Points and records
+Independent correct answers earn 10 XP plus a streak bonus rising to a maximum extra 10 XP. Supported correct answers earn 2 XP. Every 10 XP earns 1 credit. Credits buy cosmetics; purchases are checked for balance, ownership, level and duplicate charges. No payments, paid boosts or random prizes are included.
 
-An independent correct answer earns 10 XP, plus a streak bonus rising by 2 XP to a maximum extra 10 XP. A supported correct answer earns 2 XP and breaks the independent streak. Accuracy stars use 95%, 80% and 60% thresholds.
+Level thresholds follow `60n + 25n²`, where `n = level − 1`, so early levels come quickly and later gaps grow. A first away kit costs 25 credits. Larger rewards require more work:
 
-A personal record requires a complete timed match, at least one correct answer, and no help or pauses. Version 3 records use answer time and separate comparison keys from earlier wall-clock records. A higher score wins; equal-score, equal-goal matches can set a faster time record. Warm-up samples do not set timed records. Individual drills are compared by topic and time limit. Adaptive records are grouped by year and training league because their question mix changes.
+| Career target | Level | Different independently recalled facts | Practice days | Recall-secure facts |
+| --- | ---: | ---: | ---: | ---: |
+| Town Rovers | 2 | 20 | 1 | 0 |
+| County United | 4 | 60 | 3 | 10 |
+| Arsenal / Chelsea | 7 | 120 | 5 | 30 |
+| Liverpool / Manchester City / Manchester United | 9 | 180 | 7 | 50 |
+| Barcelona / Real Madrid | 12 | 250 | 10 | 80 |
+| World All-Stars | 18 | 400 | 14 | 150 |
 
-## Data
+Club offers appear as in-game notes. These are fictional rewards without club affiliation. Arithmetic changes the kick style; accurate streaks unlock power shots, fireballs and meteor strikes. Reduced-motion and reading preferences keep the same rewards.
 
-The established `numbergrove.data.v1` and `numbergrove.round.v1` browser keys are preserved so the visual redesign does not erase earlier progress. Placeholder names Pupil 1/2/3 migrate to Ace/Carter/Cruz while retaining their IDs and saved work.
+## Records and leagues
 
-Profiles are device-local selections without passwords. Anyone using the same browser can switch profiles or view results. Refreshing or hiding the page pauses the current match and preserves its player. Clearing browser data removes local progress. Use JSON backup/restore to move a squad to another browser or origin. Restoring replaces current data after a confirmation. Backups contain player progress and should be kept private.
+Personal records require a completed, unpaused timed match without mathematical hints and at least one correct answer. Version 4 comparison keys separate topic, table mode, length and timing. Higher XP wins, with faster elapsed time breaking equal-score/equal-goal ties.
 
-The app has no analytics, advertising, external scripts or external fonts. Its display font is bundled with its licence in `dist/assets/`. Hosting infrastructure may still keep ordinary access logs. No player answers are sent to a backend by the application.
+The squad league compares **real profiles saved in the same browser**, with seven-day/all-time and played-year filters. It counts independent points from completed unpaused timed matches with at least five attempts. Lifetime totals survive the retained match-history limit. There is no global leaderboard, online pupil authentication or cross-device sync.
 
-## GitHub and hosting
+## Clear working and access
 
-The root `index.html` opens the app in `dist/`. The project is ready for a static host or GitHub Pages using `main` and `/ (root)`. Relative URLs support project subdirectory hosting. Enabling GitHub Pages is a separate hosting setting.
+- Column addition carries sit below the answer in the next place-value column. Subtraction exchanges sit above crossed-out top digits. Worked examples preserve successive exchanges, including through zeros, and show an inverse check.
+- Learners enter answers from the ones column and can write their own exchange/carry notes. Working notes do not reveal an answer or count as Coach help.
+- Ten frames, crossing-10 jumps, equal groups, fraction diagrams, long multiplication and long division provide other worked models.
+- Dyslexia-friendly mode uses cream surfaces, familiar sans-serif text, increased spacing and quieter motion. It is a preference, not a treatment.
+- Questions and working can be read aloud. The app selects an actual installed `en-GB` voice when available, listens for voice-list changes and exposes speech pace. A British accent cannot be supplied when the device has no British voice.
 
-GitHub access is connected. This repository contains the complete static application, bundled font and licence, automated checks, curriculum map and browser screenshots. GitHub Pages has not been enabled by this upload. The working preview uses the existing private Sites publication.
+## Data and privacy
 
-## Files
+The existing `numbergrove.data.v1` and `numbergrove.round.v1` browser keys are retained for migration. Genuine saved work is preserved. Fresh installs start with an empty squad. Exact unused legacy factory profiles may be removed; progress-bearing profiles are retained.
 
-| File | Responsibility |
+Profiles are local selections without passwords. Other people using the browser can switch players and view reports. Clearing browser data removes progress. JSON backup/restore and CSV results are available; restoring replaces the current squad after a confirmation. Keep backups private.
+
+The app does not upload pupil answers. It includes no analytics, ads or external fonts/scripts. The host may keep ordinary access logs. A deployed public resource serves application files; each visitor’s progress stays in that visitor’s browser.
+
+## Verification and current checkpoint
+
+**64 automated tests pass**, including all generated answers, six-year promotion attainability, fraction arithmetic, exact table evidence, purchases, leagues, British speech and the written-method exchanges from `864 − 788` and `1000 − 27`.
+
+[Verification evidence](docs/VERIFICATION.md) · [Next-session checkpoint](docs/NEXT_SESSION.md)
+
+| Main files | Purpose |
 | --- | --- |
-| `dist/app.mjs` | Interface, profiles, local persistence and match lifecycle |
-| `dist/engine.mjs` | Original arithmetic pools, fact recall and backup validation |
-| `dist/adaptive.mjs` | Prerequisites, calibration, weak skills and review selection |
-| `dist/curriculum.mjs` | Wider curriculum generators, answer equivalence and geometry validation |
-| `dist/rewards.mjs` | XP and personal-record eligibility |
-| `dist/progression.mjs` | Daily goals, academy milestones, table-fact status and timing policy |
-| `dist/coaching.mjs` | Numeric models for worked explanations |
-| `dist/experience.mjs` | Progress, coaching and penalty-goal views |
-| `dist/experience.css` | Responsive Matchday 3 design |
-| `dist/visuals.mjs` | Football artwork and exact mathematical diagrams |
-| `dist/style.css` | Football design and responsive layouts |
-| `tests/` | Arithmetic, adaptive policy, curriculum, construction and record checks |
-
-Research and curriculum references were reviewed on 4 November 2026. Earlier competitor research informed the focused drills, visual feedback and retrieval approach; no claim of experimentally proven superiority is made.
+| `dist/app.mjs`, `dist/academy-ui.mjs` | Profiles, question interface, match lifecycle and academy views |
+| `dist/engine.mjs`, `dist/curriculum.mjs`, `dist/primary.mjs` | Question families, curriculum and answer validation |
+| `dist/adaptive.mjs`, `dist/tables.mjs`, `dist/promotion.mjs` | Selection, recall evidence, six-year promotion and leagues |
+| `dist/career.mjs`, `dist/avatar.mjs` | Reward gates, wallet, shop, club offers and original player artwork |
+| `dist/column-method.mjs`, `dist/coaching.mjs`, `dist/experience.mjs` | Written methods, mathematical working and football animation |
+| `dist/speech.mjs`, `dist/academy.css` | Read-aloud and accessible/responsive game styles |
+| `scripts/build-marketing.mjs` | Thirty static marketing/resource pages and SEO metadata |
+| `tests/`, `docs/` | Automated checks, source research, screenshots and remaining QA |

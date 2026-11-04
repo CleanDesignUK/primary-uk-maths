@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /play/
+Sitemap: https://numbergrove-maths.cleandesign-uk.chatgpt.site/sitemap.xml

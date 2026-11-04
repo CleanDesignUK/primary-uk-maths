@@ -1,4 +1,5 @@
 import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs';
+import {validateCareer} from './career.mjs';
 export const VERSION = 1;
 export const DAY = 86400000;
 export const INTERVALS = [0, 1, 3, 7, 14, 30, 60];
@@ -14,6 +15,8 @@ export const SKILLS = [
   {id:'place3',title:'Place value to 1,000',category:'number',kind:'place',icon:'blocks',color:'blue',description:'Explore hundreds, tens and ones.',example:'The 4 in 342 is worth 40',priority:9},
   {id:'place6',title:'Bigger place values',category:'number',kind:'place',icon:'blocks',color:'lavender',description:'See the value of each digit to 1,000,000.',example:'The 5 in 254,301 is worth 50,000',priority:10},
   ...Array.from({length:12},(_,i)=>({id:`table${i+1}`,title:`The ${i+1} times table`,category:'tables',kind:'mul',table:i+1,icon:'times',color:['mint','peach','lavender','yellow'][i%4],description:`Build every fact from ${i+1} × 1 to ${i+1} × 12.`,example:`${i+1} × 4 = ${(i+1)*4}`,priority:20+i})),
+  {id:'mix2510',title:'Mix the 2, 5 and 10s',category:'tables',kind:'mul',tables:[2,5,10],priority:32},
+  {id:'div2510',title:'Division: 2, 5 and 10',category:'tables',kind:'div',tables:[2,5,10],priority:32},
   {id:'mix348',title:'Mix the 3, 4 & 8s',category:'tables',kind:'mul',tables:[3,4,8],icon:'shuffle',color:'mint',description:'Keep your three focus tables flexible.',example:'3 × 7, 4 × 6, 8 × 9',priority:33},
   {id:'mixAll',title:'All tables mixed',category:'tables',kind:'mul',tables:Array.from({length:12},(_,i)=>i+1),icon:'shuffle',color:'lavender',description:'Switch confidently between tables 1 to 12.',example:'7 × 8, 12 × 9, 6 × 4',priority:34},
   {id:'div348',title:'Division: 3, 4 & 8',category:'tables',kind:'div',tables:[3,4,8],icon:'divide',color:'blue',description:'Turn your times-table facts around.',example:'24 ÷ 3 = 8',priority:35},
@@ -30,8 +33,8 @@ export const SKILLS = [
 export const skillById = id => SKILLS.find(s=>s.id===id);
 export const localDay = (now=Date.now()) => {const d=new Date(now);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 export const uid = () => globalThis.crypto?.randomUUID?.() || `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
-export function newProfile(name,year=3,avatar='sprout') {return {id:uid(),name:name.trim().slice(0,24),year:Number(year),avatar,createdAt:Date.now(),facts:{},sessions:[],records:{}};}
-export function initialData(){return {version:VERSION,activeId:null,profiles:[newProfile('Ace',3,'sprout'),newProfile('Carter',3,'flower'),newProfile('Cruz',5,'tree')],settings:{sound:false,reduceMotion:false}};}
+export function newProfile(name,year=1,avatar='sprout') {return {id:uid(),name:name.trim().slice(0,24),year:Number(year),avatar,createdAt:Date.now(),facts:{},sessions:[],records:{}};}
+export function initialData(){return {version:VERSION,activeId:null,profiles:[],settings:{sound:false,reduceMotion:false,dyslexia:false,autoRead:false,voiceURI:'',speechRate:.9}};}
 
 function seeded(seed){return ()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
 export function hasRegroup(a,b,op){
@@ -54,7 +57,7 @@ export function questionPool(id){
   if(id==='doubles')for(let a=0;a<=10;a++){add(a,a,'double',2*a);add(2*a,2,'half',a);}
   if(id==='missing')for(let a=0;a<=10;a++)for(let b=0;b<=10-a;b++){add(a,b,'missing+',a,{blank:'a',total:a+b});if(a+b>0)add(a+b,b,'missing−',b,{blank:'b',total:a});}
   if(s.kind==='mul'||s.kind==='div')for(const t of s.tables||[s.table])for(let n=1;n<=12;n++){
-    if(s.kind==='mul')add(t,n,'×',t*n,{key:`×:${Math.min(t,n)}:${Math.max(t,n)}`});
+    if(s.kind==='mul')add(t,n,'×',t*n,{key:`×:${Math.min(t,n)}:${Math.max(t,n)}`,table:t});
     else add(t*n,t,'÷',n);
   }
   if(s.kind==='place'){
@@ -72,8 +75,8 @@ export function questionPool(id){
 }
 
 export function poolForSkills(ids){return [...new Map(ids.flatMap(questionPool).map(q=>[q.key,q])).values()];}
-export function selectQuestion(profile,ids,seen=[],now=Date.now(),rng=Math.random){
-  const pool=poolForSkills(ids),recent=new Set(seen.slice(-3)),counts=new Map();for(const k of seen)counts.set(k,(counts.get(k)||0)+1);
+export function selectQuestion(profile,ids,seen=[],now=Date.now(),rng=Math.random,customPool=null){
+  const pool=customPool||poolForSkills(ids),recent=new Set(seen.slice(-3)),counts=new Map();for(const k of seen)counts.set(k,(counts.get(k)||0)+1);
   let choices=pool.filter(q=>!recent.has(q.key));if(!choices.length)choices=pool;
   const weights=choices.map(q=>{const f=profile.facts[q.key];let w=!f?4:f.due<=now?9:1;if(f&&f.lastCorrect===false)w*=2;
     // Keep zero/one facts in the bank without letting easy identities dominate training.
@@ -84,7 +87,7 @@ export function selectQuestion(profile,ids,seen=[],now=Date.now(),rng=Math.rando
 }
 export function recordFact(profile,q,correct,assisted=false,ms=0,now=Date.now()){
   const f=profile.facts[q.key]||{attempts:0,correct:0,stage:0,due:now,days:[],history:[],assisted:0};
-  const day=localDay(now);f.attempts++;f.correct+=correct?1:0;f.assisted+=assisted?1:0;f.lastAt=now;f.lastCorrect=correct&&!assisted;f.history=[...f.history.slice(-9),{correct:correct&&!assisted,ms,day}];
+  const day=localDay(now);if(correct&&!assisted&&(q.factFamily||q.op==='×'||q.op==='÷'||q.op==='missing×')){f.forms||={};const form=q.op==='÷'?`divide:${q.b}`:q.op==='missing×'?`missing:${q.tableFocus||q.a}`:'multiply';f.forms[form]=true;}f.attempts++;f.correct+=correct?1:0;f.assisted+=assisted?1:0;f.lastAt=now;f.lastCorrect=correct&&!assisted;f.history=[...f.history.slice(-9),{correct:correct&&!assisted,ms,day}];
   if(correct&&!assisted){
     if(!f.days.includes(day))f.days=[...f.days.slice(-11),day];
     if(f.lastAdvanceDay!==day&&f.due<=now){f.stage=Math.min(6,f.stage+1);f.lastAdvanceDay=day;f.due=now+INTERVALS[f.stage]*DAY;}
@@ -132,6 +135,7 @@ export function explain(q){
   if(q.op==='+'&&a+b>10){const jump=10-a,rest=b-jump;return {title:'Make 10 first',steps:[`${a} needs ${jump} more to reach 10.`,`Split ${b} into ${jump} and ${rest}.`,`${a} + ${jump} = 10. Then 10 + ${rest} = ${answer}.`],visual:'tenframe'};}
   if(q.op==='−'&&a>10&&answer<10){const jump=a-10,rest=b-jump;return {title:'Go back through 10',steps:[`Split ${b} into ${jump} and ${rest}.`,`${a} − ${jump} = 10.`,`Then 10 − ${rest} = ${answer}.`],visual:'tenframe'};}
   if(q.op==='×')return {title:'Equal groups make a total',steps:[`Think of ${a} equal groups of ${b}.`,`${Array(Math.min(a,12)).fill(b).join(' + ')} = ${answer}.`,`You can turn it around: ${b} × ${a} = ${answer}.`],visual:'array'};
+  if(q.op==='missing×')return {title:'Use the inverse fact',steps:[`${q.total} ÷ ${q.a} = ${answer}.`,`${q.a} × ${answer} = ${q.total}.`],visual:'groups'};
   if(q.op==='÷')return {title:'Use a multiplication fact',steps:[`${a} shared into groups of ${b}. How many groups?`,`${b} × ${answer} = ${a}.`,`So ${a} ÷ ${b} = ${answer}.`],visual:'groups'};
   if(q.op==='bond')return {title:`Find the part that makes ${q.total}`,steps:[`The whole is ${q.total}. One part is ${a}.`,`${q.total} − ${a} = ${answer}.`,`So ${a} + ${answer} = ${q.total}.`],visual:'tenframe'};
   if(q.op==='double')return {title:'Add two equal parts',steps:[`Double ${a} means ${a} + ${a}.`,`${a} + ${a} = ${answer}.`],visual:'tenframe'};
@@ -143,11 +147,12 @@ export function explain(q){
 }
 
 export function validateImport(raw){
-  if(!raw||raw.version!==VERSION||!Array.isArray(raw.profiles)||!raw.profiles.length||raw.profiles.length>100)throw new Error('Choose a Matchday Maths backup file (version 1).');
+  if(!raw||raw.version!==VERSION||!Array.isArray(raw.profiles)||raw.profiles.length>100)throw new Error('Choose a Matchday Maths backup file (version 1).');
   const seen=new Set();
-  for(const p of raw.profiles){if(!p||typeof p.id!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(p.id)||seen.has(p.id)||typeof p.name!=='string'||!p.name.trim()||p.name.length>24||![3,5,0].includes(p.year)||!['sprout','flower','tree','sun'].includes(p.avatar)||!Array.isArray(p.sessions)||p.sessions.length>500||!p.facts||Array.isArray(p.facts)||typeof p.facts!=='object')throw new Error('This backup has an invalid pupil profile.');seen.add(p.id);if(p.goalsTotal!==undefined&&(!Number.isFinite(p.goalsTotal)||p.goalsTotal<0))throw new Error('This backup contains invalid goals.');if(p.pointsTotal!==undefined&&(!Number.isFinite(p.pointsTotal)||p.pointsTotal<0))throw new Error('This backup contains invalid points.');
+  for(const p of raw.profiles){if(!p||typeof p.id!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(p.id)||seen.has(p.id)||typeof p.name!=='string'||!p.name.trim()||p.name.length>24||![0,1,2,3,4,5,6].includes(p.year)||!['sprout','flower','tree','sun'].includes(p.avatar)||!Array.isArray(p.sessions)||p.sessions.length>500||!p.facts||Array.isArray(p.facts)||typeof p.facts!=='object')throw new Error('This backup has an invalid pupil profile.');seen.add(p.id);if(p.goalsTotal!==undefined&&(!Number.isFinite(p.goalsTotal)||p.goalsTotal<0))throw new Error('This backup contains invalid goals.');if(p.pointsTotal!==undefined&&(!Number.isFinite(p.pointsTotal)||p.pointsTotal<0))throw new Error('This backup contains invalid points.');
     if(p.trainingSeconds!==undefined&&![60,120,180].includes(p.trainingSeconds))throw new Error('This backup contains an invalid training clock.');
-    if(p.placementProgress!==undefined&&(!Number.isInteger(p.placementProgress)||p.placementProgress<0||p.placementProgress>12))throw new Error('This backup contains invalid warm-up progress.');
+    if(p.placementProgress!==undefined&&(!Number.isInteger(p.placementProgress)||p.placementProgress<0||p.placementProgress>24))throw new Error('This backup contains invalid warm-up progress.');
+    validateCareer(p);
     if(p.learning){
       if(typeof p.learning!=='object'||Array.isArray(p.learning))throw new Error('This backup contains invalid learning records.');
       for(const [id,st] of Object.entries(p.learning))if(!skillById(id)||!st||!Number.isInteger(st.n)||st.n<0||!Number.isInteger(st.correct)||st.correct<0||st.correct>st.n||!Array.isArray(st.recent)||st.recent.length>20||!Array.isArray(st.keys)||!Array.isArray(st.days)||!Array.isArray(st.probes)||!Number.isFinite(st.firstAt)||st.recent.some(r=>!r||typeof r.correct!=='boolean'||!Number.isFinite(r.ms)||r.ms<0||!Number.isFinite(r.at)))throw new Error('This backup contains invalid learning records.');
@@ -156,5 +161,5 @@ export function validateImport(raw){
     if(p.records&&(typeof p.records!=='object'||Array.isArray(p.records)||Object.keys(p.records).length>500))throw new Error('This backup contains invalid records.');
     for(const s of [...p.sessions,...Object.values(p.records||{})])if(!s||(s.manual!==undefined&&s.manual!==null&&!skillById(s.manual))||typeof s.id!=='string'||!Array.isArray(s.skillIds)||!s.skillIds.length||s.skillIds.some(id=>!skillById(id))||!Number.isInteger(s.attempts)||s.attempts<0||!Number.isInteger(s.correct)||s.correct<0||s.correct>s.attempts||!Number.isFinite(s.points)||s.points<0||!Number.isFinite(s.duration)||!Number.isFinite(s.elapsed)||s.elapsed<0||!Number.isFinite(s.endedAt)||typeof s.complete!=='boolean'||!['timed','practice','check','review'].includes(s.mode))throw new Error('This backup contains invalid sessions.');
   }
-  return {version:VERSION,profiles:raw.profiles,activeId:seen.has(raw.activeId)?raw.activeId:null,settings:{sound:!!raw.settings?.sound,reduceMotion:!!raw.settings?.reduceMotion}};
+  return {version:VERSION,profiles:raw.profiles,activeId:seen.has(raw.activeId)?raw.activeId:null,settings:{sound:!!raw.settings?.sound,reduceMotion:!!raw.settings?.reduceMotion,dyslexia:!!raw.settings?.dyslexia,autoRead:!!raw.settings?.autoRead,voiceURI:typeof raw.settings?.voiceURI==='string'?raw.settings.voiceURI.slice(0,300):'',speechRate:[.75,.9,1].includes(raw.settings?.speechRate)?raw.settings.speechRate:.9}};
 }

@@ -1,29 +1,42 @@
-# Matchday Maths 3 verification
+# Matchday Maths 4 verification
 
-Verified on 4 November 2026. Browser screenshots show test play, not student assessment results. Fresh profiles have no seeded scores or mastery.
+Checkpoint: 4 November 2026. Screenshots show developer test play, not pupil assessment data. Test profiles are not bundled in the application.
 
-## Automated checks
+## Automated
 
-`npm run check` and `node --test tests/*.test.mjs` pass. There are 48 checks covering arithmetic pools, all curriculum families, prerequisite routing, delayed retries, spaced retrieval, mathematical answer equivalence, shape construction, profile separation, import validation, daily goals, progress milestones, worked examples and record eligibility. The captured output is in [test-results.txt](test-results.txt).
+`npm run check` and `npm test` pass. There are 64 tests. [Full output](test-results.txt).
 
-## Browser checks
+Coverage includes: arithmetic and all generated question answers; six year maps and probes; prerequisite routing and delayed retries; spaced recall; direct/inverse/missing table evidence; three-new-family table limit; correct fraction, decimal and percentage arithmetic; valid clock/coordinate/graph responses; six-year promotion gates and attainability; nonlinear levels; balances, purchases and inventory; larger club offers requiring actual practice; local league eligibility/ties/lifetime totals; real British-voice selection; long division; and all 30 marketing pages’ metadata, structured data and local links.
 
-- Completed the 12-skill warm-up over two visits. After the first two answers, continuing began at the 3 times table with 10 shots remaining.
-- Verified the feedback clock remained unchanged while reading a mistake explanation.
-- Completed a 10-shot independent training match. The result showed 10/10, 170 XP, a new personal record and all three daily goals completed.
-- Checked mixed adaptive practice including arithmetic, times tables and a visual fraction.
-- Verified anonymous syllabus browsing, the player picker before a chosen drill, and the selected crossing-10 drill starting under Carter.
-- Checked Cruz's Year 5 profile on a 390 px mobile frame. The document had a 375 px content viewport and a 375 px scroll width, with no horizontal overflow. After the spacing adjustment, the question, Shoot control and full keypad fit in the 844 px frame.
-- Verified the visible 9 + 9 worked example split 9 into 1 and 8, jumped through 10, and reached 18.
+The written-method tests check every column pool and the user's exact example, `864 − 788 = 76`. They retain the intermediate tens value 5 before 15, final ones value 14 and the hundreds reduction to 7. Exchange through zeros is also checked independently for `1000 − 27`. Addition carries appear below the answer and in the incoming column.
 
-## Screenshots
+## Browser checks actually completed
 
-- [Dashboard](dashboard-preview.jpg)
-- [Match](game-preview.jpg)
-- [New record](record-preview.jpg)
-- [Mobile](mobile-preview.jpg)
-- [Visual coaching](coaching-preview.jpg)
+- Fresh empty squad and profile creation, without names or invented scores.
+- Custom nickname, number 17, Midfielder position and skin tone.
+- Immediate Year 3 warm-up and saving an unfinished warm-up.
+- Dyslexia-friendly mode toggled during a live question; a correct independent answer still earned 10 XP.
+- A complete ten-shot multiplication match: 10/10, 170 XP, new record, 17 earned credits and the three daily goals.
+- A second complete ten-shot table-coach match, which presented multiplication, inverse division and missing factors.
+- Buying the 25-credit away kit after earning 35 credits. The kit was equipped and 10 credits remained after reloading.
+- The shop visibly withheld club offers because the test player had only seven different facts and one practice day.
+- Updated subtraction workspace and the actual worked method for `701 − 579 = 122`, including exchange through a zero, crossed-out original digits and the inverse check.
+- Marketing homepage loaded, with six year links, resource navigation and the stated supplementary-resource scope.
+- Corrected an old hash-route alias that had sent Tables to the syllabus instead of the dedicated table gym.
 
-## Practical limits
+## Current proof
 
-Automated tests and browser QA do not establish teaching efficacy or permanent retention. The app uses England's Year 3 and Year 5 curriculum map, with earlier prerequisites. Profiles use browser storage and have no password or cross-device sync. The 1, 2 and 3 minute auto-training settings use separate record keys; version 3 feedback timing is separate from earlier records. GitHub Pages activation is a separate hosting setting.
+- [Fresh profile screen](matchday-profile-v4.jpg)
+- [Dyslexia-friendly live question](matchday-reading-v4.jpg)
+- [Real completed match and record](matchday-record-v4.jpg)
+- [Earned kit purchase after reload](matchday-kit-v4.jpg)
+- [Revised column workspace](matchday-column-v4.jpg)
+- [Actual exchanged-digit working](matchday-column-working-v4.jpg)
+
+Earlier `*-preview.jpg` files belong to version 3 and are retained as historical screenshots. They are not proof of this expansion.
+
+## Still to complete
+
+Final 390 px mobile browser regression; a second player's full UI match and displayed league comparison; direct browser interaction checks for the new Year 6 constructions; the complete public hosting/canonical/indexing configuration; and final deployed-version checks. Automated checks cover the underlying rules but do not replace those browser checks. See [the next-session checkpoint](NEXT_SESSION.md).
+
+This is supplementary practice. Neither automated tests nor browser QA establishes teaching efficacy, official attainment or permanent retention.
