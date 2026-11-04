@@ -1,0 +1,10 @@
+{
+  "name": "matchday-maths",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check dist/app.mjs && node --check dist/engine.mjs && node --check dist/adaptive.mjs && node --check dist/curriculum.mjs && node --check dist/rewards.mjs && node --check dist/visuals.mjs && node --check dist/progression.mjs && node --check dist/coaching.mjs && node --check dist/experience.mjs"
+  }
+}

@@ -4,6 +4,10 @@ Football-themed primary maths training for **Ace and Carter (Year 3)** and **Cru
 
 [Working preview](https://numbergrove-maths.cleandesign-uk.chatgpt.site) · GitHub repository: [CleanDesignUK/primary-uk-maths](https://github.com/CleanDesignUK/primary-uk-maths)
 
+## Proof and screenshots
+
+The screenshots in `docs/` show browser QA sessions with test answers, not student assessment results. Fresh profiles start at zero. The automated test log is in `docs/test-results.txt`.
+
 ## Run
 
 No installation, build, database or paid API is needed.
@@ -18,9 +22,11 @@ Open the served URL. ES modules need HTTP rather than opening `index.html` direc
 ## Main experience
 
 - Ace, Carter and Cruz have separate local profiles, scores, recall evidence and personal records. Add other players from the opening screen or Coach.
-- Selecting a player starts questions immediately. A new player gets a 12-question starting-point sample; later training matches have 10 shots.
+- Selecting a player starts questions immediately. A new player gets a 12-question starting-point sample that resumes after an early finish; later training matches have 10 shots. Reloading an unselected squad keeps the player picker open.
 - Coach selects supporting prerequisites, weak facts, due recall, written methods and wider-curriculum samples. Pupils do not need to select the next topic.
-- Correct answers score goals and XP. Streaks, medals, levels, personal records and faster-record tie-breaks provide rewards.
+- Correct answers animate a penalty shot and score goals and XP. Daily hat-trick goals, six academy milestones, medals, levels, personal records and faster-record tie-breaks provide rewards.
+- A table tracker shows every fact as new, training, replay due or match fit. The status comes from each player’s real retrieval history.
+- Coach feedback includes partitioned jumps through 10, equal groups, counters, part-whole bars and worked column steps. The clock counts answer time and stops during feedback. Each player can have a 1, 2 or 3 minute auto-training clock.
 - Short labels, large answer controls, an on-screen keypad and optional question read-aloud support limited reading. Detailed explanations stay behind Coach or appear after a mistake.
 - A separate Year 3/Year 5 syllabus has 105 exercise families across number, calculation, multiplication/division, fractions/decimals, measure/time, geometry and statistics. See [the curriculum map](docs/CURRICULUM_MAP.md).
 - Visual interactions include minute-accurate and Roman clocks, rulers, fractions, coordinate diagrams, shape drawing, angle construction and bar-chart construction.
@@ -35,8 +41,9 @@ Open the served URL. ES modules need HTTP rather than opening `index.html` direc
 2. **Prerequisite graph:** weak supporting skills are selected before harder targets. For example, addition across 10 depends on addition facts and bonds to 10. Column levels build on earlier columns, place value and crossing-10 facts.
 3. **Lane balance:** early training concentrates on foundations and tables, with written methods and a wider-curriculum sample. As the core becomes ready, wider curriculum practice increases.
 4. **Error replay:** mistakes return after other questions. Consecutive difficult answers trigger a supporting skill in the automatic route. Manual drills stay within their chosen topic.
-5. **Spaced retrieval:** due facts receive review slots. Successful independent recall advances intervals of 1, 3, 7, 14, 30 and 60 days, at most once per calendar day. Help or an error resets the interval.
-6. **Readiness versus mastery:** recent independent accuracy and question coverage can allow progression. Long-term “match fit” status requires spaced evidence and repeated independent sessions. Exact fact families also need broad secure-fact coverage. A same-day run cannot establish mastery.
+5. **Useful sampling:** zero/one identities remain in the bank, with less weight for new or not-yet-due facts. Mistakes and due reviews keep their priority, even for easy identities.
+6. **Spaced retrieval:** due facts receive review slots. Successful independent recall advances intervals of 1, 3, 7, 14, 30 and 60 days, at most once per calendar day. Help or an error resets the interval.
+7. **Readiness versus mastery:** recent independent accuracy and question coverage can allow progression. Long-term “match fit” status requires spaced evidence and repeated independent sessions. Exact fact families also need broad secure-fact coverage. A same-day run cannot establish mastery.
 
 The rules are product heuristics, not guarantees of permanent memory, a validated diagnostic test or a replacement for a teacher. Reading/typing speed affects response times. Physical measuring, model making and discussion remain valuable.
 
@@ -44,7 +51,7 @@ The rules are product heuristics, not guarantees of permanent memory, a validate
 
 An independent correct answer earns 10 XP, plus a streak bonus rising by 2 XP to a maximum extra 10 XP. A supported correct answer earns 2 XP and breaks the independent streak. Accuracy stars use 95%, 80% and 60% thresholds.
 
-A personal record requires a complete timed match, at least one answer, and no help or pauses. A higher score wins; equal-score, equal-goal matches can set a faster time record. Warm-up samples do not set timed records. Individual drills are compared by topic and time limit. Adaptive records are grouped by year and training league because their question mix changes.
+A personal record requires a complete timed match, at least one correct answer, and no help or pauses. Version 3 records use answer time and separate comparison keys from earlier wall-clock records. A higher score wins; equal-score, equal-goal matches can set a faster time record. Warm-up samples do not set timed records. Individual drills are compared by topic and time limit. Adaptive records are grouped by year and training league because their question mix changes.
 
 ## Data
 
@@ -58,6 +65,7 @@ The app has no analytics, advertising, external scripts or external fonts. Its d
 
 The root `index.html` opens the app in `dist/`. The project is ready for a static host or GitHub Pages using `main` and `/ (root)`. Relative URLs support project subdirectory hosting. Enabling GitHub Pages is a separate hosting setting.
 
+GitHub access is connected. This repository contains the complete static application, bundled font and licence, automated checks, curriculum map and browser screenshots. GitHub Pages has not been enabled by this upload. The working preview uses the existing private Sites publication.
 
 ## Files
 
@@ -68,6 +76,10 @@ The root `index.html` opens the app in `dist/`. The project is ready for a stati
 | `dist/adaptive.mjs` | Prerequisites, calibration, weak skills and review selection |
 | `dist/curriculum.mjs` | Wider curriculum generators, answer equivalence and geometry validation |
 | `dist/rewards.mjs` | XP and personal-record eligibility |
+| `dist/progression.mjs` | Daily goals, academy milestones, table-fact status and timing policy |
+| `dist/coaching.mjs` | Numeric models for worked explanations |
+| `dist/experience.mjs` | Progress, coaching and penalty-goal views |
+| `dist/experience.css` | Responsive Matchday 3 design |
 | `dist/visuals.mjs` | Football artwork and exact mathematical diagrams |
 | `dist/style.css` | Football design and responsive layouts |
 | `tests/` | Arithmetic, adaptive policy, curriculum, construction and record checks |
