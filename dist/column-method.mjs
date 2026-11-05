@@ -23,20 +23,26 @@ const cell=(content,i,kind='')=>`<span class="written-cell ${kind}" data-column=
 export function columnWorkspace(q,{digits=[],notes=[],history=[],done=false}={}){
  const m=columnMethod(q),sub=q.op==='−',correct=String(q.answer).padStart(m.n,'0');
  const heads=row(['<span></span>',...m.columns.map((c,i)=>cell(`<abbr title="${c.place}">${c.label}</abbr>`,i))],'written-heads');
- const noteRow=row(['<span class="written-side-label">'+(sub?'Exchange':'Carry')+'</span>',...m.columns.map((c,i)=>cell(`${sub?`<span class="pupil-note-history">${(history[i]||[]).map(n=>`<s>${esc(n)}</s>`).join('')}</span>`:''}<input class="column-note ${sub?'exchange-note':'carry-note'}" aria-label="${sub?'Exchanged value':'Carry into'} ${c.place} column" inputmode="numeric" maxlength="${sub?2:1}" data-note="${i}" value="${esc(notes[i]??'')}" ${done?'disabled':''}>`,i))],sub?'exchange-row':'carry-row');
+ const noteRow=row(['<span></span>',...m.columns.map((c,i)=>{
+  const hasNote=sub?c.top!==' ':c.index>0&&(c.top!==' '||c.bottom!==' ');
+  if(!hasNote)return cell('',i);
+  const previous=sub&&(history[i]||[]).length?`<span class="pupil-note-history">${history[i].map(n=>`<s>${esc(n)}</s>`).join('')}</span>`:'';
+  const input=`<input class="column-note ${sub?'exchange-note':'carry-note'}" aria-label="${sub?'Exchanged value in':'Carry into'} ${c.place} column" inputmode="numeric" maxlength="${sub?2:1}" autocomplete="off" data-note="${i}" value="${esc(notes[i]??'')}" ${done?'disabled':''}>`;
+  return cell(previous+input,i,'note-cell');
+ })],sub?'exchange-row':'carry-row');
  const top=row(['<span></span>',...m.columns.map((c,i)=>cell(`<span class="operand-original ${sub&&notes[i]!==undefined&&notes[i]!==''?'crossed':''}" data-original="${i}">${c.top===' '?'&nbsp;':c.top}</span>`,i))]);
  const bottom=row([`<span class="written-operator">${q.op}</span>`,...m.columns.map((c,i)=>cell(c.bottom===' '?'&nbsp;':c.bottom,i))]);
  const answers=row(['<span></span>',...m.columns.map((c,i)=>cell(`<input class="column-digit ${done?(Number(digits[i]||0)===Number(correct[i])?'correct':'incorrect'):''}" id="digit-${i}" data-digit="${i}" aria-label="Answer ${c.place} column" inputmode="numeric" maxlength="1" autocomplete="off" value="${esc(digits[i]??'')}" ${done?'disabled':''}>`,i,'answer-cell'))],'written-answer-row');
- return `<div class="written-method workspace ${sub?'subtraction':'addition'}" style="--digits:${m.n}" aria-label="${q.op==='+'?'Column addition':'Column subtraction'} workspace">${heads}${sub?noteRow:''}${top}${bottom}${answers}${sub?'':noteRow}<p class="written-caption">${sub?'Write exchanged values above the crossed-out digits.':'Write carried digits below, in the next column.'}</p></div>`;
+ return `<div class="written-method arithmetic-paper workspace ${sub?'subtraction':'addition'}" style="--digits:${m.n}" aria-label="${q.op==='+'?'Column addition':'Column subtraction'} workspace">${heads}${sub?noteRow:''}${top}${bottom}${answers}${sub?'':noteRow}</div><p class="written-caption">${sub?'Exchange above the digit.':'Carry below the next column.'}</p>`;
 }
 export function columnWorked(q){
  const m=columnMethod(q),sub=q.op==='−';
  const heads=row(['<span></span>',...m.columns.map((c,i)=>cell(`<abbr title="${c.place}">${c.label}</abbr>`,i))],'written-heads');
- const regroup=sub?row(['<span class="written-side-label">Exchange</span>',...m.columns.map((c,i)=>cell(c.changes.length?`<span class="exchange-trail">${c.changes.map((value,j)=>j===c.changes.length-1?`<b>${value}</b>`:`<s>${value}</s>`).join('')}</span>`:'',i))],'exchange-row'):'';
+ const regroup=sub&&m.exchanges.length?row(['<span></span>',...m.columns.map((c,i)=>cell(c.changes.length?`<span class="exchange-trail">${c.changes.map((value,j)=>j===c.changes.length-1?`<b>${value}</b>`:`<s>${value}</s>`).join('')}</span>`:'',i))],'exchange-row'):'';
  const top=row(['<span></span>',...m.columns.map((c,i)=>cell(`<span class="operand-original ${sub&&c.changes.length?'crossed':''}">${c.top===' '?'&nbsp;':c.top}</span>`,i))]);
  const bottom=row([`<span class="written-operator">${q.op}</span>`,...m.columns.map((c,i)=>cell(c.bottom===' '?'&nbsp;':c.bottom,i))]);
  const answer=row(['<span></span>',...m.columns.map((c,i)=>cell(c.answer===' '?'&nbsp;':c.answer,i))],'written-answer-row');
- const carries=sub?'':row(['<span class="written-side-label">Carry</span>',...m.columns.map((c,i)=>cell(c.carry?`<b class="worked-carry">${c.carry}</b>`:'',i))],'carry-row');
+ const carries=!sub&&m.columns.some(c=>c.carry)?row(['<span></span>',...m.columns.map((c,i)=>cell(c.carry?`<b class="worked-carry">${c.carry}</b>`:'',i))],'carry-row'):'';
  const steps=m.steps.map((s,i)=>{const exchange=m.exchanges.find(e=>e.at===i),calculation=s.a===undefined?`Write the final ${s.result}.`:`${s.a} ${q.op} ${s.b}${s.incoming?' + '+s.incoming:''} = ${q.op==='+'?s.result+(s.carry||0)*10:s.result}`;return `<li><span class="method-step-number">${i+1}</span><div><b>${places[i][0].toUpperCase()+places[i].slice(1)}: ${calculation}</b>${exchange?`<p>${esc(exchange.text)}</p>`:s.carry?`<p>Write ${s.result}. Carry 1 ${singular(places[i+1])} into the next column.</p>`:''}</div></li>`;}).join('');
- return `<div class="written-method worked ${sub?'subtraction':'addition'}" style="--digits:${m.n}" aria-label="Worked ${q.a} ${q.op} ${q.b} equals ${q.answer}">${heads}${regroup}${top}${bottom}${answer}${carries}</div><ol class="written-steps">${steps}</ol><p class="written-check">${sub?`Check: ${q.answer} + ${q.b} = ${q.a}`:`Check: ${q.answer} − ${q.b} = ${q.a}`}</p>`;
+ return `<div class="written-method arithmetic-paper worked ${sub?'subtraction':'addition'}" style="--digits:${m.n}" aria-label="Worked ${q.a} ${q.op} ${q.b} equals ${q.answer}">${heads}${regroup}${top}${bottom}${answer}${carries}</div><ol class="written-steps">${steps}</ol><p class="written-check">${sub?`Check: ${q.answer} + ${q.b} = ${q.a}`:`Check: ${q.answer} − ${q.b} = ${q.a}`}</p>`;
 }

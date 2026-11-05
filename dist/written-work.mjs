@@ -20,7 +20,7 @@ export function writtenTask(question) {
 }
 
 export function multiplicationWorking(a, b) {
-  const width = String(a * b).length;
+  const width = Math.max(String(a).length, String(b).length, String(a * b).length);
   const multiplicand = [...String(a)].reverse().map(Number);
   const partials = [...String(b)].reverse().map((digit, shift) => {
     const factor = Number(digit) * 10 ** shift;
@@ -29,11 +29,20 @@ export function multiplicationWorking(a, b) {
     for (let i = 0; i < multiplicand.length; i++) {
       carry = Math.floor((multiplicand[i] * Number(digit) + carry) / 10);
       const nextColumn = width - 2 - i - shift;
-      if (carry && nextColumn >= 0) carries[nextColumn] = String(carry);
+      if (carry && i + 1 < multiplicand.length) carries[nextColumn] = String(carry);
     }
     return {label: shift ? 'Tens' : 'Ones', factor, value: a * factor, carries, shift};
   });
-  return {type:'longMultiply', title:'Multiply in columns', a, b, partials, total:a*b, width};
+  const sumCarries = Array(width).fill('');
+  if (partials.length > 1) {
+    const products = partials.map(part => String(part.value).padStart(width, '0'));
+    let carry = 0;
+    for (let i = width - 1; i > 0; i--) {
+      carry = Math.floor((carry + products.reduce((sum, product) => sum + Number(product[i]), 0)) / 10);
+      if (carry) sumCarries[i - 1] = String(carry);
+    }
+  }
+  return {type:'longMultiply', title:'Multiply in columns', a, b, partials, sumCarries, total:a*b, width};
 }
 
 export function divisionWorking(dividend, divisor) {
@@ -65,60 +74,103 @@ function digits(value, width, end = width - 1) {
 function noteField(key, label, value, done, maxlength = 1) {
   return `<input class="work-note" data-work="${esc(key)}" aria-label="${esc(label)}" inputmode="numeric" maxlength="${maxlength}" value="${esc(value || '')}" ${done ? 'disabled' : ''} autocomplete="off">`;
 }
-function answerDigits(width, entered, done, label, expected) {
+function answerDigits(width, entered, done, label, expected, start = 0) {
   const correct = String(expected).padStart(width,'0');
   return Array.from({length:width}, (_, i) => {
     const place = placeNames[width-i-1] || `digit ${i+1}`;
     const status = done ? (Number(entered[i] || 0) === Number(correct[i]) ? 'correct' : 'incorrect') : '';
-    return `<input class="column-digit ${status}" id="digit-${i}" data-digit="${i}" aria-label="${label} ${place} column" inputmode="numeric" maxlength="1" value="${esc(entered[i] || '')}" autocomplete="off" ${done ? 'disabled' : ''}>`;
+    return `<input class="column-digit ${status}" id="digit-${i}" data-digit="${i}" aria-label="${label} ${place} column" inputmode="numeric" maxlength="1" value="${esc(entered[i] || '')}" autocomplete="off" ${i === start ? 'data-start-digit' : ''} ${done ? 'disabled' : ''}>`;
   });
+}
+
+function multiplicationCarries(task, width, shift, key, label, notes, done) {
+  const start = width - String(task.a).length - shift;
+  const end = width - 1 - shift;
+  return row(width, Array.from({length:width}, (_, i) => i >= start && i < end
+    ? noteField(`${key}-${i}`, `${label}, ${placeNames[width-i-1]} column`, notes[`${key}-${i}`], done)
+    : '<span></span>'), 'method-carries');
 }
 
 export function multiplicationWorkspace(task, {entered = [], notes = {}, done = false} = {}) {
   const model = multiplicationWorking(task.a, task.b);
   // Use the operand widths so the blank board does not reveal the answer's length.
   const width = String(task.a).length + String(task.b).length;
-  const work = model.partials.map(({label, shift}, index) => {
+  const long = model.partials.length > 1;
+  const work = long ? model.partials.map(({label, shift}, index) => {
     const fields = Array.from({length:width}, (_, i) => i >= width-shift ? '<span class="method-cell place-zero">0</span>' : noteField(`product-${index}-${i}`, `${label} row, ${placeNames[width-i-1]} column`, notes[`product-${index}-${i}`], done));
-    const carryFields = Array.from({length:width}, (_, i) => i >= width-shift ? '<span></span>' : noteField(`carry-${index}-${i}`, `${label} carry, ${placeNames[width-i-1]} column`, notes[`carry-${index}-${i}`], done));
-    return `<div class="partial-work"><small>${label} row</small>${row(width, fields, '', index ? '+' : '')}${row(width, carryFields, 'method-carries', 'Carry')}</div>`;
+    return row(width, fields, 'partial-product-row', index ? '+' : '') +
+      multiplicationCarries(task, width, shift, `carry-${index}`, `${label} carry into`, notes, done);
+  }).join('') : '';
+  const carries = long
+    ? row(width, Array.from({length:width}, (_, i) => i < width-1
+      ? noteField(`sum-${i}`, `Addition carry into ${placeNames[width-i-1]} column`, notes[`sum-${i}`], done)
+      : '<span></span>'), 'method-carries')
+    : multiplicationCarries(task, width, 0, 'carry-0', 'Carry into', notes, done);
+  const answer = row(width, answerDigits(width, entered, done, 'Product', model.total, width-1), 'method-answer');
+  return `<div class="method-board arithmetic-paper multiply-board" aria-label="Written multiplication workspace">${row(width,digits(task.a,width))}${row(width,digits(task.b,width),'','×')}${long?'<div class="method-rule"></div>'+work:''}${answer}${carries}</div><p class="worksheet-caption">${long ? 'Ones row, tens row, then add.' : 'Carry below the next column.'}</p>`;
+}
+
+function shortDividend(model, notes, done) {
+  const digits = [...String(model.dividend)];
+  const carries = new Map(model.steps.map(step => [step.index, step.carry]));
+  return row(digits.length, digits.map((digit, i) => {
+    const carry = notes ? (i ? noteField(`rem-carry-${i}`, `Remainder carried to digit ${i+1}`, notes[`rem-carry-${i}`], done) : '')
+      : (carries.get(i) ? `<sup>${carries.get(i)}</sup>` : '');
+    return `<span class="method-cell bus-digit">${carry}<span>${digit}</span></span>`;
+  }), 'dividend-row', String(model.divisor));
+}
+
+function divisionRows(model, notes, done) {
+  const width = String(model.dividend).length;
+  const divisorWidth = String(model.divisor).length;
+  return model.steps.map(step => {
+    const end = step.index;
+    const start = Math.max(0, end - divisorWidth);
+    const slot = end - divisorWidth + 1;
+    const downEnd = step.bring === null ? end : end + 1;
+    const down = step.bring === null ? step.remainder : step.remainder * 10 + step.bring;
+    const fields = (kind, label, first, last, value, minus = false) => {
+      const printed = String(value);
+      const left = notes ? first : last - printed.length + 1;
+      return row(width, Array.from({length:width}, (_, i) => {
+        if (minus && i === left - 1) return '<span class="method-minus">−</span>';
+        if (i < left || i > last) return '<span></span>';
+        const key = `${kind}-${slot}-${i}`;
+        if (notes) return noteField(key, `${label}, ${placeNames[width-i-1]} column`, notes[key], done);
+        const brought = kind === 'down' && i === downEnd && step.bring !== null;
+        return `<span class="method-cell ${brought?'brought-digit':''}">${printed[i-left]}</span>`;
+      }), kind === 'back' ? 'division-product' : 'division-difference', minus && left === 0 ? '−' : '');
+    };
+    const line = row(width, Array.from({length:width}, (_, i) => i >= start && i <= end
+      ? '<span class="rule-segment"></span>' : '<span></span>'), 'division-rule');
+    return fields('back', 'Subtract the product', start, end, step.product, true) + line +
+      fields('down', step.bring === null ? 'Remainder' : 'Subtract and bring down', Math.max(0, downEnd - divisorWidth), downEnd, down);
   }).join('');
-  const answer = row(width, answerDigits(width, entered, done, 'Product', model.total), 'method-answer');
-  return `<div class="method-board multiply-board" aria-label="Written multiplication workspace">${row(width,digits(task.a,width))}${row(width,digits(task.b,width),'','×')}<div class="method-rule"></div>${model.partials.length > 1 ? work : row(width, Array.from({length:width}, (_, i) => noteField(`carry-0-${i}`, `Carry, ${placeNames[width-i-1]} column`, notes[`carry-0-${i}`],done)), 'method-carries','Carry')}<div class="method-final"><small>Answer</small>${answer}</div></div><p class="worksheet-caption">${task.b >= 10 ? 'Multiply by the ones, then the tens. Add both rows.' : 'Start with the ones. Write any carries in the small boxes.'}</p>`;
 }
 
 export function divisionWorkspace(task, {entered = [], notes = {}, done = false, remainder = ''} = {}) {
   const width = String(task.a).length;
-  const model = divisionWorking(task.a,task.b);
-  const quotient = row(width, answerDigits(width,entered,done,'Quotient',model.quotient),'quotient-row');
-  const dividend = row(width,digits(task.a,width),'dividend-row',String(task.b));
-  let work = '';
-  if (task.type === 'short-division') {
-    const carries = Array.from({length:width},(_, i) => i ? noteField(`rem-carry-${i}`,`Remainder carried to digit ${i+1}`,notes[`rem-carry-${i}`],done) : '<span></span>');
-    work = row(width,carries,'method-carries short-carries','Carry');
-  } else {
-    const count = width - String(task.b).length + 1;
-    work = Array.from({length:count}, (_, step) => {
-      const end = String(task.b).length + step - 1;
-      const fields = (kind,label,limit) => Array.from({length:width},(_,i) => i <= limit ? noteField(`${kind}-${step}-${i}`,`${label} ${step+1}, digit ${i+1}`,notes[`${kind}-${step}-${i}`],done) : '<span></span>');
-      return `<div class="division-work-step"><small>Step ${step+1}</small>${row(width,fields('back','Multiply back',end),'division-product','−')}${row(width,fields('down','Subtract and bring down',Math.min(width-1,end+1)),'division-difference')}</div>`;
-    }).join('');
-  }
-  const remainderField = task.needsRemainder ? `<label class="remainder-field">Remainder <input class="work-note" id="division-remainder" data-remainder inputmode="numeric" maxlength="2" aria-label="Remainder" value="${esc(remainder)}" ${done?'disabled':''}></label>` : '';
-  return `<div class="method-board division-board ${task.type}" aria-label="${model.title} workspace"><small>Quotient</small>${quotient}${task.type==='short-division'?work:''}${dividend}${task.type==='long-division'?work:''}${remainderField}</div><p class="worksheet-caption">${task.type==='short-division'?'Divide from the left. Carry the remainder to the next digit.':'Divide, multiply back, subtract, then bring down.'}</p>`;
+  const model = divisionWorking(task.a, task.b);
+  const short = task.type === 'short-division';
+  const quotient = row(width, answerDigits(width, entered, done, 'Quotient', model.quotient, model.steps[0].index), 'quotient-row');
+  const dividend = short ? shortDividend(model, notes, done) : row(width, digits(task.a,width), 'dividend-row', String(task.b));
+  const remainderField = task.needsRemainder ? `<label class="remainder-field">r <input class="work-note" id="division-remainder" data-remainder inputmode="numeric" maxlength="2" aria-label="Remainder" value="${esc(remainder)}" ${done?'disabled':''}></label>` : '';
+  return `<div class="method-board arithmetic-paper division-board ${task.type}" aria-label="${model.title} workspace"><div class="quotient-line">${quotient}${remainderField}</div>${dividend}${short?'':divisionRows(model, notes, done)}</div><p class="worksheet-caption">${short?'Write remainders small beside the next digit.':'Divide, multiply, subtract, bring down.'}</p>`;
 }
 
 export function multiplicationSolution(model) {
   const width = model.width;
-  const partials = model.partials.map((part,i) => `<div class="partial-work"><small>${part.label} · ${model.a} × ${part.factor}</small>${row(width,digits(part.value,width),'',i?'+':'')}${row(width,part.carries.map(c=>`<span>${c}</span>`),'method-carries','Carry')}</div>`).join('');
-  return `<div class="method-board multiply-board worked-board">${row(width,digits(model.a,width))}${row(width,digits(model.b,width),'','×')}<div class="method-rule"></div>${partials}${row(width,digits(model.total,width),'method-answer')}</div><p class="worksheet-caption">${model.partials.length>1?'The tens row starts one place to the left. Add the two products.':'Multiply each digit from the right. Carry to the next column.'}</p>`;
+  const long = model.partials.length > 1;
+  const carries = values => values.some(Boolean) ? row(width, values.map(c => `<span>${c}</span>`), 'method-carries') : '';
+  const partials = long ? model.partials.map((part, i) => row(width, digits(part.value,width), 'partial-product-row', i?'+':'') + carries(part.carries)).join('') : '';
+  return `<div class="method-board arithmetic-paper multiply-board worked-board" aria-label="Worked multiplication">${row(width,digits(model.a,width))}${row(width,digits(model.b,width),'','×')}${long?'<div class="method-rule"></div>'+partials:''}${row(width,digits(model.total,width),'method-answer')}${carries(long?model.sumCarries:model.partials[0].carries)}</div><p class="worksheet-caption">${long?'Multiply by the ones, then the tens. Add the two rows.':'Multiply from the right. Carry to the next column.'}</p>`;
 }
 
 export function divisionSolution(model) {
   const width = String(model.dividend).length;
   const short = model.divisor < 10;
-  const carries = Array(width).fill('');
-  model.steps.forEach(step => { if (step.carry) carries[step.index] = String(step.carry); });
-  const steps = model.steps.map((step,i) => `<div class="division-work-step"><small>${i+1}. ${step.current} ÷ ${model.divisor} gives ${step.digit}</small>${row(width,digits(step.product,width,step.index),'division-product','−')}${row(width,digits(step.remainder,width,step.index),'division-difference')}${step.bring!==null?`<small>Bring down ${step.bring} to make ${step.remainder*10+step.bring}.</small>`:''}</div>`).join('');
-  return `<div class="method-board division-board worked-board">${row(width,digits(model.quotient,width),'quotient-row')}${short?row(width,carries.map(c=>`<span>${c}</span>`),'method-carries','Carry'):''}${row(width,digits(model.dividend,width),'dividend-row',String(model.divisor))}${short?'':steps}</div><p class="worksheet-caption">${mathText(`${model.quotient} × ${model.divisor} + ${model.remainder} = ${model.dividend}`)}${model.remainder?` · Remainder ${model.remainder}`:''}</p>`;
+  const quotient = row(width, digits(model.quotient,width), 'quotient-row');
+  const remainder = model.remainder ? `<span class="remainder-field" aria-label="Remainder ${model.remainder}">r ${model.remainder}</span>` : '';
+  const dividend = short ? shortDividend(model) : row(width, digits(model.dividend,width), 'dividend-row', String(model.divisor));
+  return `<div class="method-board arithmetic-paper division-board worked-board ${short?'short-division':'long-division'}" aria-label="Worked ${model.title.toLowerCase()}"><div class="quotient-line">${quotient}${remainder}</div>${dividend}${short?'':divisionRows(model)}</div><p class="worksheet-caption">${mathText(`${model.quotient} × ${model.divisor}${model.remainder?` + ${model.remainder}`:''} = ${model.dividend}`)}</p>`;
 }

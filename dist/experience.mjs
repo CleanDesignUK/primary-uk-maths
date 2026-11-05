@@ -1,5 +1,5 @@
-import {multiplicationSolution,divisionSolution} from './written-work.mjs';
-import {columnWorked} from './column-method.mjs';
+import {multiplicationSolution,divisionSolution} from './written-work.mjs?v=6.1.1';
+import {columnWorked} from './column-method.mjs?v=6.1.1';
 import {avatarSVG} from './avatar.mjs';
 import {itemById} from './career.mjs';
 import {esc,icon,mathText} from './visuals.mjs';

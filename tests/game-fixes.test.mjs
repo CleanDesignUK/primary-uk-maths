@@ -99,3 +99,32 @@ test('written multiplication and division workspaces match the entire integer qu
  }
  assert.ok(questionPool('longDiv6').some(q=>writtenTask(q)?.needsRemainder));
 });
+
+test('pupils carry into a receiving digit and the coach writes the final carry once', async () => {
+ const {columnWorkspace} = await import('../dist/column-method.mjs');
+ const {multiplicationSolution} = await import('../dist/written-work.mjs');
+ const addition = columnWorkspace({a:68,b:57,answer:125,op:'+'});
+ assert.match(addition,/Carry into tens column/);
+ assert.doesNotMatch(addition,/Carry into (ones|hundreds) column/);
+ const short = multiplicationWorking(97,8);
+ assert.deepEqual(short.partials[0].carries,['','5','']);
+ assert.equal((multiplicationSolution(short).match(/method-answer/g)||[]).length,1);
+ const long = multiplicationWorking(98,76);
+ assert.deepEqual(long.partials.map(p=>p.value),[588,6860]);
+ assert.deepEqual(long.sumCarries,['1','1','','']);
+ assert.match(multiplicationWorkspace({a:98,b:76}),/class="method-cell place-zero">0/);
+});
+
+test('bus-stop notes sit beside dividend digits and long division brings down in the same grid', async () => {
+ const {divisionSolution} = await import('../dist/written-work.mjs');
+ const short = divisionSolution(divisionWorking(945,7));
+ assert.match(short,/<sup>2<\/sup><span>4<\/span>/);
+ assert.match(short,/<sup>3<\/sup><span>5<\/span>/);
+ const long = divisionSolution(divisionWorking(972,36));
+ assert.match(long,/<span class="method-cell ">2<\/span><span class="method-cell ">5<\/span><span class="method-cell brought-digit">2<\/span>/);
+ assert.match(long,/27 × 36 = 972/);
+ const board = divisionWorkspace({a:1206,b:12,type:'long-division',needsRemainder:true});
+ assert.equal((board.match(/division-rule/g)||[]).length,3);
+ assert.match(board,/data-start-digit/);
+ assert.match(board,/aria-label="Remainder"/);
+});
