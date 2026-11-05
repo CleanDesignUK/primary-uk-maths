@@ -6,23 +6,45 @@ import {avatarSVG,clubBadge} from './avatar.mjs';
 import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,PLAYER_THEMES,KIT_TRIMS} from './career.mjs?v=6';
 import {yearProgress,leagueTable} from './promotion.mjs';
 import {focusTables,tableEvidence} from './tables.mjs';
-import {goalsMarkup,factMapMarkup} from './experience.mjs';
+import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=6.3.0';
+import {matchMission,missionProgress} from './shot.mjs?v=6.3.0';
 import {britishVoices} from './speech.mjs';
 
 const nav=(view,label,symbol='arrow',className='btn white')=>`<button class="${className}" data-action="nav" data-view="${view}">${icon(symbol,17)}${label}</button>`;
 const heading=(eyebrow,title,aside='')=>`<div class="heading academy-page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1></div>${aside}</div>`;
 const progressStrip=p=>{const v=levelProgress(p);return `<div class="career-progress"><div><b>Level ${v.level}</b><span>${Math.floor(v.current)} / ${v.needed} XP</span></div><div class="xp"><i style="width:${v.percent}%"></i></div><small>Next level: ${v.needed-Math.floor(v.current)} XP</small></div>`;};
-export function pickerView(data){
+export const firstShots=[
+ {a:3,b:4,op:'×',answer:12,choices:[7,12,16],coach:'Three groups of four. Count 4, 8, 12.'},
+ {a:8,b:5,op:'+',answer:13,choices:[12,14,13],coach:'Add 2 to make 10. Add the other 3.'},
+ {a:24,b:4,op:'÷',answer:6,choices:[6,8,20],coach:'Four times six makes 24.'}
+];
+export function firstShotView({index=0,goal=false}={}){
+ const q=firstShots[index];
+ return `<section class="pitch-card match-pitch first-shot" aria-labelledby="first-shot-title">
+  <div class="match-card-top"><h2 id="first-shot-title">${icon('ball',16)} Try a shot</h2><span class="first-shot-tag">FREE PLAY</span></div>
+  ${penaltyArena()}
+  <div class="first-shot-pad"><p class="first-shot-equation">${q.a} <span>${q.op}</span> ${q.b} <span>=</span> <strong>?</strong></p>
+   <div class="first-shot-answers" role="group" aria-label="Choose an answer">${q.choices.map(n=>`<button type="button" class="${goal&&n===q.answer?'scored':''}" data-action="first-shot" data-answer="${n}" ${goal?'disabled':''}>${n}</button>`).join('')}</div>
+   <div class="first-shot-footer"><p id="first-shot-feedback" role="status">${goal?'Goal! In the net.':'Tap an answer to shoot.'}</p><button class="text-btn first-shot-next" data-action="first-shot-next" ${goal?'':'hidden'}>Next shot ${icon('arrow',14)}</button></div>
+  </div>
+ </section>`;
+}
+export function pickerView(data,firstShot){
  const players=data.profiles;
- if(!players.length)return `<section class="academy-welcome arcade-welcome">
-  <div class="welcome-copy"><span class="field-label"><i class="live-dot" aria-hidden="true"></i> Football academy · Years 1–6</span><h1>Own the<br><em>pitch.</em></h1><p>Pick your year. Build your player. Kick off.</p><button class="btn lime big arcade-kickoff" data-action="new-player">${icon('play',22)} Create your player</button></div>
-  <div class="welcome-character">${avatarSVG(null,{size:305})}<span class="welcome-ball" aria-hidden="true">${icon('ball',56)}</span></div>
- </section><div class="welcome-foot"><button class="text-btn" data-action="browse">Explore the curriculum ${icon('arrow',15)}</button></div>`;
- return `<section class="squad-select"><div class="section-head"><div><span class="eyebrow">Matchday squad</span><h1>Choose a player</h1></div><button class="btn lime" data-action="new-player">${icon('plus',18)} Add player</button></div>
+ if(!players.length)return `<div class="kickoff-screen">
+  <section class="kickoff-welcome">
+   <span class="field-label"><i class="live-dot" aria-hidden="true"></i> Football academy · Years 1–6</span>
+   <h1>Matchday <em>Maths</em></h1>
+   <p>Play football. Practise maths.</p>
+   <button class="btn lime big arcade-kickoff" data-action="new-player">${icon('play',22)} Create your player</button>
+   <button class="text-btn kickoff-curriculum" data-action="browse">Explore the curriculum ${icon('arrow',15)}</button>
+  </section>${firstShotView(firstShot)}
+ </div>`;
+ return `<div class="kickoff-screen"><section class="squad-select"><div class="section-head"><div><span class="eyebrow">Matchday squad</span><h1>Choose a player</h1></div><button class="btn lime" data-action="new-player">${icon('plus',18)} Add player</button></div>
  <div class="squad-cards">${players.map(p=>{
   initCareer(p);
   return `<button class="squad-player" data-action="choose-player" data-id="${p.id}" aria-label="Play as ${esc(p.name)}, Year ${p.year}"><div class="squad-info">${clubBadge(p)}<span>Year ${p.year} · Level ${careerLevel(p)}</span><h2>${esc(p.name)}</h2><small>${esc(p.look.position)} · No. ${p.look.number}</small><span class="squad-play">${icon('play',17)} Play</span></div>${avatarSVG(p,{size:146})}</button>`;
- }).join('')}</div></section>`;
+ }).join('')}</div></section>${firstShotView(firstShot)}</div>`;
 }
 export function yearJourney(p,selectedYear=p.year){
  const progress=yearProgress(p,selectedYear),explored=progress.skills.filter(s=>s.n>0).length;
@@ -55,6 +77,7 @@ export function homeView(p){
  const match=progress.eligible?'Year promotion':p.placementComplete?'Coach match':'Your warm-up';
  const shots=progress.eligible?12:p.placementComplete?10:Math.max(0,probeIds(p).length-(p.placementProgress||0));
  const checkReady=progressCheckPlan(p).length>0;
+ const objective=progress.eligible?null:missionProgress(matchMission(p.sessions.filter(round=>round.complete).length),[]);
  return `<div class="lobby-layout"><div class="lobby-main">
   <section class="game-lobby" aria-label="Next match">
    <div class="lobby-banner"><div class="lobby-copy">
@@ -62,7 +85,7 @@ export function homeView(p){
     <h1>GG, ${esc(p.name)}!</h1>
     <div class="lobby-kicker">${clubBadge(p)}<span>${esc(club.name)} · Year ${p.year}</span></div>
     <button class="btn lime lobby-play arcade-kickoff" data-action="${progress.eligible?'promotion':'play'}">${icon('play',24)} ${play}</button>
-    <small>${shots} shots</small>
+    <small class="kickoff-round-details">${shots} shots${objective?`<span>${icon('star',13)} ${objective.name}</span>`:''}</small>
    </div><div class="lobby-player"><span class="lobby-jersey" aria-hidden="true">${p.look.number}</span>${avatarSVG(p,{size:267})}<button class="lobby-kit-btn" data-action="appearance" aria-label="Edit my player">${icon('shirt',17)} <span>${esc(p.look.position)} · No. ${p.look.number}</span></button></div></div>
    <div class="lobby-stage-footer">${progressStrip(p)}<button class="wallet-shop" data-action="open-shop" aria-label="Shop, ${credits(p)} credits"><span class="credit-chip" aria-hidden="true">C</span><span><b>${credits(p)} credits</b></span>${icon('arrow',16)}</button></div>
   </section>${modeCards()}

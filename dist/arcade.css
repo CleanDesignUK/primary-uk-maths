@@ -65,23 +65,10 @@ body.arcade {
 .arcade .arcade-page>.heading .eyebrow,.arcade .squad-select .eyebrow {color:var(--game-accent)}
 .arcade .arcade-page>.heading p {color:var(--quiet)}
 
-/* The same player and pitch carry through selection and the lobby. */
-.arcade .arcade-welcome,.arcade .game-lobby {
+.arcade .game-lobby {
  background:#0c2339;border:1px solid #3c5a70;border-radius:21px;
  box-shadow:0 14px 30px #0004;color:var(--bright);
 }
-.arcade .arcade-welcome {
- position:relative;min-height:485px;padding:58px 54px;isolation:isolate;overflow:hidden;
- background:linear-gradient(90deg,#071727 3%,#071727ce 30%,#07172735 70%),var(--stadium) 65% 56%/cover;
-}
-.arcade .arcade-welcome .welcome-copy {position:relative;z-index:2;max-width:68%}
-.arcade .arcade-welcome h1 {font-size:clamp(62px,9vw,132px);line-height:.86;letter-spacing:.025em;margin:25px 0 15px;color:var(--bright)}
-.arcade .arcade-welcome h1 em {color:var(--game-accent)}
-.arcade .arcade-welcome p {font-size:16px;color:#dce9fa;line-height:1.4;margin:0 0 20px}
-.arcade .arcade-welcome .welcome-character {position:absolute;z-index:1;right:8%;bottom:24px;display:grid;justify-items:center}
-.arcade .welcome-character .block-player {filter:drop-shadow(0 12px 8px #051423ab);width:clamp(165px,28vw,333px);height:auto}
-.welcome-ball {position:absolute;right:7%;bottom:12%;color:#fff;filter:drop-shadow(0 4px 4px #041322)}
-.arcade .welcome-foot,.arcade .welcome-foot .text-btn {color:var(--quiet)}
 .squad-select .section-head {margin:18px 0 12px}
 .arcade .squad-select h1 {font-family:Matchday,Impact,sans-serif;font-size:clamp(39px,6vw,72px);text-transform:uppercase;margin:4px 0}
 .arcade .squad-player {
@@ -299,7 +286,6 @@ body.arcade {
 .arcade.reading-mode .arcade-page>.heading :is(h1,.eyebrow,p),
 .arcade.reading-mode .arcade-section-title h2,
 .arcade.reading-mode .squad-select :is(h1,.eyebrow),
-.arcade.reading-mode .welcome-foot .text-btn,
 .arcade.reading-mode .shop-title :is(h2,span),
 .arcade.reading-mode .syllabus-tools .text-btn,
 .arcade.reading-mode .domain-title :is(h2,small),
@@ -343,15 +329,6 @@ body.arcade {
  .arcade .header-tools :is(.icon-btn,.profile-mini) {min-height:36px;min-width:35px;height:36px;padding:4px 6px}
  .arcade .header-tools .profile-mini {max-width:96px;font-size:11px}
  .arcade .header-tools .profile-dot {width:20px;height:20px;font-size:10px}
- .arcade .arcade-welcome {min-height:355px;padding:27px 16px;background-position:64% 56%}
- .arcade .arcade-welcome .welcome-copy {max-width:67%}
- .arcade .arcade-welcome .welcome-character {right:-6%;bottom:38px}
- .arcade .arcade-welcome h1 {font-size:clamp(53px,13vw,76px);margin:20px 0 10px}
- .arcade .arcade-welcome p {font-size:13px;margin-bottom:13px;max-width:170px}
- .arcade .welcome-character .block-player {width:clamp(130px,45vw,220px)}
- .welcome-ball {right:12%}
- .welcome-ball svg {width:33px;height:33px}
- .arcade .arcade-welcome .arcade-kickoff {font-size:14px;min-height:48px;padding:7px 11px}
  .arcade .squad-select .section-head {gap:7px}
  .arcade .squad-select .section-head .btn {padding-inline:8px}
  .lobby-layout {display:block}
@@ -514,4 +491,67 @@ body.arcade {
  .q-toolbar:has(.dont-know)>.q-label {display:none}
  .q-toolbar:has(.dont-know)>.q-toolbar-actions {width:100%;justify-content:space-between;gap:4px}
  .q-toolbar .dont-know {padding-inline:7px;font-size:12px}
+}
+
+.kickoff-screen {
+ display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);
+ grid-template-areas:"intro pitch";gap:14px;align-items:stretch;
+ max-width:1140px;margin:16px auto 24px;
+}
+.kickoff-welcome {
+ grid-area:intro;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+ min-width:0;padding:clamp(21px,4vw,54px);
+ border:1px solid #405a75;border-radius:19px;
+ background:linear-gradient(110deg,#081724f2 18%,#08172466),var(--stadium) 50% 63%/cover;
+ color:#f5faff;box-shadow:0 6px 0 #050d18;
+}
+.kickoff-welcome h1 {
+ margin:12px 0 6px;font:clamp(46px,7.2vw,94px)/.97 Matchday,Impact,sans-serif;
+ text-transform:uppercase;letter-spacing:.02em;
+}
+.kickoff-welcome h1 em {color:var(--game-accent);font-style:normal}
+.kickoff-welcome p {margin:5px 0 16px;color:#e0edfd;font-size:16px}
+.kickoff-welcome .kickoff-curriculum {color:#deebf9;min-height:44px;margin-top:5px}
+.kickoff-screen>.squad-select {grid-area:intro;min-width:0}
+.kickoff-round-details {display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap}
+.kickoff-round-details span {display:inline-flex;align-items:center;gap:4px;color:#fff1b1}
+.arcade .first-shot {position:relative;top:auto;padding:10px 12px;border-radius:17px}
+.first-shot .match-card-top {min-height:29px;margin:0 0 5px}
+.first-shot h2 {
+ display:flex;align-items:center;gap:6px;margin:0;
+ font-size:14px;font-weight:800;letter-spacing:0;color:#f0f7ff;
+}
+.first-shot-tag {color:#a8dff3;font-size:10px}
+.arcade .first-shot .penalty-view {height:clamp(140px,22vw,218px);margin:0}
+.first-shot-pad {padding:8px 0 0;text-align:center}
+.first-shot-equation {
+ color:#fff;font-size:clamp(30px,4.2vw,48px);
+ line-height:1.2;font-weight:850;font-variant-numeric:tabular-nums;
+}
+.first-shot-equation span {color:#b5d7ed}
+.first-shot-equation strong {color:var(--game-accent)}
+.first-shot-answers {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:7px}
+.first-shot-answers button {
+ min-height:49px;padding:4px;border:1px solid #597899;border-radius:8px;
+ background:#233c58;color:#f2f7ff;font-size:23px;font-weight:800;
+ box-shadow:0 3px 0 #061320;
+}
+.first-shot-answers button:not(:disabled):hover {background:#2e5070;border-color:#a2daf6}
+.first-shot-answers button.scored {background:var(--game-accent);color:#182e2a;border-color:#bde786}
+.first-shot-footer {
+ min-height:44px;display:flex;align-items:center;justify-content:space-between;
+ gap:6px;color:#e0edfd;font-size:13px;text-align:left;
+}
+.first-shot-next {min-height:44px;color:#e4ff9f;white-space:nowrap}
+.first-shot-next[hidden] {display:none}
+@media(max-width:680px) {
+ .kickoff-screen {grid-template-columns:minmax(0,1fr);grid-template-areas:"intro" "pitch";gap:9px;margin:8px auto 12px}
+ .kickoff-welcome {padding:12px 13px;border-radius:14px}
+ .kickoff-welcome h1 {font-size:clamp(39px,11vw,62px);margin:7px 0 3px}
+ .kickoff-welcome p {font-size:13px;margin:4px 0 8px}
+ .kickoff-welcome .arcade-kickoff {min-height:46px;font-size:14px;padding:7px 10px}
+ .kickoff-welcome .kickoff-curriculum {min-height:37px;margin:3px 0 -3px;font-size:11px}
+ .arcade .first-shot {padding:7px 8px;border-radius:13px}
+ .arcade .first-shot .penalty-view {height:clamp(113px,20vh,160px)}
+ .first-shot-equation {font-size:36px}
 }

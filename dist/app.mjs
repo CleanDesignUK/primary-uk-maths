@@ -6,7 +6,7 @@ import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoach
 import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.3.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.3.0';
 import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
-import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.2.0';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.4.0';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6';
 import {avatarSVG} from './avatar.mjs';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
@@ -23,6 +23,7 @@ const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
 const app=$('#app'),modalRoot=$('#modal-root');
 let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='kit',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,pendingMatch=null,audio;
 const draftRounds=new Map();
+const firstShot={index:0,goal:false};
 try{const raw=localStorage.getItem(STORAGE);data=raw?validateImport(JSON.parse(raw)):initialData();}catch{data=initialData();storageWarning='Progress could not be loaded. Restore a backup in Coach.';}
 if(data.profiles.length===3&&data.profiles.every(p=>['Ace','Carter','Cruz'].includes(p.name)&&!p.sessions.length&&!Object.keys(p.facts).length)&&Math.max(...data.profiles.map(p=>p.createdAt))-Math.min(...data.profiles.map(p=>p.createdAt))<1000){data.profiles=[];data.activeId=null;}
 try{const reading=localStorage.getItem('matchday.reading');if(reading!==null)data.settings.dyslexia=reading==='true';}catch{}
@@ -117,7 +118,21 @@ function render(){
  app.innerHTML=`<div class="shell arcade-shell">${header(hasMenu)}<main id="main" class="${content==='players'?'welcome':'page'} arcade-page" tabindex="-1">${storageWarning?`<div class="storage-warning" role="alert">${esc(storageWarning)}</div>`:''}${ribbon}${(pages[content]||playersPage)()}</main>${footer()}</div>`;
  applyAccessPreferences();
 }
-function playersPage(){return pickerView(data);}
+function playersPage(){return pickerView(data,firstShot);}
+function takeFirstShot(answer){
+ const drill=$('.first-shot');
+ const question=firstShots[firstShot.index];
+ if(!drill||firstShot.goal||!question.choices.includes(answer))return;
+ const goal=answerMatches(question,answer);
+ firstShot.goal=goal;
+ paintShot($('.penalty-view',drill),{question,correct:goal,attempt:firstShot.index+1,aim:'centre',replay:true});
+ $('#first-shot-feedback').textContent=goal?'Goal! In the net.':question.coach;
+ if(goal){
+  $$('[data-action="first-shot"]',drill).forEach(button=>{button.disabled=true;button.classList.toggle('scored',Number(button.dataset.answer)===answer);});
+  const next=$('[data-action="first-shot-next"]',drill);
+  next.hidden=false;next.focus({preventScroll:true});
+ }
+}
 function metric(value,label,symbol){return `<div class="metric"><span class="metric-icon">${icon(symbol,23)}</span><div><strong>${value}</strong><small>${label}</small></div></div>`;}
 function shortTitle(s){if(s.id.startsWith('col'))return `${s.title} · ${s.digits} digits${!s.regroup?' · no exchange':''}`;return s.title;}
 function symbolFor(s){if(s.table)return `×${s.table}`;if(['mix348','mixAll'].includes(s.id))return '×';if(s.kind==='div')return '÷';if(s.kind==='place')return '123';if(s.kind==='coladd'||s.kind==='add')return '+';if(s.kind==='colsub'||s.kind==='sub')return '−';if(s.kind==='bonds')return s.id==='bonds10'?'10':'20';return DOMAINS.find(d=>d.id===domainFor(s))?.symbol||'?';}
@@ -527,6 +542,15 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
   if(!pendingSkill&&savedRound())resumeSaved();else startMatch(pendingSkill);
   pendingSkill=null;break;
  case 'new-player':profileForm();break;
+ case 'first-shot':takeFirstShot(Number(b.dataset.answer));break;
+ case 'first-shot-next':
+  if(firstShot.goal){
+   firstShot.index=(firstShot.index+1)%firstShots.length;
+   firstShot.goal=false;
+   $('.first-shot').outerHTML=firstShotView(firstShot);
+   $('[data-action="first-shot"]')?.focus({preventScroll:true});
+  }
+  break;
  case 'edit-player':profileForm(b.dataset.id);break;
  case 'delete-player':{const p=data.profiles.find(x=>x.id===b.dataset.id);openDialog(`<h2 id="dialog-title">Delete ${esc(p.name)}?</h2><p>This removes this player’s progress from this browser. Back up first if you want to keep it.</p><div class="dialog-actions"><button class="btn white" data-action="close-dialog">Keep player</button><button class="btn danger" data-action="confirm-delete" data-id="${p.id}">Delete player</button></div>`);break;}
  case 'confirm-delete':data.profiles=data.profiles.filter(p=>p.id!==b.dataset.id);draftRounds.delete(b.dataset.id);if(data.activeId===b.dataset.id)data.activeId=null;save();saveRound();closeDialog();render();toast('Player removed.');break;
