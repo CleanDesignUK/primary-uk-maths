@@ -1,7 +1,15 @@
 export const SKIN_TONES={sand:'#e7b88c',warm:'#c58c62',brown:'#9a6544',deep:'#65432f',rose:'#f0c8aa'};
 export const HAIR_COLOURS={brown:'#503b2b',black:'#272824',blond:'#d3ad61',ginger:'#a75532',silver:'#c3c7bd'};
+export const PLAYER_THEMES = {
+ pitch:{name:'Stadium green',accent:'#d3f66e',dark:'#163b2b'},
+ ocean:{name:'Ocean blue',accent:'#80e2ff',dark:'#17334c'},
+ ember:{name:'Ember orange',accent:'#ffc384',dark:'#4c2b23'},
+ violet:{name:'Night violet',accent:'#d6baff',dark:'#322554'},
+ rose:{name:'Rose red',accent:'#ffaab7',dark:'#492636'}
+};
+export const KIT_TRIMS = {match:'Kit trim',lime:'#d8f477',sky:'#83dbfa',gold:'#f9d674',rose:'#f6a0ae',white:'#f5f6f0'};
 export const POSITIONS=['Striker','Midfielder','Defender','Goalkeeper'];
-export const ITEMS=[
+const ORIGINAL_ITEMS=[
  {id:'kit-home',slot:'kit',name:'Academy home',price:0,level:1,colour:'#2d704c',accent:'#d4f36a'},
  {id:'kit-blue',slot:'kit',name:'Electric away',price:25,level:2,colour:'#466ccd',accent:'#e8eeff'},
  {id:'kit-red',slot:'kit',name:'Red captain',price:40,level:3,colour:'#bd4e43',accent:'#f6dfad'},
@@ -30,6 +38,51 @@ export const ITEMS=[
  {id:'trail-blue',slot:'trail',name:'Blue comet',price:80,level:5,colour:'#6caff4'},
  {id:'trail-purple',slot:'trail',name:'Purple lightning',price:140,level:9,colour:'#b48cef'}
 ];
+const LEGACY_PRICE = Object.fromEntries(ORIGINAL_ITEMS.map(item => [item.id,item.price]));
+const newItem = (id, slot, name, price, level, colour, extra={}) => ({id,slot,name,price,level,colour,...extra});
+export const ITEMS = [
+ ...ORIGINAL_ITEMS.map(item=>({...item,price:item.price*5})),
+ newItem('kit-sash','kit','Stadium sash',185,5,'#295b47',{accent:'#f3de9d',pattern:'sash'}),
+ newItem('kit-halves','kit','Two-tone away',235,6,'#2c4f91',{accent:'#98d9ff',pattern:'halves'}),
+ newItem('kit-sunset','kit','Sunset captain',350,8,'#b34739',{accent:'#ffd186',pattern:'stripes'}),
+ newItem('kit-aurora','kit','Aurora eleven',480,10,'#344375',{accent:'#96f3cc',pattern:'chevron'}),
+ newItem('kit-obsidian','kit','Obsidian cup',780,13,'#1e2b37',{accent:'#e7cc78',pattern:'sash'}),
+ newItem('kit-glacier','kit','Glacier final',940,15,'#234a66',{accent:'#b6fbff',pattern:'halves'}),
+ newItem('kit-diamond','kit','Diamond legends',1600,20,'#562f70',{accent:'#e8cdfd',pattern:'chevron'}),
+ newItem('shorts-lime','shorts','Lime away shorts',155,5,'#a1bf5c'),
+ newItem('shorts-ice','shorts','Glacier shorts',235,7,'#b0d9e0'),
+ newItem('shorts-gold','shorts','Gold stripe shorts',390,10,'#ac8339'),
+ newItem('boots-blue','boots','Blue sprint boots',185,5,'#6598ed'),
+ newItem('boots-violet','boots','Violet curl boots',285,7,'#ad83df'),
+ newItem('boots-gold','boots','Gold finisher boots',560,12,'#e6c16e'),
+ newItem('boots-cosmic','boots','Cosmic stud boots',850,15,'#7f98e6'),
+ newItem('hair-wave','hair','Wavy crop',0,1),
+ newItem('hair-fade','hair','High fade',120,4),
+ newItem('hair-fringe','hair','Swept fringe',190,5),
+ newItem('hair-locs','hair','Short locs',220,6),
+ newItem('hair-bun','hair','Top knot',260,7),
+ newItem('hair-mohawk','hair','Mohawk',325,8),
+ newItem('hair-long','hair','Long waves',410,10),
+ newItem('accessory-cap','accessory','Training cap',155,5,'#335b4c'),
+ newItem('accessory-band-gold','accessory','Gold armband',400,10,'#e6c16e'),
+ newItem('accessory-headphones','accessory','Tunnel headphones',360,9,'#7096d4'),
+ newItem('accessory-scarf','accessory','Club scarf',295,8,'#e99b60'),
+ newItem('ball-voltage','ball','Voltage ball',260,7,'#d9f176'),
+ newItem('ball-ember','ball','Ember ball',520,11,'#ffb16b'),
+ newItem('ball-nebula','ball','Nebula ball',845,14,'#cfb5ff'),
+ newItem('trail-ember','trail','Ember trail',460,10,'#f4a04f'),
+ newItem('trail-mint','trail','Mint streak',290,8,'#80e8c2'),
+ newItem('trail-solar','trail','Solar burst',925,16,'#ffd55c'),
+ newItem('pattern-classic','pattern','Club design',0,1),
+ newItem('pattern-stripes','pattern','Touchline stripes',0,1),
+ newItem('pattern-sash','pattern','Diagonal sash',165,5),
+ newItem('pattern-halves','pattern','Split colours',230,6),
+ newItem('pattern-chevron','pattern','Captain chevrons',340,8),
+ newItem('celebrate-fist','celebration','Fist pump',0,1),
+ newItem('celebrate-jump','celebration','Victory jump',175,5,'#bada6f'),
+ newItem('celebrate-slide','celebration','Knee slide',320,8,'#92d8fc'),
+ newItem('celebrate-spin','celebration','Champion turn',580,12,'#d1a8f0')
+];
 export const CLUBS=[
  {id:'academy',name:'Academy XI',level:1,colour:'#2d704c',short:'AXI'},
  {id:'local',name:'Town Rovers',level:2,colour:'#53719a',short:'TR'},
@@ -51,7 +104,7 @@ export const itemById=id=>ITEMS.find(item=>item.id===id);
 export const clubById=id=>CLUBS.find(club=>club.id===id)||CLUBS[0];
 export function initCareer(p){
  p.inventory||=[];p.creditsSpent??=0;p.purchases||=[];p.completedYears||=[];p.practical||={};p.inbox||=[];p.offeredClubs||=['academy'];
- p.look={skin:'warm',hairColour:'brown',kit:'kit-home',shorts:'shorts-dark',boots:'boots-classic',hair:'hair-crop',accessory:'accessory-none',ball:'ball-classic',trail:'trail-none',number:9,position:'Striker',club:'academy',...(p.look||{})};
+ p.look={skin:'warm',hairColour:'brown',kit:'kit-home',shorts:'shorts-dark',boots:'boots-classic',hair:'hair-crop',accessory:'accessory-none',ball:'ball-classic',trail:'trail-none',number:9,position:'Striker',club:'academy',theme:'pitch',trim:'match',pattern:'pattern-classic',celebration:'celebrate-fist',...(p.look||{})};
  return p;
 }
 export const owns=(p,item)=>item.price===0||(p.inventory||[]).includes(item.id);
@@ -61,7 +114,7 @@ export function buyItem(p,id){
  if(owns(p,item))return {ok:true,alreadyOwned:true,message:'Already in your locker.'};
  if(careerLevel(p)<item.level)return {ok:false,message:`Unlocks at level ${item.level}.`};
  if(credits(p)<item.price)return {ok:false,message:`Earn ${item.price-credits(p)} more credits.`};
- p.creditsSpent+=item.price;p.inventory.push(id);p.purchases.push({id,cost:item.price,at:Date.now()});return {ok:true,message:`${item.name} is yours.`};
+ p.creditsSpent+=item.price;p.inventory.push(id);p.purchases.push({id,cost:item.price,catalogue:2,at:Date.now()});return {ok:true,message:`${item.name} is yours.`};
 }
 export function equipItem(p,id){initCareer(p);const item=itemById(id);if(!item||!owns(p,item))return false;p.look[item.slot]=id;return true;}
 // Club offers require breadth and later-day recall as well as XP.
@@ -77,14 +130,28 @@ export function chooseClub(p,id){initCareer(p);const club=CLUBS.find(c=>c.id===i
 export function careerNews(p,previousLevel,now=Date.now()){
  initCareer(p);const newClubs=CLUBS.filter(c=>!p.offeredClubs.includes(c.id)&&clubProgress(p,c).eligible);
  if(newClubs.length){newClubs.forEach(c=>p.offeredClubs.push(c.id));p.inbox.push({key:'clubs:'+newClubs.map(c=>c.id).join(':'),kind:'club',title:'You earned a club offer',text:`Your independent practice and recall have earned ${newClubs.map(c=>c.name).join(' or ')} in your game career. Visit the locker room.`,at:now,read:false});}
+ const next=CLUBS.find(club=>!clubProgress(p,club).eligible);
+ if(next&&careerXP(p)>0){
+  const progress=clubProgress(p,next);
+  const fraction=progress.goals.reduce((sum,goal)=>sum+Math.min(1,goal.value/goal.target),0)/progress.goals.length;
+  const milestone=[75,50,25].find(mark=>fraction*100>=mark);
+  const key=`scout:${next.id}:${milestone}`;
+  if(milestone&&!p.inbox.some(note=>note.key===key)){
+   const goal=progress.remaining.find(g=>g.label==='Different facts')||progress.remaining[0];
+   p.inbox.push({key,kind:'coach',title:`Coach · ${next.name} scout watch`,text:`GG, ${p.name}! You’re ${Math.round(fraction*100)}% of the way to this club offer. Next target: ${goal.label.toLowerCase()} ${goal.value}/${goal.target}.`,at:now,read:false});
+  }
+ }
+ p.inbox=p.inbox.slice(-100);
  return newClubs;
 }
 export function validateCareer(p){
  if(p.look){const l=p.look;if(!SKIN_TONES[l.skin]||!HAIR_COLOURS[l.hairColour]||!Number.isInteger(l.number)||l.number<1||l.number>99||!POSITIONS.includes(l.position)||!CLUBS.some(c=>c.id===l.club))throw Error('Invalid player customisation.');for(const slot of ['kit','shorts','boots','hair','accessory','ball','trail'])if(!ITEMS.some(i=>i.id===l[slot]&&i.slot===slot))throw Error('Invalid equipped item.');}
  if(p.offeredClubs!==undefined&&(!Array.isArray(p.offeredClubs)||p.offeredClubs.some(id=>!CLUBS.some(c=>c.id===id))||new Set(p.offeredClubs).size!==p.offeredClubs.length))throw Error('Invalid club offers.');
+ if(p.look&&((p.look.theme!==undefined&&!Object.hasOwn(PLAYER_THEMES,p.look.theme))||(p.look.trim!==undefined&&!Object.hasOwn(KIT_TRIMS,p.look.trim))))throw Error('Invalid player colours.');
+ for(const slot of ['pattern','celebration'])if(p.look?.[slot]!==undefined&&(!ITEMS.some(item=>item.id===p.look[slot]&&item.slot===slot)||!owns(p,itemById(p.look[slot]))))throw Error('Invalid player equipment.');
  if(p.inventory!==undefined&&(!Array.isArray(p.inventory)||new Set(p.inventory).size!==p.inventory.length||p.inventory.some(id=>!itemById(id))))throw Error('Invalid player inventory.');
  if(p.creditsSpent!==undefined&&(!Number.isSafeInteger(p.creditsSpent)||p.creditsSpent<0||p.creditsSpent>Math.floor(careerXP(p)/10)))throw Error('Invalid credit balance.');
- if(p.purchases!==undefined&&(!Array.isArray(p.purchases)||p.purchases.length>ITEMS.length||p.purchases.some(t=>!t||!itemById(t.id)||t.cost!==itemById(t.id).price||!Number.isFinite(t.at))))throw Error('Invalid shop history.');
+ if(p.purchases!==undefined&&(!Array.isArray(p.purchases)||p.purchases.length>ITEMS.length||p.purchases.some(t=>!t||!itemById(t.id)||t.cost!==(t.catalogue===2?itemById(t.id).price:LEGACY_PRICE[t.id]??itemById(t.id).price)||!Number.isFinite(t.at))))throw Error('Invalid shop history.');
  if(p.purchases&&new Set(p.purchases.map(t=>t.id)).size!==p.purchases.length)throw Error('Duplicate shop purchases.');
  if(p.purchases&&p.purchases.reduce((n,t)=>n+t.cost,0)!==(p.creditsSpent||0))throw Error('Shop balance does not match purchases.');
  if(p.inventory?.some(id=>itemById(id).price>0&&!p.purchases?.some(t=>t.id===id)))throw Error('Inventory has an unpurchased item.');

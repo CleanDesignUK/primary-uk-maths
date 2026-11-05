@@ -1,5 +1,6 @@
 import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs';
 import {validateCareer} from './career.mjs';
+import {validateRewards} from './rewards.mjs';
 export const VERSION = 1;
 export const DAY = 86400000;
 export const INTERVALS = [0, 1, 3, 7, 14, 30, 60];
@@ -153,6 +154,7 @@ export function validateImport(raw){
     if(p.trainingSeconds!==undefined&&![60,120,180].includes(p.trainingSeconds))throw new Error('This backup contains an invalid training clock.');
     if(p.placementProgress!==undefined&&(!Number.isInteger(p.placementProgress)||p.placementProgress<0||p.placementProgress>24))throw new Error('This backup contains invalid warm-up progress.');
     validateCareer(p);
+    validateRewards(p);
     if(p.learning){
       if(typeof p.learning!=='object'||Array.isArray(p.learning))throw new Error('This backup contains invalid learning records.');
       for(const [id,st] of Object.entries(p.learning))if(!skillById(id)||!st||!Number.isInteger(st.n)||st.n<0||!Number.isInteger(st.correct)||st.correct<0||st.correct>st.n||!Array.isArray(st.recent)||st.recent.length>20||!Array.isArray(st.keys)||!Array.isArray(st.days)||!Array.isArray(st.probes)||!Number.isFinite(st.firstAt)||st.recent.some(r=>!r||typeof r.correct!=='boolean'||!Number.isFinite(r.ms)||r.ms<0||!Number.isFinite(r.at)))throw new Error('This backup contains invalid learning records.');

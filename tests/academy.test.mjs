@@ -51,7 +51,7 @@ test('table match fitness needs all 12 facts, inverse forms and genuinely spaced
  const q=questionPool('table8')[0];recordLearning(profile,q,false,false,1000,'miss',now+5*DAY);assert.equal(tableEvidence(profile,8).matchFit,false);
 });
 test('earned credits cannot be overspent or double-charged and equipped items must be owned',()=>{
- const profile=p();profile.pointsTotal=340;assert.equal(credits(profile),34);assert.equal(equipItem(profile,'kit-blue'),false);assert.equal(buyItem(profile,'kit-blue').ok,true);assert.equal(credits(profile),9);assert.equal(equipItem(profile,'kit-blue'),true);assert.equal(buyItem(profile,'kit-blue').alreadyOwned,true);assert.equal(credits(profile),9);assert.equal(buyItem(profile,'kit-red').ok,false);assert.ok(validateCareer(profile));
+ const profile=p();profile.pointsTotal=1360;assert.equal(credits(profile),136);assert.equal(equipItem(profile,'kit-blue'),false);assert.equal(buyItem(profile,'kit-blue').ok,true);assert.equal(credits(profile),11);assert.equal(equipItem(profile,'kit-blue'),true);assert.equal(buyItem(profile,'kit-blue').alreadyOwned,true);assert.equal(credits(profile),11);assert.equal(buyItem(profile,'kit-red').ok,false);assert.ok(validateCareer(profile));
  const raw=initialData();raw.profiles=[profile];assert.equal(validateImport(structuredClone(raw)).profiles[0].look.kit,'kit-blue');
  for(const mutate of [p=>p.creditsSpent=999,p=>p.look.number=100,p=>p.inventory.push('kit-gold'),p=>p.purchases.push({...p.purchases[0]})]){const invalid=structuredClone(profile);mutate(invalid);assert.throws(()=>validateCareer(invalid));}
 });
@@ -68,10 +68,10 @@ test('a fully evidenced year can be promoted and Year 6 graduation stops at Year
  const match={promotion:true,complete:true,target:12,attempts:12,correct:12,hintsUsed:0,curriculumYear:year};assert.equal(checkPromotion(profile,{...match,hintsUsed:1},now+4*DAY).promoted,false);const out=checkPromotion(profile,{...match,pausedEver:true},now+4*DAY);assert.equal(out.promoted,true);assert.equal(profile.year,year===6?6:year+1);assert.ok(profile.completedYears.includes(year));if(year===6)assert.equal(profile.graduated,true);
  }
 });
-const match=(id,year,extra={})=>({id,schema:'football-v4',mode:'timed',complete:true,curriculumYear:year,endedAt:now,attempts:10,correct:10,points:100,rows:Array.from({length:10},()=>({correct:true,assisted:false,earned:10})),...extra});
+const match=(id,year,extra={})=>({id,schema:'football-v5',ranked:true,careerXP:100,target:10,mode:'timed',complete:true,curriculumYear:year,endedAt:now,attempts:10,correct:10,points:100,rows:Array.from({length:10},()=>({correct:true,assisted:false,earned:10})),...extra});
 test('local league uses real eligible matches, ties, independent points and the played year',()=>{
  const a=p(3),b=p(5),empty=p(1);a.name='Player A';b.name='Player B';a.sessions=[match('a',3),match('paused',3,{pausedEver:true}),match('probe',3,{mode:'check'})];b.sessions=[match('b',3)];let league=leagueTable([a,b,empty],{now});assert.equal(league.length,2);assert.deepEqual(league.map(r=>[r.rank,r.points]),[[1,100],[1,100]]);assert.equal(leagueTable([a,b],{year:5,now}).length,0);
- b.sessions[0].rows[0].assisted=true;delete b.leagueTotals;league=leagueTable([a,b],{now});assert.equal(league[1].points,90);assert.equal(league[1].accuracy,90);
+ b.sessions[0].rows[0].assisted=true;b.sessions[0].careerXP=90;delete b.leagueTotals;league=leagueTable([a,b],{now});assert.equal(league[1].points,90);assert.equal(league[1].accuracy,90);
 });
 test('lifetime league totals survive trimmed history and a saved match is counted once',()=>{
  const profile=p();profile.pointsTotal=200;initLeague(profile);const first=match('first',3);assert.equal(recordLeague(profile,first),true);assert.equal(recordLeague(profile,first),false);profile.sessions=[];assert.equal(leagueTable([profile],{period:'all',now})[0].points,100);assert.equal(leagueTable([profile],{period:'week',now}).length,0);

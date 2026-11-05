@@ -1,3 +1,4 @@
+import {MATCH_SCHEMA} from './rewards.mjs';
 import {skillById,DAY} from './engine.mjs';
 import {syllabusIds,domainFor,DOMAINS} from './curriculum.mjs';
 import {competency} from './adaptive.mjs';
@@ -23,11 +24,12 @@ export function checkPromotion(profile,match,now=Date.now()){
  return {promoted:true,from:year,to:graduated?6:year+1,graduated,news};
 }
 
-const eligibleLeague=s=>s.complete&&s.mode==='timed'&&!s.pausedEver&&s.attempts>=5;
+const eligibleLeague=s=>s.schema===MATCH_SCHEMA&&s.ranked&&s.complete&&s.mode==='timed'&&!s.manual&&!s.pausedEver&&!s.hintsUsed&&s.attempts===s.target&&s.target>=6&&s.careerXP>0;
 const emptyLeague=()=>({points:0,correct:0,attempts:0,matches:0});
-function addLeague(total,match){const rows=match.rows||[];total.points+=rows.reduce((n,r)=>n+(r.correct&&!r.assisted?(r.earned||10):0),0);total.correct+=rows.filter(r=>r.correct&&!r.assisted).length;total.attempts+=rows.length;total.matches++;}
+function addLeague(total,match){const rows=match.rows||[];total.points+=match.careerXP;total.correct+=rows.filter(r=>r.correct&&!r.assisted).length;total.attempts+=rows.length;total.matches++;}
 export function initLeague(p){
- if(p.leagueTotals)return;
+ if(p.leagueTotals&&p.leagueVersion===2)return;
+ p.leagueVersion=2;
  p.leagueTotals={all:emptyLeague(),years:{}};p.leagueTracked=[];
  for(const s of p.sessions){p.leagueTracked.push(s.id);if(!eligibleLeague(s))continue;const y=s.curriculumYear||p.year||1;p.leagueTotals.years[y]||=emptyLeague();addLeague(p.leagueTotals.all,s);addLeague(p.leagueTotals.years[y],s);}
  p.leagueTracked=p.leagueTracked.slice(-500);
@@ -39,7 +41,7 @@ export function leagueTable(profiles,{period='week',year=0,now=Date.now()}={}){
   initLeague(p);if(period==='all'){const s=year?p.leagueTotals.years[year]||emptyLeague():p.leagueTotals.all;return {profile:p,...s,accuracy:s.attempts?Math.round(s.correct/s.attempts*100):0};}
   const matches=p.sessions.filter(s=>s.endedAt>=since&&eligibleLeague(s)&&(!year||(s.curriculumYear||p.year)===year));
   const answers=matches.flatMap(s=>s.rows||[]),correct=answers.filter(r=>r.correct&&!r.assisted).length,attempts=answers.length;
-  return {profile:p,points:answers.reduce((n,r)=>n+(r.correct&&!r.assisted?(r.earned||10):0),0),correct,attempts,accuracy:attempts?Math.round(correct/attempts*100):0,matches:matches.length};
+  return {profile:p,points:matches.reduce((sum,match)=>sum+match.careerXP,0),correct,attempts,accuracy:attempts?Math.round(correct/attempts*100):0,matches:matches.length};
  }).filter(r=>r.attempts>0).sort((a,b)=>b.points-a.points||b.accuracy-a.accuracy||b.correct-a.correct||a.profile.name.localeCompare(b.profile.name));
  let rank=0;return rows.map((row,i)=>{if(i===0||row.points!==rows[i-1].points||row.accuracy!==rows[i-1].accuracy||row.correct!==rows[i-1].correct)rank=i+1;return {...row,rank};});
 }

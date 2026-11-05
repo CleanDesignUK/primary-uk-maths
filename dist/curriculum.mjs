@@ -120,6 +120,10 @@ export function answerMatches(q,value){
  if(q.format==='plot'){if(!Array.isArray(value)||value.length!==q.answer.length||value.some(p=>!Array.isArray(p)||p.length!==2||p.some(n=>!Number.isFinite(Number(n)))))return false;const keys=value.map(p=>p.map(Number).join(','));return new Set(keys).size===keys.length&&q.answer.every(p=>keys.includes(p.join(',')));}
  if(q.format==='bars')return Array.isArray(value)&&value.length===q.answer.length&&value.every((n,i)=>Number(n)===q.answer[i]);
  if(q.format==='pair'){const parts=String(value).replace(/[()\s]/g,'').split(',');if(parts.length!==2||parts.some(n=>!/^−?-?\d+(?:\.\d+)?$/.test(n)))return false;const numbers=parts.map(n=>Number(n.replace('−','-')));if(q.pairRule)return numbers.every(n=>Number.isInteger(n)&&n>=0)&&numbers[0]*(q.pairRule.xCoefficient||1)+numbers[1]===q.pairRule.total;const target=Array.isArray(q.answer)?q.answer:String(q.answer).split(',');return numbers.every((n,i)=>n===Number(target[i]));}
+ if(q.format==='remainder'){
+  const normalise=value=>String(value).trim().toLowerCase().replace(/\s+/g,'');
+  return normalise(value)===normalise(q.answer);
+ }
  if(q.format==='choice')return String(value).trim().toLowerCase()===String(q.answer).trim().toLowerCase();
  if(['fraction','mixed'].includes(q.format)&&String(q.answer).includes('/')&&!String(value).includes('/'))return false;
  const given=parseNumber(value),expected=parseNumber(q.answer);return Number.isFinite(given)&&Number.isFinite(expected)&&Math.abs(given-expected)<(q.format==='angle'?.6:1e-7);

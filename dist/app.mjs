@@ -1,13 +1,16 @@
 import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
-import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus} from './adaptive.mjs';
+import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan} from './adaptive.mjs';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs';
-import {earnedXP,eligibleRecord,newPersonalBest} from './rewards.mjs';
+import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs';
+import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs';
 import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
-import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusCards,progressView,reportContent,coachView} from './academy-ui.mjs';
-import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById} from './career.mjs';
-import {avatarSVG,shotType,superMove} from './avatar.mjs';
+import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs';
+import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs';
+import {avatarSVG} from './avatar.mjs';
+import {paintShot} from './shot.mjs';
+import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs';
 import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs';
 import {focusTables} from './tables.mjs';
 import {workingText} from './coaching.mjs';
@@ -17,14 +20,14 @@ import {columnWorkspace} from './column-method.mjs';
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
 const app=$('#app'),modalRoot=$('#modal-root');
-let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='kit',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,advanceId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,audio;
+let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='kit',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,audio;
 try{const raw=localStorage.getItem(STORAGE);data=raw?validateImport(JSON.parse(raw)):initialData();}catch{data=initialData();storageWarning='Progress could not be loaded. Restore a backup in Coach.';}
 if(data.profiles.length===3&&data.profiles.every(p=>['Ace','Carter','Cruz'].includes(p.name)&&!p.sessions.length&&!Object.keys(p.facts).length)&&Math.max(...data.profiles.map(p=>p.createdAt))-Math.min(...data.profiles.map(p=>p.createdAt))<1000){data.profiles=[];data.activeId=null;}
 try{const reading=localStorage.getItem('matchday.reading');if(reading!==null)data.settings.dyslexia=reading==='true';}catch{}
-for(const p of data.profiles){initCareer(p);if(p.year===0)p.year=1;initLearning(p);initLeague(p);}
+for(const p of data.profiles){initCareer(p);if(p.year===0)p.year=1;initLearning(p);initRewards(p);initLeague(p);}
 const routeMap={today:'home',skills:'syllabus',progress:'stats',grownups:'coach'};
-let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league'].includes(initialRoute)?initialRoute:'home');
-try{const s=JSON.parse(localStorage.getItem(DRAFT)||'null');if(['football-v2','football-v3','football-v4'].includes(s?.schema)&&data.profiles.some(p=>p.id===s.profileId)&&Number.isFinite(s.elapsed)&&s.q&&s.skillIds.every(skillById)){session=s;session.paused=true;session.pausedEver=true;data.activeId=s.profileId;}}catch{}
+let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(initialRoute)?initialRoute:'home');
+try{const s=JSON.parse(localStorage.getItem(DRAFT)||'null');if(['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(s?.schema)&&data.profiles.some(p=>p.id===s.profileId)&&Number.isFinite(s.elapsed)&&s.q&&s.skillIds.every(skillById)){session=s;session.paused=true;session.pausedEver=true;data.activeId=s.profileId;}}catch{}
 const player=()=>data.profiles.find(p=>p.id===(session?.profileId||data.activeId));
 const colours=['#326443','#4c70be','#c0874e','#7179a8'];
 const playerIndex=p=>Math.max(0,data.profiles.findIndex(x=>x.id===p.id));
@@ -37,11 +40,11 @@ function saveRound(){try{if(session)localStorage.setItem(DRAFT,JSON.stringify(se
 function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3300);}
 function profileDot(p){return `<span class="profile-dot">${p?.look?.number||9}</span>`;}
 function brand(){return `<a class="brand" href="#home" data-action="home" aria-label="Matchday Maths home"><span class="brand-mark">${icon('ball',28)}</span><span class="brand-type">Matchday Maths<small>The number academy</small></span></a>`;}
-function header(){const p=player();return `<header class="header">${brand()}${data.activeId&&view!=='players'?`<nav class="header-nav" aria-label="Main navigation">${[['home','Play','ball'],['tables','Tables','flame'],['syllabus','Your year','grid'],['locker','Your kit','coach'],['league','League','trophy']].map(([id,label,sym])=>`<button class="nav-btn ${view===id?'active':''}" data-action="nav" data-view="${id}" ${view===id?'aria-current="page"':''}>${icon(sym,18)}<span>${label}</span></button>`).join('')}</nav>`:''}<div class="header-tools">${readingButton()}${p&&data.activeId?`<button class="profile-mini" data-action="players" aria-label="Switch player">${profileDot(p)}${esc(p.name)}</button>`:''}<button class="icon-btn" data-action="nav" data-view="coach" aria-label="Coach and settings">${icon('settings',19)}</button></div></header>`;}
+function header(){const p=player();return `<header class="header">${brand()}${data.activeId&&view!=='players'?`<nav class="header-nav" aria-label="Main navigation">${[['home','Play','ball'],['tables','Times tables','times'],['syllabus','Curriculum','grid'],['locker','Shop','shop'],['league','League','trophy']].map(([id,label,sym])=>`<button class="nav-btn ${(view===id||id==='syllabus'&&view==='written'||id==='league'&&view==='world')?'active':''}" data-action="nav" data-view="${id}" ${view===id?'aria-current="page"':''}>${icon(sym,18)}<span>${label}</span></button>`).join('')}</nav>`:''}<div class="header-tools">${readingButton()}${p&&data.activeId?`<button class="profile-mini" data-action="players" aria-label="Switch player">${profileDot(p)}${esc(p.name)}</button>`:''}<button class="icon-btn" data-action="nav" data-view="coach" aria-label="Coach and settings">${icon('settings',19)}</button></div></header>`;}
 function footer(){return `<footer class="footer"><span>${icon('shield',13)} Saved on this device.</span><div><a href="../">About</a><button class="text-btn" data-action="nav" data-view="coach">Grown-ups ${icon('settings',13)}</button></div></footer>`;}
-function navigate(next){if(session){pause();return;}closeDialog();result=null;view=next;location.hash=next;render();scrollTo({top:0});}
-window.addEventListener('hashchange',()=>{if(location.hash==='#main')return;if(!session&&!result){view=routeMap[location.hash.slice(1)]||(['home','tables','syllabus','stats','coach','players','locker','league'].includes(location.hash.slice(1))?location.hash.slice(1):'home');render();}});
-function render(){applyAccessPreferences();if(session){renderGame();return;}if(result){renderResult();return;}const content=!data.activeId&&!['coach','syllabus','league'].includes(view)?'players':view;app.innerHTML=`<div class="shell">${header()}<main id="main" class="${content==='players'?'welcome':'page'}" tabindex="-1">${storageWarning?`<div class="storage-warning" role="alert">${esc(storageWarning)}</div>`:''}${({players:playersPage,home:homePage,tables:()=>tablesView(player(),gym),syllabus:syllabusPage,stats:statsPage,coach:coachPage,locker:()=>lockerView(player(),shopSlot),league:()=>leagueView(data,player(),leaguePeriod,leagueYear)}[content]||playersPage)()}</main>${footer()}</div>`;applyAccessPreferences();}
+function navigate(next){if(view==='world'&&next!=='world'){clearInterval(worldTimer);world.match=null;world.feedback=null;}if(next==='world')world.loaded=false;if(session){pause();return;}closeDialog();result=null;view=next;location.hash=next;render();scrollTo({top:0});}
+window.addEventListener('hashchange',()=>{if(location.hash==='#main')return;if(!session&&!result){view=routeMap[location.hash.slice(1)]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(location.hash.slice(1))?location.hash.slice(1):'home');render();}});
+function render(){applyAccessPreferences();if(view==='world'&&world.match&&!session&&!result){renderWorldMatch();return;}if(session){renderGame();return;}if(result){renderResult();return;}const content=!data.activeId&&!['coach','syllabus','league','world'].includes(view)?'players':view;app.innerHTML=`<div class="shell">${header()}<main id="main" class="${content==='players'?'welcome':'page'}" tabindex="-1">${storageWarning?`<div class="storage-warning" role="alert">${esc(storageWarning)}</div>`:''}${({players:playersPage,home:homePage,tables:()=>tablesView(player(),gym),syllabus:syllabusPage,written:writtenPage,world:worldPage,stats:statsPage,coach:coachPage,locker:()=>lockerView(player(),shopSlot),league:()=>leagueView(data,player(),leaguePeriod,leagueYear)}[content]||playersPage)()}</main>${footer()}</div>`;applyAccessPreferences();}
 function playersPage(){return pickerView(data);}
 function metric(value,label,symbol){return `<div class="metric"><span class="metric-icon">${icon(symbol,23)}</span><div><strong>${value}</strong><small>${label}</small></div></div>`;}
 function shortTitle(s){if(s.id.startsWith('col'))return `${s.title} · ${s.digits} digits${!s.regroup?' · no exchange':''}`;return s.title;}
@@ -53,103 +56,259 @@ function syllabusPage(){return syllabusView(data.activeId?player():null,year,dom
 const eligible=eligibleRecord;
 function recordKey(s){return s.recordKey||`${[...s.skillIds].sort().join(',')}|${s.duration}`;}
 function bestFor(key,p=player()){return p.records?.[key]||null;}
-function recordLabel(s){return s.manual?shortTitle(skillById(s.manual)):['football-v2','football-v3','football-v4'].includes(s.schema)?`Coach training · League ${s.league||1}`:s.skillIds.length===1?skillById(s.skillIds[0]).title:'Mixed practice';}
+function recordLabel(s){return s.manual?shortTitle(skillById(s.manual)):['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(s.schema)?`Coach training · League ${s.league||1}`:s.skillIds.length===1?skillById(s.skillIds[0]).title:'Mixed practice';}
 function recordsMarkup(p){const records=Object.values(p.records||{}).sort((a,b)=>b.endedAt-a.endedAt);return records.length?`<div class="records">${records.slice(0,10).map(s=>`<div class="record">${icon('trophy',22)}<div><b>${esc(recordLabel(s))}</b><small>${s.correct}/${s.attempts} goals · ${Math.round(s.elapsed)}s</small></div><strong>${s.points}</strong></div>`).join('')}</div>`:'<div class="empty">'+icon('trophy',33)+'<h3>Your first record is waiting.</h3><button class="btn soft" data-action="play" style="margin-top:17px">Kick off '+icon('arrow',15)+'</button></div>';}
 function medals(p){const s=profileSummary(p),ss=p.sessions,goals=totalGoals(p);return [['First kick','Finish a match','ball',ss.some(x=>x.complete)],['Hat-trick','3 goals in a row','flame',ss.some(x=>x.bestStreak>=3)],['Clean sheet','10/10 without help','shield',ss.some(x=>x.attempts>=10&&x.correct===x.attempts&&!x.hintsUsed)],['Golden boot','50 goals','trophy',goals>=50],['Match regular','Train on 3 days','clock',s.days.length>=3],['Record breaker','Set a personal best','star',Object.keys(p.records||{}).length>0],['Midfield master','Practise 3, 4 and 8','ball',[3,4,8].every(t=>p.learning[`table${t}`]?.correct>=5)],['Match fit','12 secure facts','shield',s.factsSecure>=12]];}
 function statsPage(){return progressView(player(),recordsMarkup(player()));}
-function historyMarkup(p){return p.sessions.length?`<div class="report-wrap"><table class="report"><thead><tr><th>Date</th><th>Match</th><th>Goals</th><th>XP</th><th>Time</th></tr></thead><tbody>${[...p.sessions].reverse().slice(0,20).map(s=>`<tr><td>${new Date(s.endedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td>${esc(s.mode==='check'?'Warm-up':recordLabel(s))}<small>${s.complete?'Full match':'Saved early'}${s.hintsUsed?' · Coach helped':''}${s.pausedEver?' · paused':''}</small></td><td>${s.correct}/${s.attempts}</td><td>${s.points}</td><td>${Math.round(s.elapsed)}s</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><h3>A fresh start.</h3><p>Your match results appear here.</p></div>';}
+function historyMarkup(p){return p.sessions.length?`<div class="report-wrap"><table class="report"><thead><tr><th>Date</th><th>Match</th><th>Goals</th><th>XP</th><th>Time</th></tr></thead><tbody>${[...p.sessions].reverse().slice(0,20).map(s=>`<tr><td>${new Date(s.endedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td>${esc(s.mode==='check'?'Warm-up':recordLabel(s))}<small>${s.complete?'Full match':'Saved early'}${s.hintsUsed?' · Coach helped':''}${s.pausedEver?' · paused':''}</small></td><td>${s.correct}/${s.attempts}</td><td>${s.careerXP??s.points}</td><td>${Math.round(s.elapsed)}s</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><h3>A fresh start.</h3><p>Your match results appear here.</p></div>';}
 function coachPage(){return coachView(data,voices);}
 
-function startMatch(manual=null,options={}){
- const p=player();if(!p){profileForm();return;}initCareer(p);data.activeId=p.id;save();closeDialog();result=null;
- const placement=!manual&&!options.promotion&&!p.placementComplete,probeStart=placement?warmupProgress(p):0,league=Math.min(5,1+Math.floor(SKILLS.filter(s=>competency(p,s.id).ready).length/12));
- const s=manual?skillById(manual):null,duration=options.promotion?600:options.length===25?180:placement?240:manual?(s.category==='columns'||s.id==='mul5'||s.id==='division5'?180:s.extra?180:60):([60,120,180].includes(p.trainingSeconds)?p.trainingSeconds:120);
- session={schema:'football-v4',curriculumYear:p.year,promotion:!!options.promotion,tableMode:options.tableMode||'auto',focusTable:laneFocus(p,'tables'),clockHour:12,clockMinute:0,id:uid(),profileId:p.id,skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement?'check':'timed',duration,target:options.promotion?12:placement?probeIds(p).length-probeStart:options.length||10,recordKey:manual?`v4:drill:${manual}:${options.tableMode||'auto'}:${options.length||10}:${duration}`:options.promotion?`v4:promotion:y${p.year}`:`v4:training:y${p.year}:league${league}:${duration}`,startedAt:Date.now(),elapsed:0,currentMs:0,attempts:0,correct:0,points:0,streak:0,bestStreak:0,rows:[],seen:[],retries:[],paused:false,pausedEver:false,hintsUsed:0,assisted:false,phase:'question',q:null,selection:null,answer:'',digits:[],notes:[],drawing:[],bars:[],angle:30};
+function startMatch(manual=null,options={}) {
+ const p=player();
+ if(!p){profileForm();return;}
+ const skill=manual?skillById(manual):null;
+ if(manual&&!skill)return;
+ initCareer(p);initRewards(p);data.activeId=p.id;save();closeDialog();result=null;
+ const checkPlan=options.progressCheck?progressCheckPlan(p):[];
+ if(options.progressCheck&&!checkPlan.length){toast('Try a Coach match first.');return;}
+ const progressCheck=checkPlan.length>0;
+ const placement=!manual&&!options.promotion&&!progressCheck&&!p.placementComplete;
+ const probeStart=placement?warmupProgress(p):0;
+ const league=Math.min(5,1+Math.floor(SKILLS.filter(s=>competency(p,s.id).ready).length/12));
+ const written=skill&&(skill.category==='columns'||['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6'].includes(skill.id));
+ const pace=[60,120,180].includes(p.trainingSeconds)?p.trainingSeconds:120;
+ const duration=options.promotion||written?600:placement?300:options.length===25?180:manual?(skill.extra?180:60):p.year>=5&&!options.tableChallenge?420:pace;
+ const target=options.promotion?12:progressCheck?6:placement?probeIds(p).length-probeStart:options.length||(written?6:10);
+ const matchType=manual?`practice:${manual}:${options.tableMode||'auto'}`:options.tableChallenge?'table-challenge':options.promotion?'promotion':`coach:${league}`;
+ session={
+  schema:MATCH_SCHEMA, curriculumYear:p.year, promotion:!!options.promotion,
+  progressCheck, checkPlan, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
+  focusTable:laneFocus(p,'tables'), clockHour:12,clockMinute:0,id:uid(),profileId:p.id,
+  skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement||progressCheck?'check':'timed',duration,target,
+  recordKey:`v5:${matchType}:y${p.year}:${target}:${duration}`, startedAt:Date.now(),
+  elapsed:0,currentMs:0,attempts:0,correct:0,points:0,careerPending:0,streak:0,bestStreak:0,
+  rows:[],seen:[],retries:[],paused:false,pausedEver:false,hintsUsed:0,assisted:false,phase:'question',q:null,selection:null,
+  answer:'',digits:[],notes:[],drawing:[],bars:[],angle:30,work:{},scratch:'',remainder:''
+ };
  nextQuestion(false);renderGame();startTick();saveRound();scrollTo({top:0});
 }
+
 function nextQuestion(renderHost=true){
- clearTimeout(advanceId);if(!session)return;
+ if(!session)return;
  if(session.attempts>=session.target){finishMatch(true);return;}
  const next=nextAdaptive(player(),session);if(!next?.q)throw Error('No next exercise');
  if(next.retryKey){const i=session.retries.findIndex(r=>r.q.key===next.retryKey);if(i>=0)session.retries.splice(i,1);}
  if(next.advanceProbe)session.probeIndex++;
- session.q=next.q;session.selection=next;session.assisted=false;session.phase='question';session.answer='';session.digits=[];session.notes=[];session.noteHistory=[];session.drawing=[];session.bars=[];session.angle=30;session.clockHour=12;session.clockMinute=0;session.currentMs=0;session.lastDigit=null;
+ session.q=next.q;session.selection=next;session.assisted=false;session.phase='question';session.answer='';session.digits=[];session.notes=[];session.noteHistory=[];session.drawing=[];session.bars=[];session.angle=30;session.clockHour=12;session.clockMinute=0;session.currentMs=0;session.lastDigit=null;session.work={};session.scratch='';session.remainder='';
  session.seen.push(session.q.key);if(!session.skillIds.includes(session.q.skillId))session.skillIds.push(session.q.skillId);saveRound();
- if(renderHost&&$('#question-host')){renderQuestion();updateLive();}
+ if(renderHost&&$('#question-host')){renderQuestion();paintPitch();updateLive();}
 }
 const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,Math.ceil(s))%60).padStart(2,'0')}`;
 function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
-function renderGame(){const p=player(),best=bestFor(session.recordKey);app.innerHTML=`<div class="game-shell"><header class="game-header">${brand()}<div class="game-header-right"><span class="profile-mini">${profileDot(p)}${esc(p.name)}</span>${readingButton()}<button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header><main id="main" class="game-main"><div class="game-title"><div><div class="eyebrow">${session.promotion?'Promotion match':session.placement?'Warm-up':session.manual?'Syllabus drill':'Coach-led training'}</div><h1>${session.promotion?`Year ${session.curriculumYear} promotion`:session.manual?esc(shortTitle(skillById(session.manual))):session.placement?'Let’s play.':'Your next shot.'}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${clock(session.duration-session.elapsed)}</strong><small id="timer-caption">Time</small></div></div></div><div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div><div class="game-grid"><section id="question-host" class="question-card" aria-label="Maths question"></section><aside class="game-side"><section class="pitch-card"><div class="match-card-top"><span>${icon('ball',12)} LIVE TRAINING</span><i></i></div>${penaltyArena(p)}<div class="pitch-score"><span>YOUR<br>SCORE</span><strong id="live-xp">${session.points}<small> XP</small></strong></div><div class="pitch-best"><span>${session.placement?'WARM-UP':'PERSONAL BEST'}</span><b>${session.placement?'FIND YOUR LEVEL':best?best.points+' XP':'SET YOUR FIRST'}</b></div></section><div id="keypad"><div class="numpad" role="group" aria-label="Number keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="key" data-key="${n}" aria-label="${n}">${n}</button>`).join('')}<button class="key-muted" data-action="key" data-key="clear" aria-label="Clear answer">C</button><button data-action="key" data-key="0">0</button><button class="key-muted" data-action="key" data-key="back" aria-label="Delete last digit">${icon('erase',18)}</button></div><div class="symbol-keys" id="symbol-keys">${['.','/','−',',',' '].map(k=>`<button data-action="key" data-key="${k}" aria-label="${k===' '?'Space':k==='/'?'Fraction bar':k===','?'Comma':k==='−'?'Minus':'Decimal point'}">${k===' '?'␣':k}</button>`).join('')}</div></div><div class="side-finish"><button class="text-btn" data-action="finish">Save & finish ${icon('arrow',12)}</button></div></aside></div></main></div>`;renderQuestion();if(session.paused)showPauseOverlay();}
+function renderGame() {
+ const p=player();
+ const best=bestFor(session.recordKey);
+ const earns=isCoachChallenge(p,session);
+ const label=session.promotion?'Promotion match':session.progressCheck?'Progress check':session.placement?'Warm-up':session.manual?'Free practice':session.tableChallenge?'Tables challenge':'Coach match';
+ const title=session.manual?shortTitle(skillById(session.manual)):session.progressCheck?'Check your progress':session.placement?'Let’s warm up':`Year ${session.curriculumYear} ${session.promotion?'promotion':'match'}`;
+ const numberKeys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="key" data-key="${n}" aria-label="${n}">${n}</button>`).join('');
+ app.innerHTML=`<div class="game-shell">
+  <header class="game-header">${brand()}<div class="game-header-right"><span class="profile-mini">${profileDot(p)}${esc(p.name)}</span>${readingButton()}<button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
+  <main id="main" class="game-main">
+   <div class="game-title"><div><div class="eyebrow">${label}</div><h1>${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${session.progressCheck?'∞':clock(session.duration-session.elapsed)}</strong><small id="timer-caption">${session.progressCheck?'No timer':'Time'}</small></div></div></div>
+   <div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div>
+   <div class="game-grid match-grid">
+    <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span>${icon('ball',13)} Shot cam</span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p)}<div class="pitch-hud"><span id="move-caption">Ready to shoot</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div></section>
+    <section id="question-host" class="question-card" aria-label="Maths question"></section>
+    <aside class="match-controls"><div class="desktop-record">${best?`Personal best · ${best.points} pts`:earns?'Finish the match to bank XP':'Practice goals'}</div><div id="keypad"><div class="numpad" role="group" aria-label="Number keypad">${numberKeys}<button class="key-muted" data-action="key" data-key="clear" aria-label="Clear answer">C</button><button data-action="key" data-key="0">0</button><button class="key-muted" data-action="key" data-key="back" aria-label="Delete last digit">${icon('erase',18)}</button></div><div class="symbol-keys" id="symbol-keys">${['.','/','−',',',' '].map(k=>`<button data-action="key" data-key="${k}" aria-label="${k===' '?'Space':k==='/'?'Fraction bar':k===','?'Comma':k==='−'?'Minus':'Decimal point'}">${k===' '?'␣':k}</button>`).join('')}</div></div><button class="text-btn finish-practice" data-action="finish">Save & finish ${icon('arrow',12)}</button></aside>
+   </div>
+  </main></div>`;
+ renderQuestion();paintPitch();updateLive();
+ if(session.paused)showPauseOverlay();
+}
+
 function coreExpression(q,reveal=false){const a=q.a?.toLocaleString('en-GB'),b=q.b?.toLocaleString('en-GB'),ans=String(q.answer);switch(q.op){case 'bond':return `${a} + ${reveal?ans:'□'} = ${q.total}`;case 'missing+':return `${reveal?ans:'□'} + ${b} = ${q.total}`;case 'missing−':return `${a} − ${reveal?ans:'□'} = ${q.total}`;case 'missing×':return `${a} <span class="op">×</span> □ <span class="op">=</span> ${q.total}`;case 'double':return `Double ${a}${reveal?' = '+ans:''}`;case 'half':return `Half of ${a}${reveal?' = '+ans:''}`;case 'place':return String(q.a).split('').map((digit,i,str)=>({digit,i})).map(({digit,i})=>i===String(q.a).length-1-Math.log10(q.power)?`<span class="highlight">${digit}</span>`:digit).join('');default:return `${a} <span class="op">${q.op}</span> ${b}${reveal?' = '+ans:' <span class="op">=</span>'}`;}}
 function equationLabel(q,reveal=true){if(q.expression!==undefined)return q.expression||skillById(q.skillId).title;return coreExpression(q,reveal).replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();}
 function questionPrompt(q){if(q.prompt!==undefined)return q.prompt;return q.op==='place'?'Value of the green digit?':q.op==='bond'?`Make ${q.total}`:q.op?.startsWith('missing')?'Find the gap':q.key.startsWith('column')?'Start with the ones.':q.op==='double'||q.op==='half'?'':q.op==='×'?'Multiply':q.op==='÷'?'Divide':q.op==='+'?'Add':'Subtract';}
 function columnMarkup(q,done=false){return columnWorkspace(q,{digits:session.digits,notes:session.notes,history:session.noteHistory||[],done});}
-function drawingMarkup(v,done){const points=session.drawing||[],path=points.map(p=>`${24+p[0]*45},${20+p[1]*43}`).join(' ');return `<div class="drawing" id="drawing-board"><svg viewBox="0 0 290 260" aria-hidden="true">${Array.from({length:6},(_,i)=>`<path d="M${24+i*45} 20v215M24 ${20+i*43}h225" stroke="#dfe7d6" stroke-width="1"/>`).join('')}<polyline points="${path}${points.length===v.sides&&points.length?' '+(24+points[0][0]*45)+','+(20+points[0][1]*43):''}" fill="${points.length===v.sides?'#7193d026':'none'}" stroke="#4e78bd" stroke-width="3"/></svg>${Array.from({length:36},(_,i)=>{const x=i%6,y=Math.floor(i/6),selected=points.some(p=>p[0]===x&&p[1]===y);return `<button type="button" class="dot-btn ${selected?'selected':''}" style="left:${(24+x*45)/290*100}%;top:${(20+y*43)/260*100}%" data-action="draw-point" data-x="${x}" data-y="${y}" aria-label="Point ${x}, ${y}" aria-pressed="${selected}" ${done?'disabled':''}></button>`;}).join('')}</div>${!done?'<div class="drawing-actions"><button type="button" class="text-btn" data-action="draw-undo">Undo</button><button type="button" class="text-btn" data-action="draw-clear">Reset</button></div>':''}`;}
+function writtenPage(){
+ const p=player(),ids=syllabusIds(p.year).filter(id=>/^col(?:Add|Sub)/.test(id)||['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6'].includes(id));
+ return `<div class="heading"><div><span class="eyebrow">Year ${p.year}</span><h1>Written maths</h1><p>Use the working boxes and start with an example.</p></div></div>${ids.length?syllabusCards(p,ids):`<div class="panel"><h2>Build your number methods</h2><p>Start with ${p.year===1?'numbers and equal groups':'adding and subtracting within 100'}.</p><button class="btn lime" data-action="skill" data-skill="${p.year===1?'add20':'mental2'}">Start practice</button></div>`}`;
+}
+let shownExample=null;
+function showSkillExample(id){
+ const skill=skillById(id),q=questionPool(id)[0];
+ if(!skill||!q)return;
+ shownExample=q;
+ if(player()){revealFact(player(),q);save();}
+ const prompt=questionPrompt(q),expression=q.expression===undefined?coreExpression(q):mathText(q.expression),answer=answerLabel(q);
+ let visual=writtenTask(q)?'':diagram(q.visual,{angle:q.format==='angle'?q.answer:30,hour:q.format==='clock'?q.answer[0]:12,minute:q.format==='clock'?q.answer[1]:0});
+ if(q.format==='plot')visual+=plotMarkup(q.visual,true,q.answer);
+ if(q.format==='bars')visual+=diagram({...q.visual,type:'barChart'});
+ if(q.format==='drawing')visual=drawingMarkup(q.visual,true,q.visual.sides===3?[[1,4],[2,1],[4,4]]:[[1,1],[4,1],[4,3],[1,3]]);
+ openDialog(`<span class="eyebrow">Worked example</span><h2 id="dialog-title">${esc(skill.title)}</h2>${prompt?`<p>${esc(prompt)}</p>`:''}${expression?`<p class="example-equation">${expression}</p>`:''}${visual}${helpMarkup(q)}${answer?`<p class="example-answer"><b>Answer</b> ${mathText(answer)}</p>`:''}<div class="dialog-actions"><button class="btn white" data-action="close-dialog">Back</button><button class="btn lime" data-action="skill" data-skill="${id}">Practise this ${icon('arrow',16)}</button></div>`,{wide:true});
+}
+function answerLabel(q){
+ if(q.format==='drawing')return '';
+ if(q.format==='clock')return `${q.answer[0]}:${String(q.answer[1]).padStart(2,'0')}`;
+ if(q.format==='plot')return q.answer.map(([x,y])=>`(${x}, ${y})`).join(' · ');
+ if(q.format==='bars')return q.answer.map((n,i)=>`${q.visual.labels[i]} ${n}`).join(' · ');
+ if(q.format==='angle')return `${q.answer}°`;
+ if(q.format==='pair')return `(${Array.isArray(q.answer)?q.answer.join(', '):q.answer.replace(',',', ')})`;
+ const value=typeof q.answer==='number'?q.answer.toLocaleString('en-GB',{maximumFractionDigits:12}):q.answer;
+ return `${q.unit==='£'?'£':''}${value}${q.unit&&q.unit!=='£'?` ${q.unit}`:''}`;
+}
+function drawingMarkup(v,done,points=session.drawing||[]){const path=points.map(p=>`${24+p[0]*45},${20+p[1]*43}`).join(' ');return `<div class="drawing" id="drawing-board"><svg viewBox="0 0 290 260" aria-hidden="true">${Array.from({length:6},(_,i)=>`<path d="M${24+i*45} 20v215M24 ${20+i*43}h225" stroke="#dfe7d6" stroke-width="1"/>`).join('')}<polyline points="${path}${points.length===v.sides&&points.length?' '+(24+points[0][0]*45)+','+(20+points[0][1]*43):''}" fill="${points.length===v.sides?'#7193d026':'none'}" stroke="#4e78bd" stroke-width="3"/></svg>${Array.from({length:36},(_,i)=>{const x=i%6,y=Math.floor(i/6),selected=points.some(p=>p[0]===x&&p[1]===y);return `<button type="button" class="dot-btn ${selected?'selected':''}" style="left:${(24+x*45)/290*100}%;top:${(20+y*43)/260*100}%" data-action="draw-point" data-x="${x}" data-y="${y}" aria-label="Point ${x}, ${y}" aria-pressed="${selected}" ${done?'disabled':''}></button>`;}).join('')}</div>${!done?'<div class="drawing-actions"><button type="button" class="text-btn" data-action="draw-undo">Undo</button><button type="button" class="text-btn" data-action="draw-clear">Reset</button></div>':''}`;}
 function basicHelpVisual(q){if(q.op==='×')return `<div class="math-array" style="grid-template-columns:repeat(${q.b},12px)">${Array.from({length:q.a*q.b},()=>'<i></i>').join('')}</div>`;if(['+','−','bond','double'].includes(q.op)&&q.a<=20){const total=Math.min(20,q.op==='+'||q.op==='double'?q.answer:q.op==='bond'?q.total:q.a),split=q.op==='+'||q.op==='bond'||q.op==='double'?q.a:q.answer;return `<div class="ten-frames">${Array.from({length:Math.max(1,Math.ceil(total/10))},(_,r)=>`<div class="ten-frame">${Array.from({length:10},(_,j)=>`<i class="${r*10+j<total?'filled':''} ${r*10+j>=split&&r*10+j<total?'second':''}"></i>`).join('')}</div>`).join('')}</div>`;}return '';}
 function helpMarkup(q,small=false){const hints=q.hint||explain(q).steps,model=workedMarkup(q);return `<div class="help-box clean-solution"><h3>${icon('whistle',16)} Coach’s working</h3>${model||`<ol class="solution-steps">${hints.map((t,i)=>`<li><span>${i+1}</span><div>${mathText(t)}</div></li>`).join('')}</ol>`}${model?`<details class="more-help"><summary>Explain the steps</summary><ol class="solution-steps">${hints.map((t,i)=>`<li><span>${i+1}</span><div>${mathText(t)}</div></li>`).join('')}</ol></details>`:''}<button class="text-btn" data-action="hear-help">${icon('sound',15)} Hear the working</button></div>`;}
 function renderQuestion(){
- if(!session)return;const q=session.q,done=session.phase==='feedback',extra=skillById(q.skillId).extra,column=q.key.startsWith('column'),options=q.options;
+ if(!session)return;const q=session.q,done=session.phase==='feedback',extra=skillById(q.skillId).extra,column=q.key.startsWith('column'),written=writtenTask(q),options=written?null:q.options;
  let content='',input='',isWords=false;
- if(extra){isWords=/[A-Za-z]/.test(q.expression||'');content=`<div class="q-prompt">${esc(questionPrompt(q))}</div>${q.expression?`<div class="q-equation ${isWords?'words':String(q.expression).length>19?'compact':''}">${mathText(q.expression)}</div>`:''}`;
+ if(written){
+  const work={entered:session.digits,notes:session.work||{},done,remainder:session.remainder||''};
+  content=`<div class="q-prompt">${esc(questionPrompt(q))}</div>${written.type==='multiply'?multiplicationWorkspace(written,work):divisionWorkspace(written,work)}`;
+ }else if(extra){isWords=/[A-Za-z]/.test(q.expression||'');content=`<div class="q-prompt">${esc(questionPrompt(q))}</div>${q.expression?`<div class="q-equation ${isWords?'words':String(q.expression).length>19?'compact':''}">${mathText(q.expression)}</div>`:''}`;
  if(q.format==='drawing')content+=drawingMarkup(q.visual,done);else if(q.format==='plot')content+=diagram(q.visual)+plotMarkup(q.visual,done);else content+=diagram(q.visual,{angle:session.angle,points:session.drawing,bars:session.bars,hour:session.clockHour,minute:session.clockMinute});
  }else{content=`<div class="q-prompt">${esc(questionPrompt(q))}</div>`;if(column)content+=columnMarkup(q,done);else content+=`<div class="q-equation ${['double','half'].includes(q.op)?'words':q.op==='place'?'compact':''}">${coreExpression(q)}</div>`;}
  if(options){const symbol=options.every(x=>['<','>','='].includes(String(x)));input=`<div class="choices ${options.some(x=>/[A-Za-z]/.test(x))?'words':''} ${symbol?'choice-symbols':''}" role="group" aria-label="Answer choices">${options.map(o=>`<button class="choice ${done?(answerMatches(q,o)?'correct':String(session.answer)===String(o)?'incorrect':''):''}" type="button" data-action="answer-choice" data-value="${esc(o)}" ${done?'disabled':''}>${mathText(o)}</button>`).join('')}</div>`;}
  else if(q.format==='clock')input=`<div class="clock-controls"><label>Hour<select id="clock-hour" class="field" ${done?'disabled':''}>${Array.from({length:12},(_,i)=>i+1).map(h=>`<option value="${h}" ${session.clockHour===h?'selected':''}>${h}</option>`).join('')}</select></label><label>Minutes<select id="clock-minute" class="field" ${done?'disabled':''}>${Array.from({length:q.skillId==='clockHands1'?2:12},(_,i)=>i*(q.skillId==='clockHands1'?30:5)).map(m=>`<option value="${m}" ${session.clockMinute===m?'selected':''}>${String(m).padStart(2,'0')}</option>`).join('')}</select></label></div>`;
  else if(q.format==='angle')input=`<input type="range" min="0" max="${q.visual?.max||180}" step="1" class="angle-control" id="angle-control" aria-label="Turn the angle ray" value="${session.angle}" ${done?'disabled':''}>`;
  else if(q.format==='bars')input=`<div class="bar-answer-row">${q.visual.labels.map((l,i)=>`<label>${esc(l)}<span style="height:100px;width:60px;display:flex;align-items:flex-end;background:#f1f5e8;border-radius:5px;overflow:hidden"><i id="bar-view-${i}" style="display:block;background:${i?'#6489d2':'#7f9f55'};width:100%;height:${(session.bars[i]||0)*5}px"></i></span><input class="bar-input" type="number" min="0" max="20" inputmode="numeric" aria-label="${esc(l)} bar height" data-bar="${i}" value="${esc(session.bars[i]??'')}" ${done?'disabled':''}></label>`).join('')}</div>`;
- else if(!['drawing','plot','clock'].includes(q.format)&&!column)input=`<div class="answer-line">${q.unit==='£'?'<span class="unit">£</span>':''}<input class="answer-input ${q.format==='fraction'||q.format==='mixed'||q.format==='pair'||Number(q.answer)>9999?'wide':''} ${done?(session.rows.at(-1).correct?'correct':'incorrect'):''}" id="answer" aria-label="Your answer" inputmode="${['fraction','mixed','pair'].includes(q.format)?'text':q.format==='decimal'?'decimal':'numeric'}" autocomplete="off" maxlength="24" value="${esc(session.answer)}" placeholder="?" ${done?'disabled':''}>${q.unit&&q.unit!=='£'?`<span class="unit">${esc(q.unit)}</span>`:''}</div>`;
+ else if(!['drawing','plot','clock'].includes(q.format)&&!column&&!written)input=`<div class="answer-line">${q.unit==='£'?'<span class="unit">£</span>':''}<input class="answer-input ${q.format==='fraction'||q.format==='mixed'||q.format==='pair'||Number(q.answer)>9999?'wide':''} ${done?(session.rows.at(-1).correct?'correct':'incorrect'):''}" id="answer" aria-label="Your answer" inputmode="${['fraction','mixed','pair'].includes(q.format)||Number(q.answer)<0||String(q.answer).includes(':')?'text':q.format==='decimal'?'decimal':'numeric'}" autocomplete="off" maxlength="24" value="${esc(session.answer)}" placeholder="?" ${done?'disabled':''}>${q.unit&&q.unit!=='£'?`<span class="unit">${esc(q.unit)}</span>`:''}</div>`;
+ const coachButton=`<button class="coach-assist" type="button" data-action="hint" aria-expanded="${!!session.assisted}">${icon('whistle',17)} Coach help</button>`;
+ const scratch=`<details class="scratch-paper" ${session.scratch?'open':''}><summary>${icon('edit',16)} Working paper</summary><textarea id="scratch-work" maxlength="1000" aria-label="Working paper" placeholder="Write your working here…" ${done?'readonly':''}>${esc(session.scratch||'')}</textarea></details>`;
  let tail='';
- if(done){const last=session.rows.at(-1);tail=`<div class="feedback ${last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${last.correct?'Goal!':'Let’s build it.'}</h3><p>${last.correct?`+${last.earned} XP${session.streak>=3?' · '+session.streak+' in a row':''}`:`${q.format==='plot'?'Check each plotted point.':q.format==='clock'?'Check both clock hands.':q.format==='drawing'?'Check the corners.':q.format==='bars'?'Match the bar heights.':q.format==='angle'?`Aim for ${q.answer}°.`:`Answer: ${Array.isArray(q.answer)?q.answer.join(', '):esc(q.answer)}`}`}</p></div><button class="btn ${last.correct?'soft':'white'}" data-action="next">Next ${icon('arrow',15)}</button></div>${!last.correct?helpMarkup(q):''}`;}
- else tail=`${!options?`<div class="shoot"><button class="btn big" type="submit">Shoot ${icon('arrow',18)}</button></div><div class="enter-note">Enter ↵</div>`:''}<div id="answer-error" class="field-error" role="alert"></div><button class="coach-hint" type="button" data-action="hint">${icon('whistle',15)} Coach</button>${session.assisted?helpMarkup(q):''}`;
- $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${session.selection.reason==='repair'?'replay':''}">${icon(session.selection.reason==='repair'?'reset':'ball',12)}${esc(session.selection.label)}</span><button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div><form id="answer-form" novalidate>${content}${input}${tail}</form>`;
- $('#keypad').classList.toggle('hidden',!!options||['drawing','angle','plot','clock'].includes(q.format));$('#symbol-keys').classList.toggle('hidden',!q.format||q.format==='number'||q.format==='bars'||column);
+ if(done){
+  const last=session.rows.at(-1);
+  const target=answerLabel(q);
+  const feedback=last.correct?(last.careerCandidate?`+${last.careerCandidate} XP to bank`:`+${last.earned} points${isCoachChallenge(player(),session)?' · Recall practice':''}`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
+  tail=`<div class="feedback ${last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${last.correct?'Goal!':'Let’s build it.'}</h3><p>${esc(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">Next shot ${icon('arrow',15)}</button></div>${!last.correct?helpMarkup(q):''}${session.scratch?scratch:''}`;
+ }else{
+  const submitButton=options?'':`<button class="btn big shoot-button" type="submit">Shoot ${icon('arrow',18)}</button>`;
+  tail=`<div id="answer-error" class="field-error" role="alert"></div><div class="question-actions">${submitButton}</div>${scratch}${session.assisted?helpMarkup(q):''}`;
+ }
+ const skill=skillById(q.skillId);
+ const reason=session.selection.reason;
+ const coachLabel=reason==='support'?'Build up':reason==='review'?'Recall':reason==='repair'?'Try again':session.selection.label;
+ $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} Coach picked ${esc(skill.title.toLowerCase())}</p>`:''}`;
+ $('#keypad').classList.toggle('hidden',!!options||['drawing','angle','plot','clock'].includes(q.format));
+ $('#symbol-keys').classList.toggle('hidden',!q.format||q.format==='number'||q.format==='bars'||column||!!written);
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}
- if(!done)requestAnimationFrame(()=>{if(column){const inputs=$$('.column-digit');session.lastDigit=inputs.length-1;inputs.at(-1)?.focus({preventScroll:true});}else $('#answer')?.focus({preventScroll:true});});
+ if(!done&&!window.matchMedia('(max-width: 620px)').matches)requestAnimationFrame(()=>{const inputs=$$('.column-digit');if(inputs.length){session.lastDigit=inputs.length-1;inputs.at(-1)?.focus({preventScroll:true});}else $('#answer')?.focus({preventScroll:true});});
 }
-function submit(value=null){
+function submit(value=null) {
  if(!session||session.paused||session.phase!=='question')return;
- const q=session.q,column=q.key.startsWith('column');
- if(value===null){if(column){session.digits=$$('.column-digit').map(x=>x.value);if(!session.digits.some(x=>x!==''))return answerError('Add your answer.');value=Number(session.digits.map(x=>x||'0').join(''));}else if(q.format==='clock')value=[session.clockHour,session.clockMinute];else if(q.format==='plot')value=session.drawing;else if(q.format==='drawing')value=validDrawing(session.drawing,q.visual.sides);else if(q.format==='angle')value=session.angle;else if(q.format==='bars'){session.bars=$$('.bar-input').map(x=>x.value);if(session.bars.some(x=>x===''))return answerError('Set both bars.');value=session.bars.map(Number);}else{session.answer=$('#answer')?.value.trim()||'';if(!session.answer)return answerError('Add your answer.');if(q.format!=='pair'&&!Number.isFinite(parseNumber(session.answer)))return answerError('Use a number.');value=session.answer;}}
- else session.answer=String(value);
- const correct=answerMatches(q,value),help=session.assisted;
- session.attempts++;session.correct+=correct?1:0;session.streak=correct&&!help?session.streak+1:0;session.bestStreak=Math.max(session.bestStreak,session.streak);
- const earned=earnedXP(correct,help,session.streak);session.points+=earned;
- const row={q:{...q},typed:value,correct,assisted:help,ms:Math.round(session.currentMs),earned,reason:session.selection.reason,detail:session.selection.detail,newFact:!!session.selection.newFact};session.rows.push(row);
- recordLearning(player(),q,correct,help,row.ms,session.id,Date.now(),session.selection.reason==='probe');
- if(session.selection.reason==='probe'){player().placementProgress=session.probeIndex;if(session.probeIndex>=probeIds(player()).length)player().placementComplete=true;}
- if(!correct||help)session.retries.push({q:{...q},at:session.attempts+2});
- session.phase='feedback';save();saveRound();renderQuestion();updateLive();sound(correct);if(correct){$('#mini-ball').style.setProperty('--shot-x',[-64,62,-38,48][session.attempts%4]+'px');$('#mini-ball').classList.add('scored');advanceId=setTimeout(()=>{if(session&&!session.paused){$('#mini-ball')?.classList.remove('scored');nextQuestion();}},1000);}
+ const q=session.q,written=writtenTask(q);
+ const digits=$$('.column-digit');
+ if(value===null){
+  if(digits.length){
+   session.digits=digits.map(input=>input.value);
+   if(!session.digits.some(Boolean))return answerError('Add your answer.');
+   value=Number(session.digits.map(digit=>digit||'0').join(''));
+   if(written?.needsRemainder){
+    const remainder=$('#division-remainder').value;
+    if(!remainder)return answerError('Add the remainder. Use 0 if there is none.');
+    value=`${value} r ${Number(remainder)}`;
+   }
+  }else if(q.format==='clock')value=[session.clockHour,session.clockMinute];
+  else if(q.format==='plot')value=session.drawing;
+  else if(q.format==='drawing')value=validDrawing(session.drawing,q.visual.sides);
+  else if(q.format==='angle')value=session.angle;
+  else if(q.format==='bars'){
+   session.bars=$$('.bar-input').map(input=>input.value);
+   if(session.bars.some(n=>n===''))return answerError('Set both bars.');
+   value=session.bars.map(Number);
+  }else{
+   session.answer=$('#answer')?.value.trim()||'';
+   if(!session.answer)return answerError('Add your answer.');
+   if(!['pair','choice','remainder'].includes(q.format)&&!Number.isFinite(parseNumber(session.answer)))return answerError('Use a number.');
+   value=session.answer;
+  }
+ }else session.answer=String(value);
+ const p=player(),correct=answerMatches(q,value),assisted=session.assisted,now=Date.now();
+ session.attempts++;session.correct+=Number(correct);session.streak=correct&&!assisted?session.streak+1:0;
+ session.bestStreak=Math.max(session.bestStreak,session.streak);
+ const earned=earnedXP(correct,assisted,session.streak);
+ const candidate=rewardCandidate(p,q,session,{correct,assisted,now});
+ session.points+=earned;session.careerPending=(session.careerPending||0)+candidate;
+ const row={q:{...q},typed:value,correct,assisted,ms:Math.round(session.currentMs),earned,careerCandidate:candidate,reason:session.selection.reason,detail:session.selection.detail,newFact:!!session.selection.newFact};
+ session.rows.push(row);
+ recordLearning(p,q,correct,assisted,row.ms,session.id,now,session.selection.reason==='probe');
+ if(session.selection.reason==='probe'){
+  p.placementProgress=session.probeIndex;
+  if(session.probeIndex>=probeIds(p).length)p.placementComplete=true;
+ }
+ if(!correct||assisted)session.retries.push({q:{...q},at:session.attempts+2});
+ session.phase='feedback';save();saveRound();renderQuestion();updateLive();paintPitch(true);sound(correct);
 }
+
 function answerError(message){$('#answer-error').textContent=message;$('#answer')?.focus();}
 function startTick(){clearInterval(tickId);lastTick=performance.now();tickId=setInterval(()=>{if(!session||session.paused)return;const now=performance.now(),delta=Math.max(0,(now-lastTick)/1000);lastTick=now;session.elapsed+=clockDelta(session,delta);if(session.phase==='question')session.currentMs+=delta*1000;if(session.elapsed>=session.duration){session.elapsed=session.duration;finishMatch(true);return;}updateLive();if(now-lastSave>1100){saveRound();lastSave=now;}},150);}
-function updateLive(){if(!session)return;const arena=$('.penalty-view'),move=superMove(session.streak);if(arena){arena.dataset.shot=shotType(session.q);arena.dataset.super=move.id;const call=$('#goal-callout');if(call)call.textContent=move.id==='normal'?'Goal!':move.label;}const moveLabel=$('#move-label');if(moveLabel)moveLabel.textContent=move.id==='normal'?'Ready to strike':move.label;const values={'live-goals':session.correct,'live-streak':session.streak,'live-time':clock(session.duration-session.elapsed)};for(const [id,value]of Object.entries(values)){const el=document.getElementById(id);if(el)el.textContent=value;}if($('#live-xp'))$('#live-xp').innerHTML=`${session.points}<small> XP</small>`;$('#timer-box')?.classList.toggle('low',session.duration-session.elapsed<16&&session.phase==='question');$('#timer-box')?.classList.toggle('clock-rest',session.phase==='feedback');if($('#timer-caption'))$('#timer-caption').textContent=session.phase==='feedback'?'Coach time':'Time';if($('#shot-track'))$('#shot-track').innerHTML=shotTrack();}
-function pause(){if(!session)return;clearTimeout(advanceId);session.paused=true;session.pausedEver=true;saveRound();showPauseOverlay();}
-function showPauseOverlay(){if($('.paused'))return;$('.game-main').inert=true;$('.game-header').inert=true;const el=document.createElement('div');el.className='paused';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','pause-title');el.innerHTML=`<div class="pause-inner">${icon('whistle',58)}<div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--muted)">TIME OUT</div><h2 id="pause-title">TAKE A BREATHER.</h2><p>${esc(player().name)}’s match is saved.</p><button class="btn lime big" data-action="resume">PLAY ON ${icon('play',18)}</button><button class="btn white" data-action="finish">Finish</button></div>`;app.append(el);requestAnimationFrame(()=>$('[data-action=resume]',el).focus());}
-function resume(){session.paused=false;$('.paused')?.remove();$('.game-main').inert=false;$('.game-header').inert=false;if(session.phase==='feedback'&&session.rows.at(-1)?.correct)nextQuestion();else renderQuestion();startTick();saveRound();}
-function finishMatch(complete){
- if(!session)return;clearInterval(tickId);clearTimeout(advanceId);window.speechSynthesis?.cancel();
- const p=player(),previousLevel=careerLevel(p),old=bestFor(session.recordKey),before=new Set(medals(p).filter(x=>x[3]).map(x=>x[0]));
- const saved={...session,complete:complete&&(!session.placement||p.placementComplete),endedAt:Date.now(),elapsed:Math.round(session.elapsed*10)/10};
- for(const key of ['q','selection','retries','seen','answer','digits','notes','drawing','bars','angle','currentMs','lastDigit'])delete saved[key];
- saved.previousBest=old?.points||0;saved.previousTime=old?.elapsed||0;saved.newRecord=newPersonalBest(saved,old);
- if(saved.attempts){p.goalsTotal=totalGoals(p)+saved.correct;p.pointsTotal=clubPoints(p)+saved.points;p.sessions.push(saved);p.sessions=p.sessions.slice(-500);if(saved.mode==='check'&&complete&&saved.probeIndex>=probeIds(p).length)p.placementComplete=true;if(saved.newRecord){p.records||={};p.records[saved.recordKey]={...saved,rows:[]};}recordLeague(p,saved);saved.promotionResult=checkPromotion(p,saved);saved.newClubs=careerNews(p,previousLevel);saved.creditsEarned=Math.floor(clubPoints(p)/10)-Math.floor((clubPoints(p)-saved.points)/10);saved.medals=medals(p).filter(x=>x[3]&&!before.has(x[0])).map(x=>({name:x[0],symbol:x[2]}));save();}
- session=null;result=saved;saveRound();renderResult();if(saved.newRecord&&!data.settings.reduceMotion)confetti();
+function paintPitch(replay=false) {
+ const arena=$('.penalty-view');
+ if(!arena||!session)return;
+ const row=session.phase==='feedback'?session.rows.at(-1):null;
+ const move=paintShot(arena,{question:session.q,correct:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay});
+ $('#move-caption').textContent=row?(row.correct?`${move.id==='normal'?'In the net':move.label}${session.streak>=3?' · '+session.streak+' in a row':''}`:'Coach has the replay'):'Ready to shoot';
+ $('.pitch-replay').hidden=!row;
 }
+function updateLive() {
+ if(!session)return;
+ const values={'live-goals':session.correct,'live-streak':session.streak,'live-time':session.progressCheck?'∞':clock(session.duration-session.elapsed)};
+ for(const [id,value] of Object.entries(values)){const el=document.getElementById(id);if(el)el.textContent=value;}
+ const earns=isCoachChallenge(player(),session);
+ if($('#live-xp'))$('#live-xp').innerHTML=`${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small>`;
+ $('#timer-box')?.classList.toggle('low',!session.progressCheck&&session.duration-session.elapsed<16&&session.phase==='question');
+ $('#timer-box')?.classList.toggle('clock-rest',session.phase==='feedback');
+ if($('#timer-caption'))$('#timer-caption').textContent=session.progressCheck?'No timer':session.phase==='feedback'?'Coach time':'Time';
+ if($('#shot-track'))$('#shot-track').innerHTML=shotTrack();
+}
+
+function pause(){if(!session)return;session.paused=true;session.pausedEver=true;saveRound();showPauseOverlay();}
+function showPauseOverlay(){if($('.paused'))return;$('.game-main').inert=true;$('.game-header').inert=true;const el=document.createElement('div');el.className='paused';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','pause-title');el.innerHTML=`<div class="pause-inner">${icon('whistle',58)}<div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--muted)">TIME OUT</div><h2 id="pause-title">TAKE A BREATHER.</h2><p>${esc(player().name)}’s match is saved.</p><button class="btn lime big" data-action="resume">PLAY ON ${icon('play',18)}</button><button class="btn white" data-action="finish">Finish</button></div>`;app.append(el);requestAnimationFrame(()=>$('[data-action=resume]',el).focus());}
+function resume(){session.paused=false;$('.paused')?.remove();$('.game-main').inert=false;$('.game-header').inert=false;renderQuestion();paintPitch();startTick();saveRound();}
+function finishMatch(complete) {
+ if(!session)return;
+ clearInterval(tickId);window.speechSynthesis?.cancel();
+ const p=player(),previousLevel=careerLevel(p),priorXP=careerXP(p),old=bestFor(session.recordKey);
+ const before=new Set(medals(p).filter(x=>x[3]).map(x=>x[0]));
+ const saved={...session,complete:complete&&session.attempts===session.target,endedAt:Date.now(),elapsed:Math.round(session.elapsed*10)/10};
+ for(const key of ['q','selection','retries','seen','answer','digits','notes','drawing','bars','angle','currentMs','lastDigit','work','scratch','remainder','noteHistory','checkPlan'])delete saved[key];
+ saved.previousBest=old?.points||0;saved.previousTime=old?.elapsed||0;
+ saved.newRecord=newPersonalBest(saved,old);
+ if(saved.attempts&&!p.sessions.some(match=>match.id===saved.id)){
+  p.pointsTotal??=priorXP;
+  saved.careerXP=bankCareerXP(p,saved);
+  saved.ranked=isCoachChallenge(p,saved)&&saved.complete&&!saved.pausedEver&&!saved.hintsUsed&&saved.careerXP>0;
+  p.goalsTotal=totalGoals(p)+saved.correct;
+  p.sessions=[...p.sessions,saved].slice(-500);
+  if(saved.newRecord){p.records||={};p.records[saved.recordKey]={...saved,rows:[]};}
+  recordLeague(p,saved);
+  saved.promotionResult=checkPromotion(p,saved);
+  saved.newClubs=careerNews(p,previousLevel);
+  saved.creditsEarned=Math.floor(careerXP(p)/10)-Math.floor(priorXP/10);
+  saved.medals=medals(p).filter(x=>x[3]&&!before.has(x[0])).map(x=>({name:x[0],symbol:x[2]}));
+  save();
+ }
+ session=null;result=saved;saveRound();renderResult();
+ if(saved.newRecord&&!data.settings.reduceMotion)confetti();
+}
+
 function renderResult(){const r=result,p=player(),accuracy=r.attempts?Math.round(r.correct/r.attempts*100):0,stars=r.complete&&r.attempts>=5?(accuracy>=95?3:accuracy>=80?2:accuracy>=60?1:0):0,errors=[...new Map(r.rows.filter(x=>!x.correct||x.assisted).map(x=>[x.q.key,x])).values()];
- app.innerHTML=`<div class="game-shell"><header class="game-header">${brand()}<span class="profile-mini">${profileDot(p)}${esc(p.name)}</span><button class="icon-btn" data-action="result-home" aria-label="Go to clubhouse">${icon('home',19)}</button></header><main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} XP · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.points}</strong><small>match XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.pausedEver||r.hintsUsed?'<p class="muted">Coach helped or match paused. XP counts; this round does not set a timed record.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
+ app.innerHTML=`<div class="game-shell"><header class="game-header">${brand()}<span class="profile-mini">${profileDot(p)}${esc(p.name)}</span><button class="icon-btn" data-action="result-home" aria-label="Go to clubhouse">${icon('home',19)}</button></header><main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?'Your practised skills are updated.':r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
 function sound(good){if(!data.settings.sound)return;try{audio||=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.setValueAtTime(good?600:300,audio.currentTime);o.frequency.linearRampToValueAtTime(good?820:340,audio.currentTime+.12);g.gain.setValueAtTime(.03,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.22);o.start();o.stop(audio.currentTime+.24);}catch{}}
 function confetti(){const e=document.createElement('div');e.className='confetti';e.setAttribute('aria-hidden','true');e.innerHTML=Array.from({length:32},(_,i)=>`<i style="left:${Math.random()*100}%;background:${['#d4f36a','#739e5e','#d6b76b','#7a9bdc'][i%4]};animation-delay:${Math.random()*.4}s;--drift:${Math.random()*180-90}px"></i>`).join('');document.body.append(e);setTimeout(()=>e.remove(),2700);}
 function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unavailable on this device.');return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spokenMath(text)),voice=selectBritishVoice(voices,data.settings.voiceURI);if(voice)u.voice=voice;else if(!speak.warned){toast('No British voice is installed. This device will choose the voice.');speak.warned=true;}u.lang='en-GB';u.rate=data.settings.speechRate||.9;speechSynthesis.speak(u);}
 
 function openDialog(content,{wide=false,focus=null}={}){returnFocus=document.activeElement;modalRoot.innerHTML=`<div class="dialog-backdrop"><section class="dialog ${wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1"><button class="icon-btn close-dialog" data-action="close-dialog" aria-label="Close">${icon('close',17)}</button>${content}</section></div>`;app.inert=true;requestAnimationFrame(()=>$(focus||'.dialog button,.dialog input,.dialog select,.dialog',modalRoot)?.focus());}
-function closeDialog(){if(!modalRoot.firstChild)return;modalRoot.innerHTML='';app.inert=false;if(returnFocus?.isConnected)returnFocus.focus();}
+function closeDialog(){if(!modalRoot.firstChild)return;shownExample=null;modalRoot.innerHTML='';app.inert=false;if(returnFocus?.isConnected)returnFocus.focus();}
 function profileForm(id=null){const p=data.profiles.find(x=>x.id===id),y=p?.year||year||1;openDialog(`<span class="eyebrow">${p?'Your player':'Join the academy'}</span><h2 id="dialog-title">${p?'Edit player':'Build your player'}</h2><form id="profile-form" data-id="${p?.id||''}"><div class="profile-builder"><div id="profile-preview">${avatarSVG(p||{look:{}},{size:145})}</div><div><div class="field-row"><label for="player-name">Nickname</label><input class="field" id="player-name" maxlength="24" required autocomplete="off" value="${esc(p?.name||'')}" placeholder="Your nickname"></div><div class="field-row"><label for="player-year">Practice year</label><select class="field" id="player-year">${Array.from({length:6},(_,i)=>i+1).map(n=>`<option value="${n}" ${y===n?'selected':''}>Year ${n}</option>`).join('')}</select></div><div class="custom-fields"><label>Kit number<input class="field" id="player-number" inputmode="numeric" type="number" min="1" max="99" value="${p?.look?.number||9}" required></label><label>Position<select class="field" id="player-position">${POSITIONS.map(n=>`<option ${p?.look?.position===n?'selected':''}>${n}</option>`).join('')}</select></label></div><label class="voice-field" for="player-skin">Skin tone<select class="field" id="player-skin">${Object.keys(SKIN_TONES).map(n=>`<option value="${n}" ${(p?.look?.skin||'warm')===n?'selected':''}>${n}</option>`).join('')}</select></label></div></div><div class="field-row"><label for="training-clock">Auto training clock</label><select class="field" id="training-clock"><option value="120" ${!p||!p.trainingSeconds||p.trainingSeconds===120?'selected':''}>Match pace · 2 minutes</option><option value="180" ${p?.trainingSeconds===180?'selected':''}>Steady pace · 3 minutes</option><option value="60" ${p?.trainingSeconds===60?'selected':''}>Sprint pace · 1 minute</option></select></div><div class="field-error" id="profile-error" role="alert"></div><div class="dialog-actions">${p?`<button type="button" class="text-btn text-danger" data-action="delete-player" data-id="${p.id}" style="margin-right:auto">Delete player</button>`:''}<button class="btn lime" type="submit">${p?'Save':'Create & play'}${icon('arrow',17)}</button></div></form>`,{focus:'#player-name'});}
 function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Mistakes get another try after other questions. Two difficult answers trigger a supporting skill. Due facts return on later days. Passing a round is not the same as lasting mastery.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
 function showReport(id){const p=data.profiles.find(x=>x.id===id);if(p)openDialog(reportContent(p),{wide:true});}
 function download(text,name,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);}
-function csv(p){const rows=[['Player','Date','Match','Goals','Shots','XP','Seconds','Complete','Hints','Paused'],...p.sessions.map(s=>[p.name,new Date(s.endedAt).toISOString(),s.mode==='check'?'Warm-up':recordLabel(s),s.correct,s.attempts,s.points,s.elapsed,s.complete,s.hintsUsed,s.pausedEver])];return rows.map(row=>row.map(v=>{let s=String(v);if(/^[=+@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');}
-function restoreFile(file){if(file.size>20*1024*1024){toast('Choose a backup under 20 MB.');return;}file.text().then(text=>{pendingImport=validateImport(JSON.parse(text));for(const p of pendingImport.profiles){initLearning(p);initCareer(p);initLeague(p);}openDialog(`<h2 id="dialog-title">Restore ${pendingImport.profiles.length} players?</h2><p>This replaces the squad and results currently saved in this browser. Download a backup first if you want to keep them.</p><div class="dialog-actions"><button class="btn white" data-action="close-dialog">Cancel</button><button class="btn" data-action="confirm-import">Restore squad</button></div>`);}).catch(err=>toast(err.message||'Could not read that backup.'));}
-function pressKeypad(key){if(!session||session.paused||session.phase!=='question')return;if(session.q.key.startsWith('column')){const note=document.activeElement?.classList.contains('column-note')?document.activeElement:null;if(note){const n=Number(note.dataset.note),max=session.q.op==='+'?1:2;note.value=key==='clear'?'':key==='back'?note.value.slice(0,-1):(note.value+key).slice(-max);session.notes[n]=note.value;document.querySelector(`[data-original="${n}"]`)?.classList.toggle('crossed',session.q.op==='−'&&note.value!=='');saveRound();return;}const ins=$$('.column-digit');let i=session.lastDigit??ins.length-1;if(key==='clear'){ins.forEach(e=>e.value='');i=ins.length-1;}else if(key==='back'){if(ins[i].value)ins[i].value='';else{i=Math.min(ins.length-1,i+1);ins[i].value='';}}else if(/^\d$/.test(key)){ins[i].value=key;i=Math.max(0,i-1);}session.lastDigit=i;session.digits=ins.map(e=>e.value);ins[i].focus();}else{const el=$('#answer')||$$('.bar-input')[session.lastBar??0];if(!el)return;el.value=key==='clear'?'':key==='back'?el.value.slice(0,-1):(el.value+key).slice(0,24);if(el.id==='answer')session.answer=el.value;else{session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;}el.focus();}saveRound();}
+function csv(p){const rows=[['Player','Date','Match','Goals','Shots','XP','Seconds','Complete','Hints','Paused'],...p.sessions.map(s=>[p.name,new Date(s.endedAt).toISOString(),s.mode==='check'?'Warm-up':recordLabel(s),s.correct,s.attempts,s.careerXP??s.points,s.elapsed,s.complete,s.hintsUsed,s.pausedEver])];return rows.map(row=>row.map(v=>{let s=String(v);if(/^[=+@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');}
+function restoreFile(file){if(file.size>20*1024*1024){toast('Choose a backup under 20 MB.');return;}file.text().then(text=>{pendingImport=validateImport(JSON.parse(text));for(const p of pendingImport.profiles){initLearning(p);initCareer(p);initRewards(p);initLeague(p);}openDialog(`<h2 id="dialog-title">Restore ${pendingImport.profiles.length} players?</h2><p>This replaces the squad and results currently saved in this browser. Download a backup first if you want to keep them.</p><div class="dialog-actions"><button class="btn white" data-action="close-dialog">Cancel</button><button class="btn" data-action="confirm-import">Restore squad</button></div>`);}).catch(err=>toast(err.message||'Could not read that backup.'));}
+function pressKeypad(key){if(!session||session.paused||session.phase!=='question')return;if(session.q.key.startsWith('column')||writtenTask(session.q)){const note=document.activeElement?.matches('.column-note,.work-note')?document.activeElement:null;if(note){const n=Number(note.dataset.note),max=note.maxLength>0?note.maxLength:2;note.value=key==='clear'?'':key==='back'?note.value.slice(0,-1):(note.value+key).slice(-max);if(note.dataset.work){session.work||={};session.work[note.dataset.work]=note.value;}else if(note.hasAttribute('data-remainder'))session.remainder=note.value;else session.notes[n]=note.value;document.querySelector(`[data-original="${n}"]`)?.classList.toggle('crossed',session.q.op==='−'&&note.value!=='');saveRound();return;}const ins=$$('.column-digit');let i=session.lastDigit??ins.length-1;if(key==='clear'){ins.forEach(e=>e.value='');i=ins.length-1;}else if(key==='back'){if(ins[i].value)ins[i].value='';else{i=Math.min(ins.length-1,i+1);ins[i].value='';}}else if(/^\d$/.test(key)){ins[i].value=key;i=Math.max(0,i-1);}session.lastDigit=i;session.digits=ins.map(e=>e.value);ins[i].focus();}else{const el=$('#answer')||$$('.bar-input')[session.lastBar??0];if(!el)return;el.value=key==='clear'?'':key==='back'?el.value.slice(0,-1):(el.value+key).slice(0,24);if(el.id==='answer')session.answer=el.value;else{session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;}el.focus();}saveRound();}
 function handleClick(event){const b=event.target.closest('[data-action]');if(!b||b.disabled)return;event.preventDefault();switch(b.dataset.action){
  case 'home':if(session)pause();else navigate('home');break;
  case 'nav':navigate(b.dataset.view);break;
@@ -161,7 +320,28 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'confirm-delete':data.profiles=data.profiles.filter(p=>p.id!==b.dataset.id);if(data.activeId===b.dataset.id)data.activeId=null;save();closeDialog();render();toast('Player removed.');break;
  case 'browse':year=data.activeId?player().year:1;navigate('syllabus');break;
  case 'play':startMatch();break;
- case 'skill':if(!data.activeId){pendingSkill=b.dataset.skill;view='players';render();scrollTo({top:0});}else startMatch(b.dataset.skill);break;
+ case 'open-tables':navigate('tables');break;
+ case 'open-shop':navigate('locker');break;
+ case 'open-league':navigate('league');break;
+ case 'world-league':navigate('world');break;
+ case 'world-tier':if(!world.busy){world.tier=Number(b.dataset.tier);world.loaded=false;render();}break;
+ case 'world-join':joinWorld();break;
+ case 'world-refresh':if(!world.busy){world.loaded=false;render();}break;
+ case 'world-leave':openDialog(`<h2 id="dialog-title">Leave the World League?</h2><p>Your ranked alias and scores will be removed. You can rejoin with a new alias.</p><div class="dialog-actions"><button class="btn white" data-action="close-dialog">Back</button><button class="btn danger" data-action="world-confirm-leave">Leave league</button></div>`);break;
+ case 'world-confirm-leave':closeDialog();leaveWorld();break;
+ case 'world-start':startWorld();break;
+ case 'world-next':nextWorld();break;
+ case 'world-board':clearInterval(worldTimer);world.match=null;world.feedback=null;world.loaded=false;render();scrollTo({top:0});break;
+ case 'open-written':year=player().year;domain='calculation';search='';navigate('written');break;
+ case 'appearance':openDialog(appearanceView(player()),{wide:true});break;
+ case 'shop-hair':shopSlot='hair';navigate('locker');break;
+ case 'club-path':openDialog(clubJourneyView(player()));break;
+ case 'example':showSkillExample(b.dataset.skill);break;
+ case 'support-practice':data.activeId=b.dataset.profile;closeDialog();startMatch(b.dataset.skill);break;
+ case 'table-challenge':startMatch(null,{tableChallenge:true});break;
+ case 'progress-check':startMatch(null,{progressCheck:true});break;
+ case 'replay-shot':if(session?.phase==='feedback')paintPitch(true);break;
+ case 'skill':if(!data.activeId){closeDialog();pendingSkill=b.dataset.skill;view='players';render();scrollTo({top:0});}else startMatch(b.dataset.skill);break;
  case 'year':year=Number(b.dataset.year);render();break;
  case 'domain':domain=b.dataset.domain;render();break;
  case 'table-map':tableView=Number(b.dataset.table);$('#table-tracker-host')?$('#table-tracker-host').innerHTML=factMapMarkup(player(),tableView):render();break;
@@ -171,7 +351,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'equip':if(equipItem(player(),b.dataset.item)){save();render();}break;
  case 'skin':if(SKIN_TONES[b.dataset.value]){player().look.skin=b.dataset.value;save();render();}break;
  case 'hair-colour':if(HAIR_COLOURS[b.dataset.value]){player().look.hairColour=b.dataset.value;save();render();}break;
- case 'club':if(chooseClub(player(),b.dataset.club)){save();render();toast('Your new club is ready.');}break;
+ case 'club':if(chooseClub(player(),b.dataset.club)){save();closeDialog();render();toast('Your new club is ready.');}break;
  case 'league-period':leaguePeriod=b.dataset.period;render();break;
  case 'gym-table':gym.table=b.dataset.table==='all'?'all':Number(b.dataset.table);render();break;
  case 'gym-mode':gym.mode=b.dataset.mode;render();break;
@@ -187,8 +367,11 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'plot-point':if(session&&session.phase==='question'){const point=[Number(b.dataset.x),Number(b.dataset.y)],index=session.drawing.findIndex(p=>p[0]===point[0]&&p[1]===point[1]);if(index>=0)session.drawing.splice(index,1);else if(session.drawing.length<session.q.answer.length)session.drawing.push(point);saveRound();renderQuestion();}break;
  case 'sound':data.settings.sound=!data.settings.sound;save();sound(true);if(!session&&!result)render();else toast(`Sound ${data.settings.sound?'on':'off'}`);break;
  case 'hear':if(session)speak(`${questionPrompt(session.q)}. ${session.q.expression!==undefined?session.q.expression:coreExpression(session.q)}`);break;
- case 'hear-help':if(session)speak(workingText(session.q)||(session.q.hint||explain(session.q).steps).join('. '));else if(modalRoot.dataset.question)speak(modalRoot.dataset.question);break;
- case 'hint':if(session&&!session.assisted){session.assisted=true;session.hintsUsed++;saveRound();renderQuestion();}break;
+ case 'hear-help':{const q=session?.q||shownExample;if(q)speak(workingText(q)||(q.hint||explain(q).steps).join('. '));else if(modalRoot.dataset.question)speak(modalRoot.dataset.question);break;}
+ case 'hint':if(session?.phase==='question'){
+  if(!session.assisted){session.assisted=true;session.hintsUsed++;revealFact(player(),session.q);save();saveRound();renderQuestion();}
+  requestAnimationFrame(()=>$('.help-box')?.scrollIntoView({block:'nearest'}));
+ }break;
  case 'answer-choice':submit(b.dataset.value);break;
  case 'next':if(session&&!session.paused)nextQuestion();break;
  case 'key':pressKeypad(b.dataset.key);break;
@@ -199,31 +382,127 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'resume':resume();break;
  case 'finish':finishMatch(false);break;
  case 'result-home':result=null;navigate('home');break;
- case 'next-match':{const manual=result?.manual||null,options=manual?{tableMode:result.tableMode,length:result.target}:{};startMatch(manual,options);break;}
+ case 'next-match':{const manual=result?.manual||null,options=manual?{tableMode:result.tableMode,length:result.target}:{tableChallenge:result?.tableChallenge};startMatch(manual,options);break;}
  case 'review-example':{const q=result.rows.find(r=>r.q.key===b.dataset.key).q;modalRoot.dataset.question=(q.hint||explain(q).steps).join('. ');openDialog(`<h2 id="dialog-title">COACH’S REPLAY</h2><div class="q-prompt" style="margin-top:25px">${esc(questionPrompt(q))}</div><div class="q-equation compact">${mathText(equationLabel(q,true))}</div>${q.visual?diagram(q.visual):''}${helpMarkup(q)}<div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',15)}</button></div>`);break;}
  case 'how':showHow();break;
  case 'report':showReport(b.dataset.id);break;
  case 'close-dialog':closeDialog();break;
  case 'backup':download(JSON.stringify({...data,exportedAt:new Date().toISOString()},null,2),`Matchday_Maths_Backup_${localDay()}.json`,'application/json');toast('Backup downloaded.');break;
  case 'import':$('#import-file').click();break;
- case 'confirm-import':data=validateImport(pendingImport);for(const p of data.profiles){initLearning(p);initCareer(p);initLeague(p);}pendingImport=null;session=null;saveRound();save();closeDialog();view='coach';render();toast('Squad restored.');break;
+ case 'confirm-import':data=validateImport(pendingImport);for(const p of data.profiles){initLearning(p);initCareer(p);initRewards(p);initLeague(p);}pendingImport=null;session=null;saveRound();save();closeDialog();view='coach';render();toast('Squad restored.');break;
  case 'export-csv':{const p=b.dataset.id?data.profiles.find(x=>x.id===b.dataset.id):player();download(csv(p),`Matchday_${p.name.replace(/[^a-z0-9]/gi,'_')}_Scores.csv`,'text/csv;charset=utf-8');break;}
  }}
  document.addEventListener('click',handleClick);
- document.addEventListener('submit',event=>{if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;p.trainingSeconds=trainingSeconds;initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=trainingSeconds;data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
- document.addEventListener('input',event=>{const el=event.target;if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)-1}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus();next.select();}}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank();}});
- document.addEventListener('pointerdown',event=>{if(event.target.closest('[data-action="key"]')&&document.activeElement?.classList.contains('column-note'))event.preventDefault();});
+ document.addEventListener('submit',event=>{if(event.target.id==='world-answer-form'){event.preventDefault();submitWorld(new FormData(event.target).get('answer'));return;}if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){initRewards(p);p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;initRewards(p);p.trainingSeconds=trainingSeconds;initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);initRewards(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=trainingSeconds;data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
+ document.addEventListener('input',event=>{const el=event.target;if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)-1}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus();next.select();}}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank();}});
+ document.addEventListener('pointerdown',event=>{if(event.target.closest('[data-action="key"]')&&document.activeElement?.matches('.column-note,.work-note'))event.preventDefault();});
  document.addEventListener('focusin',event=>{if(event.target.classList?.contains('bar-input')&&session)session.lastBar=Number(event.target.dataset.bar);if(event.target.classList?.contains('column-digit')&&session){session.lastDigit=Number(event.target.dataset.digit);event.target.select();}});
- document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
+ document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value;if(el.id==='kit-hair'||el.id==='kit-pattern')equipItem(p,value);else{const [slot,choices]=({'kit-hair-colour':['hairColour',HAIR_COLOURS],'kit-skin':['skin',SKIN_TONES],'kit-trim':['trim',KIT_TRIMS],'kit-theme':['theme',PLAYER_THEMES]})[el.id];if(Object.hasOwn(choices,value))p.look[slot]=value;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
  document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&session&&!session.paused)pause();});
  window.addEventListener('pagehide',()=>{if(session){session.paused=true;session.pausedEver=true;saveRound();}save();});
- 
+
 function readingButton(){return `<button class="reading-toggle ${data.settings.dyslexia?'on':''}" data-action="reading" aria-label="Dyslexia-friendly mode" aria-pressed="${!!data.settings.dyslexia}" title="Dyslexia-friendly layout"><b>Aa</b><span>Dyslexia</span></button>`;}
-function applyAccessPreferences(){document.body.classList.toggle('reduce-motion',!!data.settings.reduceMotion);document.body.classList.toggle('reading-mode',!!data.settings.dyslexia);$$('[data-action="reading"]').forEach(b=>{b.setAttribute('aria-pressed',String(!!data.settings.dyslexia));b.classList.toggle('on',!!data.settings.dyslexia);});}
+function applyAccessPreferences(){document.body.dataset.playerTheme=player()?.look?.theme||'pitch';document.body.classList.toggle('reduce-motion',!!data.settings.reduceMotion);document.body.classList.toggle('reading-mode',!!data.settings.dyslexia);$$('[data-action="reading"]').forEach(b=>{b.setAttribute('aria-pressed',String(!!data.settings.dyslexia));b.classList.toggle('on',!!data.settings.dyslexia);});}
 function profilePreview(){const id=$('#profile-form')?.dataset.id,old=data.profiles.find(p=>p.id===id),p={...(old||{}),look:{...(old?.look||{})}};initCareer(p);p.look.number=Math.max(1,Math.min(99,Number($('#player-number')?.value)||9));p.look.position=$('#player-position')?.value||'Striker';p.look.skin=$('#player-skin')?.value||'warm';if($('#profile-preview'))$('#profile-preview').innerHTML=avatarSVG(p,{size:145});}
 function showPromotion(){const p=player();if(!p)return profileForm();const progress=yearProgress(p),missing=progress.skills.filter(s=>!s.secure);openDialog(`<span class="eyebrow">Academy Year ${p.year}</span><h2 id="dialog-title">Your promotion goals</h2><div class="promotion-counts"><b>${progress.secure}/${progress.total}<small>Families match fit</small></b><b>${progress.checked}/${progress.practical.length}<small>Practical checks</small></b></div>${progress.eligible?'<p>Your 12-shot promotion match is ready. Aim for at least 90% independent accuracy.</p>':`<p>Keep showing independent recall on later days. A grown-up records practical work in Year goals.</p><div class="promotion-missing">${missing.slice(0,8).map(s=>`<span>${icon('ball',14)}${esc(s.title)}</span>`).join('')}${missing.length>8?`<small>And ${missing.length-8} more families on your year map.</small>`:''}</div>`}<div class="dialog-actions"><button class="btn white" data-action="close-dialog">Back</button>${progress.eligible?'<button class="btn lime" data-action="promotion">Play promotion match</button>':`<button class="btn" data-action="close-dialog">Keep training</button>`}</div>`);}
 function showNews(){const p=player();if(!p)return;initCareer(p);p.inbox.forEach(n=>n.read=true);save();openDialog(`<span class="eyebrow">Your game career</span><h2 id="dialog-title">Academy news</h2><div class="academy-news">${p.inbox.length?[...p.inbox].reverse().map(n=>`<article>${icon(n.kind==='promotion'?'trophy':'book',25)}<div><h3>${esc(n.title)}</h3><p>${esc(n.text)}</p><small>${new Date(n.at).toLocaleDateString('en-GB')}</small></div></article>`).join(''):'<p>Your club offers and year-promotion notes will appear here.</p>'}</div><div class="dialog-actions"><button class="btn white" data-action="close-dialog">Done</button><button class="btn" data-action="news-locker">Locker room</button></div>`);}
-function plotMarkup(v,done){const lo=v.min||0,hi=v.max||8,scale=240/(hi-lo),xx=n=>35+(n-lo)*scale,yy=n=>265-(n-lo)*scale,points=session.drawing||[],sorted=[...points].sort((a,b)=>a[0]-b[0]);return `<div class="plot-board"><svg viewBox="0 0 310 300" aria-hidden="true">${Array.from({length:hi-lo+1},(_,i)=>{const n=lo+i;return `<path d="M${xx(n)} 25v240M35 ${yy(n)}h240" stroke="#dce6d4"/><text x="${xx(n)}" y="288" text-anchor="middle" font-size="11" fill="#4f6c4b">${n}</text><text x="18" y="${yy(n)+4}" text-anchor="middle" font-size="11" fill="#4f6c4b">${n}</text>`;}).join('')}<polyline points="${sorted.map(([x,y])=>`${xx(x)},${yy(y)}`).join(' ')}" fill="none" stroke="#507dc6" stroke-width="3"/></svg>${Array.from({length:(hi-lo+1)**2},(_,i)=>{const x=lo+i%(hi-lo+1),y=lo+Math.floor(i/(hi-lo+1)),selected=points.some(p=>p[0]===x&&p[1]===y);return `<button type="button" class="plot-point ${selected?'selected':''}" style="left:${xx(x)/310*100}%;top:${yy(y)/300*100}%" data-action="plot-point" data-x="${x}" data-y="${y}" aria-label="Plot point ${x}, ${y}" aria-pressed="${selected}" ${done?'disabled':''}></button>`;}).join('')}</div><div class="drawing-actions"><button class="text-btn" type="button" data-action="draw-clear">Clear points</button><span>${points.length}/${session.q.answer.length} points</span></div>`;}
+function plotMarkup(v,done,points=session.drawing||[]){const lo=v.min||0,hi=v.max||8,scale=240/(hi-lo),xx=n=>35+(n-lo)*scale,yy=n=>265-(n-lo)*scale,sorted=[...points].sort((a,b)=>a[0]-b[0]);return `<div class="plot-board"><svg viewBox="0 0 310 300" aria-hidden="true">${Array.from({length:hi-lo+1},(_,i)=>{const n=lo+i;return `<path d="M${xx(n)} 25v240M35 ${yy(n)}h240" stroke="#dce6d4"/><text x="${xx(n)}" y="288" text-anchor="middle" font-size="11" fill="#4f6c4b">${n}</text><text x="18" y="${yy(n)+4}" text-anchor="middle" font-size="11" fill="#4f6c4b">${n}</text>`;}).join('')}<polyline points="${sorted.map(([x,y])=>`${xx(x)},${yy(y)}`).join(' ')}" fill="none" stroke="#507dc6" stroke-width="3"/></svg>${Array.from({length:(hi-lo+1)**2},(_,i)=>{const x=lo+i%(hi-lo+1),y=lo+Math.floor(i/(hi-lo+1)),selected=points.some(p=>p[0]===x&&p[1]===y);return `<button type="button" class="plot-point ${selected?'selected':''}" style="left:${xx(x)/310*100}%;top:${yy(y)/300*100}%" data-action="plot-point" data-x="${x}" data-y="${y}" aria-label="Plot point ${x}, ${y}" aria-pressed="${selected}" ${done?'disabled':''}></button>`;}).join('')}</div>${done?'':`<div class="drawing-actions"><button class="text-btn" type="button" data-action="draw-clear">Clear points</button><span>${points.length}/${session.q.answer.length} points</span></div>`}`;}
 
+let world={profileId:null,tier:0,loaded:false,busy:false,available:null,board:null,match:null,feedback:null,unlocked:[0],identity:null,error:'',streak:0};
+let worldTimer;
+function worldPage(){
+ const p=player();
+ if(!p)return '<div class="panel"><h1>World League</h1><p>Choose your player to see your year group.</p><button class="btn lime" data-action="players">Choose player</button></div>';
+ if(world.profileId!==p.id||world.year!==p.year){
+  let identity=null;
+  try{identity=JSON.parse(localStorage.getItem(`matchday.world.${p.id}`)||'null');}catch{}
+  world={profileId:p.id,year:p.year,tier:0,loaded:false,busy:false,available:null,board:null,match:null,feedback:null,unlocked:[0],identity,error:'',streak:0};
+ }
+ if(!world.loaded&&!world.busy)queueMicrotask(loadWorldBoard);
+ return worldBoardView(p,world);
+}
+async function loadWorldBoard(){
+ const p=player(),state=world;
+ if(!p||view!=='world'||state.loaded||state.busy)return;
+ state.busy=true;state.error='';
+ try{
+  const query={year:p.year,tier:state.tier};
+  state.board=await leagueApi('board',{query});state.available=true;
+  if(state.identity){
+   try{const me=await leagueApi('me',{query,token:state.identity.token});state.unlocked=me.unlocked;}
+   catch(error){if(error.status===401)forgetWorld(state);else state.error=error.message;}
+  }
+ }catch(error){state.available=false;state.error=error.message;state.board=null;}
+ finally{state.loaded=true;state.busy=false;if(view==='world'&&world===state)render();}
+}
+async function joinWorld(){
+ if(world.busy||!world.available||!player())return;
+ const state=world;state.busy=true;render();
+ try{state.identity=await leagueApi('join',{body:{}});localStorage.setItem(`matchday.world.${state.profileId}`,JSON.stringify(state.identity));state.unlocked=[0];state.error='';}
+ catch(error){state.error=error.message;}
+ finally{state.busy=false;if(view==='world'&&world===state)render();}
+}
+function forgetWorld(state){
+ state.identity=null;state.unlocked=[0];state.report=null;
+ try{localStorage.removeItem(`matchday.world.${state.profileId}`);}catch{}
+}
+async function leaveWorld(){
+ const state=world;
+ if(!state.identity||state.busy)return;
+ state.busy=true;state.error='';render();
+ try{await leagueApi('leave',{token:state.identity.token,body:{}});forgetWorld(state);}
+ catch(error){if(error.status===401)forgetWorld(state);else state.error=error.message;}
+ finally{state.busy=false;state.loaded=false;if(view==='world'&&world===state)render();}
+}
+async function startWorld(){
+ const p=player(),state=world;
+ if(!p||!state.identity||state.busy||!state.unlocked.includes(state.tier))return;
+ state.busy=true;state.error='';render();
+ try{
+  state.match=await leagueApi('start',{token:state.identity.token,body:{year:p.year,tier:state.tier}});
+  state.feedback=null;state.streak=0;state.answer='';state.report=null;state.outcomes=[];
+ }catch(error){state.error=error.message;}
+ finally{
+  state.busy=false;
+  if(view==='world'&&world===state){render();scrollTo({top:0});}
+ }
+}
+async function submitWorld(value){
+ const state=world;
+ if(state.busy||!state.match||state.feedback||view!=='world')return;
+ state.answer=String(value||'').trim().replace('−','-');
+ if(!/^-?\d+(?:\.\d+)?$/.test(state.answer)){state.error='Enter a number.';render();return;}
+ state.busy=true;state.error='';state.lastQuestion=state.match.question;
+ const submitButton=$('#world-answer-form button[type="submit"]');
+ if(submitButton)submitButton.disabled=true;
+ try{
+  const shot=await leagueApi('shot',{token:state.identity.token,body:{id:state.match.id,index:state.match.index,answer:state.answer}});
+  state.match=shot;state.feedback=shot;state.outcomes[shot.index-1]=shot.goal?'goal':'miss';state.streak=shot.goal?state.streak+1:0;state.answer='';
+  if(shot.unlocked)state.unlocked=shot.unlocked;
+ }catch(error){state.error=error.message;}
+ finally{state.busy=false;if(view==='world'&&world===state)render();}
+}
+function nextWorld(){
+ if(!world.feedback)return;
+ if(world.feedback.complete){
+  world.report=world.feedback;world.tier=world.match.tier;
+  world.match=null;world.feedback=null;world.loaded=false;clearInterval(worldTimer);
+ }else world.feedback=null;
+ render();
+}
+function renderWorldMatch(){
+ const p=player();
+ if(!p){world.match=null;render();return;}
+ app.innerHTML=worldMatchView(p,world);
+ paintShot($('.penalty-view'),{question:world.feedback?world.lastQuestion:world.match.question,correct:world.feedback?.goal,attempt:world.match.index,streak:world.streak,celebration:p.look.celebration});
+ clearInterval(worldTimer);
+ if(!world.feedback?.complete)worldTimer=setInterval(()=>{
+  if(view!=='world'||!world.match){clearInterval(worldTimer);return;}
+  const time=$('#world-time');if(time)time.textContent=worldClock(world.match.expiresAt);
+  if(Date.now()>=world.match.expiresAt&&!world.busy){
+   clearInterval(worldTimer);world.match=null;world.feedback=null;world.error='Time is up. Open a new match when you’re ready.';render();
+  }
+ },250);
+}
 const requestedYear=Number(new URLSearchParams(location.search).get('year'));year=requestedYear>=1&&requestedYear<=6?requestedYear:player()?.year||1;const requestedSkill=new URLSearchParams(location.search).get('skill');if(skillById(requestedSkill)&&!session){pendingSkill=requestedSkill;if(player())startMatch(pendingSkill);else view='players';}render();if(session)startTick();if('speechSynthesis'in window){voices=speechSynthesis.getVoices();speechSynthesis.addEventListener('voiceschanged',()=>{voices=speechSynthesis.getVoices();if(view==='coach'&&!session&&!result)render();});}

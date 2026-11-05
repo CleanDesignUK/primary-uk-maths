@@ -1,42 +1,19 @@
-# Matchday Maths 4 verification
+# Matchday Maths 5 verification
 
-Checkpoint: 4 November 2026. Screenshots show developer test play, not pupil assessment data. Test profiles are not bundled in the application.
+## Automated checks
 
-## Automated
+`npm run check`, `npm test`, `npm run build` and `npm run build:worker` passed. [Test output](test-results.txt)
 
-`npm run check` and `npm test` pass. There are 64 tests. [Full output](test-results.txt).
+The 76 tests cover generated answers, curriculum routing, table evidence, later-day recall, six-year promotion, exact exchanges, long multiplication and division, reward gates, kit migration, accessibility helpers, marketing links and the ranked API with its SQL schema. League tests use two generated aliases and verify ordering, year and division boundaries, expiry, repeat submissions, promotion and removal of an alias.
 
-Coverage includes: arithmetic and all generated question answers; six year maps and probes; prerequisite routing and delayed retries; spaced recall; direct/inverse/missing table evidence; three-new-family table limit; correct fraction, decimal and percentage arithmetic; valid clock/coordinate/graph responses; six-year promotion gates and attainability; nonlinear levels; balances, purchases and inventory; larger club offers requiring actual practice; local league eligibility/ties/lifetime totals; real British-voice selection; long division; and all 30 marketing pages’ metadata, structured data and local links.
+## Browser checks
 
-The written-method tests check every column pool and the user's exact example, `864 − 788 = 76`. They retain the intermediate tens value 5 before 15, final ones value 14 and the hundreds reduction to 7. Exchange through zeros is also checked independently for `1000 − 27`. Addition carries appear below the answer and in the incoming column.
+- All five navigation tabs fit in 320 px and 390 px phone previews. The pitch sits above the question and the desktop number pad is hidden.
+- A new Year 6 profile entered a Year 6 warm-up. A correct answer played a goal and an incorrect answer played a miss.
+- The Shop opened from the match report. Hair, shirt pattern, trim and clubhouse colour changes applied. The starting paid away kit displayed 125 credits.
+- A six-digit long multiplication answer and a long division answer with a remainder scored goals. The written boards displayed aligned working fields. Saving a free-practice round showed zero career XP. Coach help opened the worked board from beside read-aloud.
+- A complete ranked Year 6 match recorded nine goals, appeared in the standings and unlocked County. This used the browser preview’s test database.
 
-## Browser checks actually completed
+[Phone goal and shot camera](matchday-phone-goal-v5.jpg)
 
-- Fresh empty squad and profile creation, without names or invented scores.
-- Custom nickname, number 17, Midfielder position and skin tone.
-- Immediate Year 3 warm-up and saving an unfinished warm-up.
-- Dyslexia-friendly mode toggled during a live question; a correct independent answer still earned 10 XP.
-- A complete ten-shot multiplication match: 10/10, 170 XP, new record, 17 earned credits and the three daily goals.
-- A second complete ten-shot table-coach match, which presented multiplication, inverse division and missing factors.
-- Buying the 25-credit away kit after earning 35 credits. The kit was equipped and 10 credits remained after reloading.
-- The shop visibly withheld club offers because the test player had only seven different facts and one practice day.
-- Updated subtraction workspace and the actual worked method for `701 − 579 = 122`, including exchange through a zero, crossed-out original digits and the inverse check.
-- Marketing homepage loaded, with six year links, resource navigation and the stated supplementary-resource scope.
-- Corrected an old hash-route alias that had sent Tables to the syllabus instead of the dedicated table gym.
-
-## Current proof
-
-- [Fresh profile screen](matchday-profile-v4.jpg)
-- [Dyslexia-friendly live question](matchday-reading-v4.jpg)
-- [Real completed match and record](matchday-record-v4.jpg)
-- [Earned kit purchase after reload](matchday-kit-v4.jpg)
-- [Revised column workspace](matchday-column-v4.jpg)
-- [Actual exchanged-digit working](matchday-column-working-v4.jpg)
-
-Earlier `*-preview.jpg` files belong to version 3 and are retained as historical screenshots. They are not proof of this expansion.
-
-## Still to complete
-
-Final 390 px mobile browser regression; a second player's full UI match and displayed league comparison; direct browser interaction checks for the new Year 6 constructions; the complete public hosting/canonical/indexing configuration; and final deployed-version checks. Automated checks cover the underlying rules but do not replace those browser checks. See [the next-session checkpoint](NEXT_SESSION.md).
-
-This is supplementary practice. Neither automated tests nor browser QA establishes teaching efficacy, official attainment or permanent retention.
+The image shows a fictional test player. The browser runs used a phone-sized viewport. The earlier version’s screenshots remain in this directory for history.

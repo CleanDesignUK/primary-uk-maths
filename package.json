@@ -1,11 +1,13 @@
 {
   "name": "matchday-maths",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "check": "node scripts/check.mjs",
-    "build": "node scripts/build-marketing.mjs"
+    "build": "node scripts/build-marketing.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build:worker": "node scripts/build-worker.mjs"
   }
 }
