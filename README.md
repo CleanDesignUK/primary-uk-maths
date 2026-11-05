@@ -20,7 +20,7 @@ Use Node 22.13 or later for the local preview and league tests, which use built-
 - The six [curriculum maps](docs/CURRICULUM_MAP.md) contain 247 named exercise families with worked examples. Physical measuring, construction and explanation have separate grown-up checklists.
 - Individual and mixed table practice covers facts through ×12, related division and missing factors. Year 2 emphasises 2, 5 and 10. Year 3 emphasises 3, 4 and 8. Later years consolidate all tables. Coach revisits facts over gaps of up to 60 days.
 - A short untimed progress check samples successfully practised skills. Grown-up reports flag persistent difficulty and suggest an exercise. Promotion requires the year’s practice evidence, practical checks and a mixed promotion match. These are game milestones.
-- Column addition and subtraction show carries and exchanges. Written multiplication has aligned carry and partial-product rows. Division has bus-stop or long-division working, including remainders where appropriate. Working paper provides extra space.
+- Column addition and subtraction show carries and exchanges. Written multiplication has aligned carry and partial-product rows. Division has bus-stop or long-division working, including remainders where appropriate. Fraction answers use stacked numerator and denominator fields, with a whole-number box for mixed answers. Working paper provides extra space.
 - The Aa button applies the dyslexia-friendly layout. Reduced motion has its own setting. Questions and working can be read aloud using an installed British voice when available.
 
 ## The football career
@@ -41,4 +41,4 @@ Ranked shots send answers for scoring. The database retains the generated alias,
 
 ## Verification
 
-[Browser checks and screenshots](docs/VERIFICATION.md) · [76 automated tests](docs/test-results.txt)
+[Browser checks and screenshots](docs/VERIFICATION.md) · [77 automated tests](docs/test-results.txt)

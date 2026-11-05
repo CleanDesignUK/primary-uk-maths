@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SKILLS,initialData,questionPool,skillById} from '../dist/engine.mjs';
 import {EXTRA_SKILLS,DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber,roman} from '../dist/curriculum.mjs';
+import {takesFraction,fractionParts,fractionSubmission} from '../dist/fraction-answer.mjs';
 
 test('a fresh academy has no pupil names, accounts or invented scores',()=>{assert.deepEqual(initialData().profiles,[]);assert.equal(initialData().activeId,null);});
 test('all six syllabus maps contain the age-appropriate maths domains',()=>{
@@ -21,6 +22,18 @@ test('fraction equivalence is mathematical while fraction tasks require a fracti
  assert.ok(answerMatches({answer:0.03,format:'decimal'},'.030'));
  assert.ok(answerMatches({answer:-4,format:'number'},'−4'));
  assert.ok(!answerMatches({answer:0,format:'number'},''));
+});
+test('stacked answer fields support generated fractions, mixed numbers and whole results',()=>{
+ for(const s of SKILLS)for(const q of questionPool(s.id).filter(takesFraction)){
+  const mixed=q.format==='mixed';
+  const parts=fractionParts(q.answer,{mixed,completed:true});
+  const submission=fractionSubmission(parts,mixed);
+  assert.ok(answerMatches(q,submission.value),`${s.id}: ${q.answer}`);
+ }
+ assert.deepEqual(fractionParts('2 1/',{mixed:true}),{whole:'2',numerator:'1',denominator:''});
+ assert.equal(fractionSubmission(fractionParts('2/4')).value,'2/4');
+ assert.equal(fractionSubmission(fractionParts('1/0')).field,'denominator');
+ assert.equal(fractionSubmission(fractionParts('1/')).field,'denominator');
 });
 test('ruler measurements subtract the starting offset',()=>{
  for(const q of questionPool('ruler3'))assert.equal(q.answer,q.visual.end-q.visual.start);

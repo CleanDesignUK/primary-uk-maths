@@ -89,6 +89,7 @@ export const CLUBS=[
  {id:'county',name:'County United',level:4,colour:'#8d6cb2',short:'CU'},
  {id:'arsenal',name:'Arsenal',level:7,colour:'#b64f46',short:'ARS'},
  {id:'chelsea',name:'Chelsea',level:7,colour:'#3d62b8',short:'CHE'},
+ {id:'tottenham',name:'Tottenham Hotspur',level:7,colour:'#233659',short:'TOT'},
  {id:'liverpool',name:'Liverpool',level:9,colour:'#b7443f',short:'LIV'},
  {id:'man-city',name:'Manchester City',level:9,colour:'#70a7c8',short:'MCI'},
  {id:'man-utd',name:'Manchester United',level:9,colour:'#b64039',short:'MUN'},

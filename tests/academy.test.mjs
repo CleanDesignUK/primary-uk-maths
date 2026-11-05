@@ -58,6 +58,7 @@ test('earned credits cannot be overspent or double-charged and equipped items mu
 test('levels start quickly and later gaps grow, while XP alone cannot buy a top club offer',()=>{
  const profile=p();for(let level=1;level<20;level++){profile.pointsTotal=xpForLevel(level);assert.equal(careerLevel(profile),level);assert.ok(xpForLevel(level+2)-xpForLevel(level+1)>xpForLevel(level+1)-xpForLevel(level));}
  profile.pointsTotal=100000;assert.equal(chooseClub(profile,'arsenal'),false);assert.ok(clubProgress(profile,CLUBS.find(c=>c.id==='arsenal')).remaining.some(g=>g.label==='Practice days'));
+ const spurs=CLUBS.find(c=>c.id==='tottenham');assert.equal(spurs.level,7);assert.equal(chooseClub(profile,spurs.id),false);
  for(const q of questionPool('add10').slice(0,20))recordLearning(profile,q,true,false,1000,'match',now);assert.equal(chooseClub(profile,'local'),true);assert.deepEqual(careerNews(profile,1,now).map(c=>c.id),['local']);assert.equal(careerNews(profile,1,now).length,0);
 });
 test('XP, one easy match, or missing practical observations never award a completed year',()=>{

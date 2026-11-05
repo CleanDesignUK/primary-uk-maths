@@ -4,7 +4,7 @@
 
 `npm run check`, `npm test`, `npm run build` and `npm run build:worker` passed. [Test output](test-results.txt)
 
-The 76 tests cover generated answers, curriculum routing, table evidence, later-day recall, six-year promotion, exact exchanges, long multiplication and division, reward gates, kit migration, accessibility helpers, marketing links and the ranked API with its SQL schema. League tests use two generated aliases and verify ordering, year and division boundaries, expiry, repeat submissions, promotion and removal of an alias.
+The 77 tests cover generated answers, curriculum routing, table evidence, later-day recall, six-year promotion, exact exchanges, long multiplication and division, reward gates, kit migration, accessibility helpers, marketing links and the ranked API with its SQL schema. League tests use two generated aliases and verify ordering, year and division boundaries, expiry, repeat submissions, promotion and removal of an alias.
 
 ## Browser checks
 
