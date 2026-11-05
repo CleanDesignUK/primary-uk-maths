@@ -21,7 +21,8 @@ import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} fro
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
 const app=$('#app'),modalRoot=$('#modal-root');
-let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='kit',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,audio;
+let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='kit',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,pendingMatch=null,audio;
+const draftRounds=new Map();
 try{const raw=localStorage.getItem(STORAGE);data=raw?validateImport(JSON.parse(raw)):initialData();}catch{data=initialData();storageWarning='Progress could not be loaded. Restore a backup in Coach.';}
 if(data.profiles.length===3&&data.profiles.every(p=>['Ace','Carter','Cruz'].includes(p.name)&&!p.sessions.length&&!Object.keys(p.facts).length)&&Math.max(...data.profiles.map(p=>p.createdAt))-Math.min(...data.profiles.map(p=>p.createdAt))<1000){data.profiles=[];data.activeId=null;}
 try{const reading=localStorage.getItem('matchday.reading');if(reading!==null)data.settings.dyslexia=reading==='true';}catch{}
@@ -30,8 +31,19 @@ const routeMap={today:'home',skills:'syllabus',progress:'stats',grownups:'coach'
 const GOAL_FEEDBACK_MS=1200;
 let goalTimer;
 let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(initialRoute)?initialRoute:'home');
-try{const s=JSON.parse(localStorage.getItem(DRAFT)||'null');if(['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(s?.schema)&&data.profiles.some(p=>p.id===s.profileId)&&Number.isFinite(s.elapsed)&&s.q&&s.skillIds.every(skillById)){session=s;session.paused=true;session.pausedEver=true;data.activeId=s.profileId;}}catch{}
+try{
+ const saved=JSON.parse(localStorage.getItem(DRAFT)||'null');
+ const rounds=saved?.schema==='rounds-v1'?saved.rounds:[saved];
+ for(const round of rounds){
+  if(!['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(round?.schema)||!data.profiles.some(p=>p.id===round.profileId)||!Number.isFinite(round.elapsed)||!round.q||!Array.isArray(round.skillIds)||!round.skillIds.every(skillById))continue;
+  round.paused=true;round.pausedEver=true;
+  draftRounds.set(round.profileId,round);
+ }
+ session=draftRounds.get(saved?.schema==='rounds-v1'?saved.active:saved?.profileId)||null;
+ if(session)data.activeId=session.profileId;
+}catch{}
 const player=()=>data.profiles.find(p=>p.id===(session?.profileId||data.activeId));
+const savedRound=()=>draftRounds.get(data.activeId);
 const colours=['#326443','#4c70be','#c0874e','#7179a8'];
 const playerIndex=p=>Math.max(0,data.profiles.findIndex(x=>x.id===p.id));
 const shirtNumber=p=>p?.look?.number||9;
@@ -39,7 +51,13 @@ const clubPoints=p=>p.pointsTotal??p.sessions.reduce((n,s)=>n+s.points,0);
 const level=p=>careerLevel(p);
 const totalGoals=p=>p.goalsTotal??p.sessions.reduce((n,s)=>n+s.correct,0);
 function save(){try{localStorage.setItem(STORAGE,JSON.stringify(data));localStorage.setItem('matchday.reading',String(!!data.settings.dyslexia));return true;}catch{storageWarning='This browser cannot save progress. Download a backup in Coach.';return false;}}
-function saveRound(){try{if(session)localStorage.setItem(DRAFT,JSON.stringify(session));else localStorage.removeItem(DRAFT);}catch{storageWarning='This round cannot be saved in this browser.';}}
+function saveRound(){
+ if(session)draftRounds.set(session.profileId,session);
+ try{
+  if(draftRounds.size)localStorage.setItem(DRAFT,JSON.stringify({schema:'rounds-v1',active:session?.profileId??null,rounds:[...draftRounds.values()]}));
+  else localStorage.removeItem(DRAFT);
+ }catch{storageWarning='This round cannot be saved in this browser.';}
+}
 function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3300);}
 function profileDot(p){return `<span class="profile-dot">${p?.look?.number||9}</span>`;}
 function brand(){
@@ -52,9 +70,9 @@ const gameMenu = [
  ["tables","Tables","times"],
  ["league","League","trophy"]
 ];
-function gameNavigation(){
+function gameNavigation(activeView=view){
  return `<nav class="arcade-nav" aria-label="Game navigation">${gameMenu.map(([id,label,symbol])=>{
-  const active=view===id||id==='syllabus'&&view==='written'||id==='league'&&view==='world';
+  const active=activeView===id||id==='syllabus'&&activeView==='written'||id==='league'&&activeView==='world';
   return `<button class="nav-btn ${active?'active':''}" data-action="${id==='syllabus'?'open-units':'nav'}" data-view="${id}" aria-label="${id==='tables'?'Times tables':label}" ${active?'aria-current="page"':''}>
    <span class="arcade-nav-icon">${icon(symbol,20)}</span><span>${label}</span>
   </button>`;
@@ -73,7 +91,18 @@ function header(hasMenu){
 function footer(){
  return `<footer class="footer arcade-footer"><span>${icon('shield',13)} Saved on this device</span><div><a href="../parents/">Parents</a><a href="../teachers/">Teachers</a><button class="text-btn" data-action="nav" data-view="coach">Grown-ups ${icon('settings',13)}</button></div></footer>`;
 }
-function navigate(next){if(view==='world'&&next!=='world'){clearTimeout(goalTimer);clearInterval(worldTimer);world.match=null;world.feedback=null;}if(next==='world')world.loaded=false;if(session){pause();return;}closeDialog();result=null;view=next;location.hash=next;render();scrollTo({top:0});}
+function parkMatch(){
+ if(!session)return;
+ clearTimeout(goalTimer);clearInterval(tickId);window.speechSynthesis?.cancel();
+ session.paused=true;session.pausedEver=true;
+ draftRounds.set(session.profileId,session);session=null;saveRound();
+}
+function navigate(next){
+ parkMatch();
+ if(view==='world'&&next!=='world'){clearTimeout(goalTimer);clearInterval(worldTimer);world.match=null;world.feedback=null;}
+ if(next==='world')world.loaded=false;
+ closeDialog();result=null;view=next;location.hash=next;render();scrollTo({top:0});
+}
 window.addEventListener('hashchange',()=>{if(location.hash==='#main')return;if(!session&&!result){view=routeMap[location.hash.slice(1)]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(location.hash.slice(1))?location.hash.slice(1):'home');render();}});
 function render(){
  applyAccessPreferences();
@@ -83,7 +112,9 @@ function render(){
  const content=!data.activeId&&!['coach','syllabus','league','world'].includes(view)?'players':view;
  const hasMenu=!!data.activeId&&content!=='players';
  const pages={players:playersPage,home:homePage,tables:()=>tablesView(player(),gym),syllabus:syllabusPage,written:writtenPage,world:worldPage,stats:statsPage,coach:coachPage,locker:()=>lockerView(player(),shopSlot),league:()=>leagueView(data,player(),leaguePeriod,leagueYear)};
- app.innerHTML=`<div class="shell arcade-shell">${header(hasMenu)}<main id="main" class="${content==='players'?'welcome':'page'} arcade-page" tabindex="-1">${storageWarning?`<div class="storage-warning" role="alert">${esc(storageWarning)}</div>`:''}${(pages[content]||playersPage)()}</main>${footer()}</div>`;
+ const resume=savedRound();
+ const ribbon=resume&&hasMenu?`<aside class="resume-ribbon"><div>${icon('ball',20)} <b>Match saved</b><small>${resume.attempts}/${resume.target} played</small></div><button class="btn lime" data-action="resume-saved">Resume ${icon('play',17)}</button></aside>`:'';
+ app.innerHTML=`<div class="shell arcade-shell">${header(hasMenu)}<main id="main" class="${content==='players'?'welcome':'page'} arcade-page" tabindex="-1">${storageWarning?`<div class="storage-warning" role="alert">${esc(storageWarning)}</div>`:''}${ribbon}${(pages[content]||playersPage)()}</main>${footer()}</div>`;
  applyAccessPreferences();
 }
 function playersPage(){return pickerView(data);}
@@ -109,6 +140,12 @@ function startMatch(manual=null,options={}) {
  if(!p){profileForm();return;}
  const skill=manual?skillById(manual):null;
  if(manual&&!skill)return;
+ if(manual){const url=new URL(location.href);if(url.searchParams.has('skill')){url.searchParams.delete('skill');history.replaceState(null,'',url);}}
+ if(savedRound()){
+  pendingMatch={manual,options};
+  openDialog(`<h2 id="dialog-title">Match saved</h2><p>Resume it or finish early to start a new one.</p><div class="dialog-actions"><button class="btn white" data-action="start-fresh">Start new</button><button class="btn lime" data-action="resume-saved">Resume ${icon('play',17)}</button></div>`);
+  return;
+ }
  initCareer(p);initRewards(p);data.activeId=p.id;save();closeDialog();result=null;
  const checkPlan=options.progressCheck?progressCheckPlan(p):[];
  const checkQuestions=progressCheckQuestions(p,checkPlan);
@@ -158,7 +195,7 @@ function renderGame() {
  const title=session.manual?shortTitle(skillById(session.manual)):session.progressCheck?'Check your progress':session.placement?`Year ${session.curriculumYear} warm-up`:`Year ${session.curriculumYear} ${session.promotion?'promotion':'match'}`;
  const numberKeys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="key" data-key="${n}" aria-label="${n}">${n}</button>`).join('');
  app.innerHTML=`<div class="game-shell">
-  <header class="game-header">${brand()}<div class="game-header-right"><span class="profile-mini">${profileDot(p)}${esc(p.name)}</span><button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
+  <header class="game-header arcade-topbar match-topbar">${brand()}${gameNavigation('home')}<div class="header-tools"><span class="profile-mini">${profileDot(p)}<span>${esc(p.name)}</span></span><button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
   <main id="main" class="game-main">
    <div class="game-title"><div><div class="eyebrow">${label}</div><h1>${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${session.progressCheck?'∞':clock(session.duration-session.elapsed)}</strong><small id="timer-caption">${session.progressCheck?'No timer':'Time'}</small></div></div></div>
    <div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div>
@@ -339,9 +376,15 @@ function updateLive() {
 }
 
 function pause(){if(!session)return;clearTimeout(goalTimer);session.paused=true;session.pausedEver=true;saveRound();showPauseOverlay();}
-function showPauseOverlay(){if($('.paused'))return;$('.game-main').inert=true;$('.game-header').inert=true;const el=document.createElement('div');el.className='paused';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','pause-title');el.innerHTML=`<div class="pause-inner">${icon('whistle',58)}<div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--muted)">TIME OUT</div><h2 id="pause-title">TAKE A BREATHER.</h2><p>${esc(player().name)}’s match is saved.</p><button class="btn lime big" data-action="resume">PLAY ON ${icon('play',18)}</button><div class="pause-options">${readingButton()}<button class="btn white" data-action="finish">Finish</button></div></div>`;app.append(el);requestAnimationFrame(()=>$('[data-action=resume]',el).focus());}
+function showPauseOverlay(){if($('.paused'))return;$('.game-main').inert=true;$('.game-header').inert=true;const el=document.createElement('div');el.className='paused';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','pause-title');el.innerHTML=`<div class="pause-inner">${icon('whistle',58)}<div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--muted)">TIME OUT</div><h2 id="pause-title">TAKE A BREATHER.</h2><p>${esc(player().name)}’s match is saved.</p><button class="btn lime big" data-action="resume">PLAY ON ${icon('play',18)}</button><div class="pause-options"><button class="btn white" data-action="nav" data-view="home">Play menu</button>${readingButton()}<button class="btn white" data-action="finish">Finish</button></div></div>`;app.append(el);requestAnimationFrame(()=>$('[data-action=resume]',el).focus());}
 function resume(){session.paused=false;$('.paused')?.remove();$('.game-main').inert=false;$('.game-header').inert=false;renderQuestion();paintPitch();startTick();saveRound();}
-function finishMatch(complete) {
+function resumeSaved(){
+ const saved=savedRound();
+ if(!saved)return;
+ closeDialog();pendingMatch=null;result=null;session=saved;session.paused=false;
+ renderGame();startTick();saveRound();scrollTo({top:0});
+}
+function finishMatch(complete,showResult=true) {
  if(!session)return;
  clearTimeout(goalTimer);clearInterval(tickId);window.speechSynthesis?.cancel();
  const p=player(),previousLevel=careerLevel(p),priorXP=careerXP(p),old=bestFor(session.recordKey);
@@ -364,12 +407,14 @@ function finishMatch(complete) {
   saved.medals=medals(p).filter(x=>x[3]&&!before.has(x[0])).map(x=>({name:x[0],symbol:x[2]}));
   save();
  }
- session=null;result=saved;saveRound();renderResult();
+ draftRounds.delete(p.id);session=null;result=showResult?saved:null;saveRound();
+ if(!showResult)return;
+ renderResult();
  if(saved.newRecord&&!data.settings.reduceMotion)confetti();
 }
 
 function renderResult(){const r=result,p=player(),accuracy=r.attempts?Math.round(r.correct/r.attempts*100):0,stars=r.complete&&r.attempts>=5?(accuracy>=95?3:accuracy>=80?2:accuracy>=60?1:0):0,errors=[...new Map(r.rows.filter(x=>!x.correct||x.assisted).map(x=>[x.q.key,x])).values()];
- app.innerHTML=`<div class="game-shell"><header class="game-header">${brand()}<span class="profile-mini">${profileDot(p)}${esc(p.name)}</span><button class="icon-btn" data-action="result-home" aria-label="Go to clubhouse">${icon('home',19)}</button></header><main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
+ app.innerHTML=`<div class="game-shell">${header(true)}<main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
 function sound(good){if(!data.settings.sound)return;try{audio||=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.setValueAtTime(good?600:300,audio.currentTime);o.frequency.linearRampToValueAtTime(good?820:340,audio.currentTime+.12);g.gain.setValueAtTime(.03,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.22);o.start();o.stop(audio.currentTime+.24);}catch{}}
 function confetti(){const e=document.createElement('div');e.className='confetti';e.setAttribute('aria-hidden','true');e.innerHTML=Array.from({length:32},(_,i)=>`<i style="left:${Math.random()*100}%;background:${['#d4f36a','#739e5e','#d6b76b','#7a9bdc'][i%4]};animation-delay:${Math.random()*.4}s;--drift:${Math.random()*180-90}px"></i>`).join('');document.body.append(e);setTimeout(()=>e.remove(),2700);}
 function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unavailable on this device.');return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spokenMath(text)),voice=selectBritishVoice(voices,data.settings.voiceURI);if(voice)u.voice=voice;else if(!speak.warned){toast('No British voice is installed. This device will choose the voice.');speak.warned=true;}u.lang='en-GB';u.rate=data.settings.speechRate||.9;speechSynthesis.speak(u);}
@@ -433,16 +478,25 @@ function pressKeypad(key){
  saveRound();
 }
 function handleClick(event){const b=event.target.closest('[data-action]');if(!b||b.disabled)return;event.preventDefault();switch(b.dataset.action){
- case 'home':if(session)pause();else navigate('home');break;
+ case 'home':navigate('home');break;
  case 'nav':navigate(b.dataset.view);break;
- case 'players':if(!session){pendingSkill=null;result=null;data.activeId=null;save();view='players';location.hash='players';render();scrollTo({top:0});}break;
- case 'choose-player':data.activeId=b.dataset.id;year=player().year;save();startMatch(pendingSkill);pendingSkill=null;break;
+ case 'players':parkMatch();pendingSkill=null;data.activeId=null;save();navigate('players');break;
+ case 'choose-player':
+  data.activeId=b.dataset.id;year=player().year;save();
+  if(!pendingSkill&&savedRound())resumeSaved();else startMatch(pendingSkill);
+  pendingSkill=null;break;
  case 'new-player':profileForm();break;
  case 'edit-player':profileForm(b.dataset.id);break;
  case 'delete-player':{const p=data.profiles.find(x=>x.id===b.dataset.id);openDialog(`<h2 id="dialog-title">Delete ${esc(p.name)}?</h2><p>This removes this player’s progress from this browser. Back up first if you want to keep it.</p><div class="dialog-actions"><button class="btn white" data-action="close-dialog">Keep player</button><button class="btn danger" data-action="confirm-delete" data-id="${p.id}">Delete player</button></div>`);break;}
- case 'confirm-delete':data.profiles=data.profiles.filter(p=>p.id!==b.dataset.id);if(data.activeId===b.dataset.id)data.activeId=null;save();closeDialog();render();toast('Player removed.');break;
+ case 'confirm-delete':data.profiles=data.profiles.filter(p=>p.id!==b.dataset.id);draftRounds.delete(b.dataset.id);if(data.activeId===b.dataset.id)data.activeId=null;save();saveRound();closeDialog();render();toast('Player removed.');break;
  case 'browse':year=data.activeId?player().year:1;navigate('syllabus');break;
  case 'play':startMatch();break;
+ case 'resume-saved':resumeSaved();break;
+ case 'start-fresh':{
+  if(!pendingMatch||!savedRound())break;
+  const {manual,options}=pendingMatch;pendingMatch=null;
+  session=savedRound();finishMatch(false,false);startMatch(manual,options);break;
+ }
  case 'open-tables':navigate('tables');break;
  case 'open-units':
   if(view!=='syllabus')year=player()?.year||year;
@@ -530,11 +584,11 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'close-dialog':closeDialog();break;
  case 'backup':download(JSON.stringify({...data,exportedAt:new Date().toISOString()},null,2),`Matchday_Maths_Backup_${localDay()}.json`,'application/json');toast('Backup downloaded.');break;
  case 'import':$('#import-file').click();break;
- case 'confirm-import':data=validateImport(pendingImport);for(const p of data.profiles){initLearning(p);initCareer(p);initRewards(p);initLeague(p);}pendingImport=null;session=null;saveRound();save();closeDialog();view='coach';render();toast('Squad restored.');break;
+ case 'confirm-import':data=validateImport(pendingImport);for(const p of data.profiles){initLearning(p);initCareer(p);initRewards(p);initLeague(p);}pendingImport=null;session=null;draftRounds.clear();saveRound();save();closeDialog();view='coach';render();toast('Squad restored.');break;
  case 'export-csv':{const p=b.dataset.id?data.profiles.find(x=>x.id===b.dataset.id):player();download(csv(p),`Matchday_${p.name.replace(/[^a-z0-9]/gi,'_')}_Scores.csv`,'text/csv;charset=utf-8');break;}
  }}
  document.addEventListener('click',handleClick);
- document.addEventListener('submit',event=>{if(event.target.id==='world-answer-form'){event.preventDefault();submitWorld(new FormData(event.target).get('answer'));return;}if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){initRewards(p);p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;initRewards(p);p.trainingSeconds=trainingSeconds;initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);initRewards(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=trainingSeconds;data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
+ document.addEventListener('submit',event=>{if(event.target.id==='world-answer-form'){event.preventDefault();submitWorld(new FormData(event.target).get('answer'));return;}if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){const saved=draftRounds.get(p.id);if(saved){session=saved;finishMatch(false,false);}initRewards(p);p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;initRewards(p);p.trainingSeconds=trainingSeconds;initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);initRewards(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=trainingSeconds;data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
  document.addEventListener('input',event=>{const el=event.target;
   if(session?.phase==='question'&&el.dataset.fractionPart){
    session.fractionParts[el.dataset.fractionPart]=el.value;

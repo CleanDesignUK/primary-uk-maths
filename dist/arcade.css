@@ -279,6 +279,19 @@ body.arcade {
 .profile-options .field-row {margin-top:8px}
 .arcade .paused .pause-inner {border:1px solid #abc9e2;box-shadow:0 16px 30px #0005}
 .arcade :focus-visible {outline:3px solid #7ccce6;outline-offset:3px}
+.arcade .game-header.match-topbar {position:relative;height:auto}
+.resume-ribbon {
+ display:flex;align-items:center;justify-content:space-between;gap:9px;
+ margin:0 auto 12px;padding:7px 9px;border:1px solid #678664;border-radius:12px;
+ background:#203841;color:#eff9e6;
+}
+.resume-ribbon>div {display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.resume-ribbon b {font-size:14px}
+.resume-ribbon small {color:#d2e7d8;font-size:12px}
+.resume-ribbon>.btn {min-height:44px;flex:none}
+@media(max-width:820px) {
+ .match-topbar .brand-type,.match-topbar .profile-mini {display:none}
+}
 
 /* The optional cream reading surface keeps its contrast. */
 .arcade.reading-mode {background:#f4eddf}
