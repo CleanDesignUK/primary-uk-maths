@@ -256,6 +256,14 @@ body.arcade {
 .arcade .question-card .coach-assist {background:#d6f6ff;border-color:#8cc9db;color:#15495b;box-shadow:0 2px 0 #a7d6e2}
 .arcade .question-card .coach-assist[aria-expanded="true"] {background:#ffedb4;border-color:#ddc687}
 .arcade .question-card .shoot-button {background:#d3f66e;color:#122730;border:1px solid #9db94f;box-shadow:0 3px 0 #b2ca6c}
+.arcade .question-actions {display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.arcade .dont-know {
+ min-height:44px;padding:7px 12px;border:1px solid #a9bece;border-radius:9px;
+ background:#eef7fd;color:#264d69;font-size:14px;font-weight:750;
+}
+.arcade .dont-know:hover,.arcade .dont-know:focus-visible {background:#d7effe;color:#153852}
+.arcade .feedback.coach-stop {background:#dceffb;color:#173e5a}
+.arcade .feedback.coach-stop p,.arcade .feedback.coach-stop>svg {color:#254d6a}
 .arcade .match-controls .desktop-record,.arcade .finish-practice {color:var(--bright)}
 .arcade .match-controls .numpad>button {border-color:#3c5270;background:#16283f;color:var(--bright)}
 .arcade .match-controls .symbol-keys>button {background:#24364e;color:var(--bright)}

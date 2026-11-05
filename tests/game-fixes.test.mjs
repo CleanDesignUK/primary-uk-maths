@@ -128,3 +128,26 @@ test('bus-stop notes sit beside dividend digits and long division brings down in
  assert.match(board,/data-start-digit/);
  assert.match(board,/aria-label="Remainder"/);
 });
+
+test('a progress check only uses independently answered questions once',()=>{
+ const p=newProfile('Test',5),pool=questionPool('mul5');
+ for(const q of pool.slice(0,3))recordLearning(p,q,true,false,2000,'practice',now);
+ recordLearning(p,pool[3],true,true,2000,'practice',now);
+ const check={progressCheck:true,checkPlan:progressCheckPlan(p),rows:[],seen:[],retries:[{q:pool[3],at:0}]};
+ const chosen=[];
+ for(let i=0;i<3;i++){
+  const next=nextAdaptive(p,check,now,()=>.2);
+  assert.equal(next.reason,'check-in');
+  chosen.push(next.q.key);
+  check.seen.push(next.q.key);
+  check.rows.push({q:next.q,correct:false});
+ }
+ assert.deepEqual(new Set(chosen),new Set(pool.slice(0,3).map(q=>q.key)));
+ assert.equal(nextAdaptive(p,check,now),null);
+});
+
+test('skips and easy build-up questions cannot award career XP',()=>{
+ const p=newProfile('Test',6),q=questionPool('division5')[0];
+ assert.equal(attempt(p,q,challenge(p,{selection:{reason:'support'}})),0);
+ assert.equal(attempt(p,q,challenge(p),{correct:false}),0);
+});

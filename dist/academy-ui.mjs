@@ -1,6 +1,6 @@
 import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs';
 import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs';
-import {competency,planSummary,probeIds,learningNotes,progressCheckPlan} from './adaptive.mjs?v=6.0.1';
+import {competency,planSummary,probeIds,learningNotes,progressCheckPlan} from './adaptive.mjs?v=6.2.0';
 import {esc,icon,mathText} from './visuals.mjs?v=6';
 import {avatarSVG,clubBadge} from './avatar.mjs';
 import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,PLAYER_THEMES,KIT_TRIMS} from './career.mjs?v=6';

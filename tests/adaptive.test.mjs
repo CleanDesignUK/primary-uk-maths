@@ -14,7 +14,7 @@ test('the baseline samples all 12 probes once, without retries replacing the ass
  for(const year of [3,5]){const p=newProfile('Test',year);initLearning(p);const s=round({placement:true,retries:[{q:questionPool('add10')[0],at:0}]});const actual=[];for(let i=0;i<12;i++){const next=nextAdaptive(p,s);actual.push(next.q.skillId);assert.equal(next.reason,'probe');s.probeIndex++;s.rows.push({q:next.q,correct:i%2===0});s.seen.push(next.q.key);}assert.deepEqual(actual,probeIds(p));}
 });
 test('baseline arithmetic probes avoid uninformative zero and one identities',()=>{
- const p=newProfile('Cruz',5);initLearning(p);for(let i=0;i<20;i++){let s=round({placement:true,probeIndex:0});let q=nextAdaptive(p,s,Date.now(),()=>i/20).q;assert.ok(q.a>=3&&q.b>=2&&q.answer>=7);s.probeIndex=2;q=nextAdaptive(p,s,Date.now(),()=>i/20).q;assert.ok(q.b>=6&&q.b!==10);}
+ const p=newProfile('Test',3);initLearning(p);for(let i=0;i<20;i++){let s=round({placement:true,probeIndex:0});let q=nextAdaptive(p,s,Date.now(),()=>i/20).q;assert.ok(q.a>=3&&q.b>=2&&q.answer>=7);s.probeIndex=2;q=nextAdaptive(p,s,Date.now(),()=>i/20).q;assert.ok(q.b>=6&&q.b!==10);}
 });
 test('mistakes are retried after other questions, not immediately',()=>{
  const p=newProfile('Ace',3),q=questionPool('bridgeSub')[0];initLearning(p);const s=round({retries:[{q,at:3}],rows:[{q,correct:false}],seen:[q.key]});assert.notEqual(nextAdaptive(p,s).reason,'repair');
@@ -22,6 +22,23 @@ test('mistakes are retried after other questions, not immediately',()=>{
 });
 test('two consecutive difficulties trigger a supporting skill',()=>{
  const p=newProfile('Ace',3);initLearning(p);const q=questionPool('bridgeSub')[4],s=round({rows:[{q,correct:false},{q,correct:false}]});const next=nextAdaptive(p,s);assert.equal(next.reason,'support');assert.equal(next.q.skillId,'sub10');
+});
+test('a Year 5 warm-up starts at Year 5 and samples both written methods',()=>{
+ const p=newProfile('Test',5);
+ assert.equal(nextAdaptive(p,round({placement:true})).q.skillId,'place6');
+ assert.ok(probeIds(p).includes('mul5'));
+ assert.ok(probeIds(p).includes('division5'));
+});
+test('an unsure answer saves a gap without an invented fact attempt or an identical replay',()=>{
+ const p=newProfile('Test',6), q=questionPool('longDiv6')[0], now=Date.now();
+ const status=recordLearning(p,q,false,false,1500,'round',now,false,true);
+ assert.equal(status.recent[0].unknown,true);
+ assert.equal(status.correct,0);
+ assert.equal(p.facts[q.key],undefined);
+ const next=nextAdaptive(p,round({rows:[{q,unknown:true,correct:false}],seen:[q.key]}),now);
+ assert.equal(next.reason,'support');
+ assert.equal(next.q.skillId,'division5');
+ assert.notEqual(next.q.key,q.key);
 });
 test('due facts receive spaced review slots and exclude facts already seen in the match',()=>{
  const p=newProfile('Ace',3),now=1_800_000_000_000,q=questionPool('table3')[7];initLearning(p);recordLearning(p,q,true,false,1000,'old',now-2*DAY);

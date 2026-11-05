@@ -1,12 +1,12 @@
 import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
-import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan} from './adaptive.mjs?v=6.0.1';
+import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions} from './adaptive.mjs?v=6.2.0';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
-import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs';
+import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.2.0';
 import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.1.1';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.1.1';
 import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
-import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.1.0';
+import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.2.0';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6';
 import {avatarSVG} from './avatar.mjs';
 import {paintShot} from './shot.mjs';
@@ -111,7 +111,8 @@ function startMatch(manual=null,options={}) {
  if(manual&&!skill)return;
  initCareer(p);initRewards(p);data.activeId=p.id;save();closeDialog();result=null;
  const checkPlan=options.progressCheck?progressCheckPlan(p):[];
- if(options.progressCheck&&!checkPlan.length){toast('Try a Coach match first.');return;}
+ const checkQuestions=progressCheckQuestions(p,checkPlan);
+ if(options.progressCheck&&checkQuestions.length<3){toast('Practise a skill first.');return;}
  const progressCheck=checkPlan.length>0;
  const placement=!manual&&!options.promotion&&!progressCheck&&!p.placementComplete;
  const probeStart=placement?warmupProgress(p):0;
@@ -119,11 +120,11 @@ function startMatch(manual=null,options={}) {
  const written=skill&&(skill.category==='columns'||['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6'].includes(skill.id));
  const pace=[60,120,180].includes(p.trainingSeconds)?p.trainingSeconds:120;
  const duration=options.promotion||written?600:placement?300:options.length===25?180:manual?(skill.extra?180:60):p.year>=5&&!options.tableChallenge?420:pace;
- const target=options.promotion?12:progressCheck?6:placement?probeIds(p).length-probeStart:options.length||(written?6:10);
+ const target=options.promotion?12:progressCheck?Math.min(6,checkQuestions.length):placement?probeIds(p).length-probeStart:options.length||(written?6:10);
  const matchType=manual?`practice:${manual}:${options.tableMode||'auto'}`:options.tableChallenge?'table-challenge':options.promotion?'promotion':`coach:${league}`;
  session={
   schema:MATCH_SCHEMA, curriculumYear:p.year, promotion:!!options.promotion,
-  progressCheck, checkPlan, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
+  progressCheck, checkPlan, checkQuestions, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
   focusTable:laneFocus(p,'tables'), clockHour:12,clockMinute:0,id:uid(),profileId:p.id,
   skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement||progressCheck?'check':'timed',duration,target,
   recordKey:`v5:${matchType}:y${p.year}:${target}:${duration}`, startedAt:Date.now(),
@@ -138,7 +139,9 @@ function nextQuestion(renderHost=true){
  clearTimeout(goalTimer);
  if(!session)return;
  if(session.attempts>=session.target){finishMatch(true);return;}
- const next=nextAdaptive(player(),session);if(!next?.q)throw Error('No next exercise');
+ const next=nextAdaptive(player(),session);
+ if(!next?.q&&session.progressCheck){session.target=session.attempts;finishMatch(true);return;}
+ if(!next?.q)throw Error('No next exercise');
  if(next.retryKey){const i=session.retries.findIndex(r=>r.q.key===next.retryKey);if(i>=0)session.retries.splice(i,1);}
  if(next.advanceProbe)session.probeIndex++;
  session.q=next.q;session.selection=next;session.assisted=false;session.phase='question';session.answer='';session.fractionParts=null;session.digits=[];session.notes=[];session.noteHistory=[];session.drawing=[];session.bars=[];session.angle=30;session.clockHour=12;session.clockMinute=0;session.currentMs=0;session.lastDigit=null;session.work={};session.scratch='';session.remainder='';
@@ -146,7 +149,7 @@ function nextQuestion(renderHost=true){
  if(renderHost&&$('#question-host')){renderQuestion();paintPitch();updateLive();}
 }
 const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,Math.ceil(s))%60).padStart(2,'0')}`;
-function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
+function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].unknown?'played':session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
 function renderGame() {
  const p=player();
  const best=bestFor(session.recordKey);
@@ -205,6 +208,7 @@ function basicHelpVisual(q){if(q.op==='×')return `<div class="math-array" style
 function helpMarkup(q,small=false){const hints=q.hint||explain(q).steps,model=workedMarkup(q);return `<div class="help-box clean-solution"><h3>${icon('whistle',16)} Coach’s working</h3>${model||`<ol class="solution-steps">${hints.map((t,i)=>`<li><span>${i+1}</span><div>${mathText(t)}</div></li>`).join('')}</ol>`}${model?`<details class="more-help"><summary>Explain the steps</summary><ol class="solution-steps">${hints.map((t,i)=>`<li><span>${i+1}</span><div>${mathText(t)}</div></li>`).join('')}</ol></details>`:''}<button class="text-btn" data-action="hear-help">${icon('sound',15)} Hear the working</button></div>`;}
 function renderQuestion(){
  if(!session)return;const q=session.q,done=session.phase==='feedback',extra=skillById(q.skillId).extra,column=q.key.startsWith('column'),written=writtenTask(q),options=written?null:q.options;
+ const unknown=done&&session.rows.at(-1).unknown;
  let content='',input='',isWords=false;
  if(written){
   const work={entered:session.digits,notes:session.work||{},done,remainder:session.remainder||''};
@@ -221,23 +225,27 @@ function renderQuestion(){
   session.fractionParts??=fractionParts(session.answer,{mixed,completed:done});
   input=fractionAnswerMarkup(session.fractionParts,{mixed,done,correct:session.rows.at(-1)?.correct});
  }else if(!['drawing','plot','clock'].includes(q.format)&&!column&&!written)input=`<div class="answer-line">${q.unit==='£'?'<span class="unit">£</span>':''}<input class="answer-input ${q.format==='pair'||Number(q.answer)>9999?'wide':''} ${done?(session.rows.at(-1).correct?'correct':'incorrect'):''}" id="answer" aria-label="Your answer" inputmode="${q.format==='pair'||Number(q.answer)<0||String(q.answer).includes(':')?'text':q.format==='decimal'?'decimal':'numeric'}" autocomplete="off" maxlength="24" value="${esc(session.answer)}" placeholder="?" ${done?'disabled':''}>${q.unit&&q.unit!=='£'?`<span class="unit">${esc(q.unit)}</span>`:''}</div>`;
+ if(unknown&&(column||written)){
+  content=`<div class="q-equation compact">${mathText(equationLabel(q,false))}</div>`;
+  input='';
+ }else if(unknown)input='';
  const coachButton=`<button class="coach-assist" type="button" data-action="hint" aria-expanded="${!!session.assisted}">${icon('whistle',17)} Coach help</button>`;
  const scratch=`<details class="scratch-paper" ${session.scratch?'open':''}><summary>${icon('edit',16)} Working paper</summary><textarea id="scratch-work" maxlength="1000" aria-label="Working paper" placeholder="Write your working here…" ${done?'readonly':''}>${esc(session.scratch||'')}</textarea></details>`;
  let tail='';
  if(done){
   const last=session.rows.at(-1);
   const target=answerLabel(q);
-  const feedback=last.correct?(last.careerCandidate?`+${last.careerCandidate} XP to bank`:`+${last.earned} points${isCoachChallenge(player(),session)?' · Recall practice':''}`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
-  tail=`<div class="feedback ${last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${last.correct?'Goal!':'Let’s build it.'}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">Next shot ${icon('arrow',15)}</button></div>${!last.correct?helpMarkup(q):''}${session.scratch?scratch:''}`;
+  const feedback=last.unknown?'See how Coach does it.':last.correct?(last.careerCandidate?`+${last.careerCandidate} XP to bank`:`+${last.earned} points${isCoachChallenge(player(),session)?' · Recall practice':''}`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
+  tail=`<div class="feedback ${last.unknown?'coach-stop':last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${last.unknown?'Coach will help':last.correct?'Goal!':'Let’s build it.'}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">${last.unknown?'Next question':'Next shot'} ${icon('arrow',15)}</button></div>${!last.correct?helpMarkup(q):''}${session.scratch?scratch:''}`;
  }else{
   const submitButton=options?'':`<button class="btn big shoot-button" type="submit">Shoot ${icon('arrow',18)}</button>`;
-  tail=`<div id="answer-error" class="field-error" role="alert"></div><div class="question-actions">${submitButton}</div>${scratch}${session.assisted?helpMarkup(q):''}`;
+  tail=`<div id="answer-error" class="field-error" role="alert"></div><div class="question-actions">${submitButton}<button class="dont-know" type="button" data-action="dont-know">I don’t know</button></div>${scratch}${session.assisted?helpMarkup(q):''}`;
  }
  const skill=skillById(q.skillId);
  const reason=session.selection.reason;
  const coachLabel=reason==='support'?'Build up':reason==='review'?'Recall':reason==='repair'?'Try again':session.selection.label;
  $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} Coach picked ${esc(skill.title.toLowerCase())}</p>`:''}`;
- $('#keypad').classList.toggle('hidden',!!options||['drawing','angle','plot','clock'].includes(q.format));
+ $('#keypad').classList.toggle('hidden',done||!!options||['drawing','angle','plot','clock'].includes(q.format));
  $('#symbol-keys').classList.toggle('hidden',!q.format||q.format==='number'||q.format==='bars'||column||!!written||takesFraction(q));
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}
  if(!done&&!window.matchMedia('(max-width: 620px)').matches)requestAnimationFrame(()=>{
@@ -246,11 +254,11 @@ function renderQuestion(){
   else if(!document.activeElement?.matches('[data-fraction-part]'))($('#fraction-whole')||$('#fraction-numerator')||$('#answer'))?.focus({preventScroll:true});
  });
 }
-function submit(value=null) {
+function submit(value=null,unknown=false) {
  if(!session||session.paused||session.phase!=='question')return;
  const q=session.q,written=writtenTask(q);
  const digits=$$('.column-digit');
- if(value===null){
+ if(!unknown&&value===null){
   if(digits.length){
    session.digits=digits.map(input=>input.value);
    if(!session.digits.some(Boolean))return answerError('Add your answer.');
@@ -278,22 +286,26 @@ function submit(value=null) {
    if(!['pair','choice','remainder'].includes(q.format)&&!Number.isFinite(parseNumber(session.answer)))return answerError('Use a number.');
    value=session.answer;
   }
- }else session.answer=String(value);
- const p=player(),correct=answerMatches(q,value),assisted=session.assisted,now=Date.now();
+ }else if(!unknown)session.answer=String(value);
+ const p=player(),correct=!unknown&&answerMatches(q,value),assisted=session.assisted,now=Date.now();
  session.attempts++;session.correct+=Number(correct);session.streak=correct&&!assisted?session.streak+1:0;
  session.bestStreak=Math.max(session.bestStreak,session.streak);
  const earned=earnedXP(correct,assisted,session.streak);
  const candidate=rewardCandidate(p,q,session,{correct,assisted,now});
  session.points+=earned;session.careerPending=(session.careerPending||0)+candidate;
- const row={q:{...q},typed:value,correct,assisted,ms:Math.round(session.currentMs),earned,careerCandidate:candidate,reason:session.selection.reason,detail:session.selection.detail,newFact:!!session.selection.newFact};
+ const row={q:{...q},typed:value,correct,assisted,unknown,ms:Math.round(session.currentMs),earned,careerCandidate:candidate,reason:session.selection.reason,detail:session.selection.detail,newFact:!!session.selection.newFact};
  session.rows.push(row);
- recordLearning(p,q,correct,assisted,row.ms,session.id,now,session.selection.reason==='probe');
+ recordLearning(p,q,correct,assisted,row.ms,session.id,now,session.selection.reason==='probe',unknown);
  if(session.selection.reason==='probe'){
   p.placementProgress=session.probeIndex;
   if(session.probeIndex>=probeIds(p).length)p.placementComplete=true;
  }
- if(!correct||assisted)session.retries.push({q:{...q},at:session.attempts+2});
- session.phase='feedback';save();saveRound();renderQuestion();updateLive();paintPitch(true);sound(correct);
+ if(!unknown&&!session.progressCheck&&!session.promotion&&(!correct||assisted))session.retries.push({q:{...q},at:session.attempts+2});
+ session.phase='feedback';save();saveRound();renderQuestion();updateLive();paintPitch(!unknown);
+ if(unknown){
+  $('.feedback')?.scrollIntoView({block:'nearest'});
+  $('[data-action="next"]')?.focus({preventScroll:true});
+ }else sound(correct);
 }
 
 function answerError(message,input=$('#answer')){$('#answer-error').textContent=message;input?.focus();}
@@ -307,9 +319,9 @@ function paintPitch(replay=false) {
  const arena=$('.penalty-view'),round=session;
  if(!arena||!round)return;
  const row=round.phase==='feedback'?round.rows.at(-1):null;
- const move=paintShot(arena,{question:session.q,correct:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay});
- $('#move-caption').textContent=row?(row.correct?`${move.id==='normal'?'In the net':move.label}${session.streak>=3?' · '+session.streak+' in a row':''}`:'Coach has the replay'):'Ready to shoot';
- $('.pitch-replay').hidden=!row;
+ const move=paintShot(arena,{question:session.q,correct:row?.unknown?undefined:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay});
+ $('#move-caption').textContent=row?(row.unknown?'Coach’s turn':row.correct?`${move.id==='normal'?'In the net':move.label}${session.streak>=3?' · '+session.streak+' in a row':''}`:'Coach has the replay'):'Ready to shoot';
+ $('.pitch-replay').hidden=!row||row.unknown;
  if(row?.correct&&!round.paused)afterGoal(()=>{
   if(session===round&&!round.paused&&round.phase==='feedback'&&round.rows.at(-1)===row)nextQuestion();
  });
@@ -335,13 +347,13 @@ function finishMatch(complete) {
  const p=player(),previousLevel=careerLevel(p),priorXP=careerXP(p),old=bestFor(session.recordKey);
  const before=new Set(medals(p).filter(x=>x[3]).map(x=>x[0]));
  const saved={...session,complete:complete&&session.attempts===session.target,endedAt:Date.now(),elapsed:Math.round(session.elapsed*10)/10};
- for(const key of ['q','selection','retries','seen','answer','digits','notes','drawing','bars','angle','currentMs','lastDigit','work','scratch','remainder','noteHistory','checkPlan'])delete saved[key];
+ for(const key of ['q','selection','retries','seen','answer','digits','notes','drawing','bars','angle','currentMs','lastDigit','work','scratch','remainder','noteHistory','checkPlan','checkQuestions'])delete saved[key];
  saved.previousBest=old?.points||0;saved.previousTime=old?.elapsed||0;
  saved.newRecord=newPersonalBest(saved,old);
  if(saved.attempts&&!p.sessions.some(match=>match.id===saved.id)){
   p.pointsTotal??=priorXP;
   saved.careerXP=bankCareerXP(p,saved);
-  saved.ranked=isCoachChallenge(p,saved)&&saved.complete&&!saved.pausedEver&&!saved.hintsUsed&&saved.careerXP>0;
+  saved.ranked=isCoachChallenge(p,saved)&&eligibleRecord(saved)&&saved.careerXP>0;
   p.goalsTotal=totalGoals(p)+saved.correct;
   p.sessions=[...p.sessions,saved].slice(-500);
   if(saved.newRecord){p.records||={};p.records[saved.recordKey]={...saved,rows:[]};}
@@ -357,7 +369,7 @@ function finishMatch(complete) {
 }
 
 function renderResult(){const r=result,p=player(),accuracy=r.attempts?Math.round(r.correct/r.attempts*100):0,stars=r.complete&&r.attempts>=5?(accuracy>=95?3:accuracy>=80?2:accuracy>=60?1:0):0,errors=[...new Map(r.rows.filter(x=>!x.correct||x.assisted).map(x=>[x.q.key,x])).values()];
- app.innerHTML=`<div class="game-shell"><header class="game-header">${brand()}<span class="profile-mini">${profileDot(p)}${esc(p.name)}</span><button class="icon-btn" data-action="result-home" aria-label="Go to clubhouse">${icon('home',19)}</button></header><main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?'Your practised skills are updated.':r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
+ app.innerHTML=`<div class="game-shell"><header class="game-header">${brand()}<span class="profile-mini">${profileDot(p)}${esc(p.name)}</span><button class="icon-btn" data-action="result-home" aria-label="Go to clubhouse">${icon('home',19)}</button></header><main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
 function sound(good){if(!data.settings.sound)return;try{audio||=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.setValueAtTime(good?600:300,audio.currentTime);o.frequency.linearRampToValueAtTime(good?820:340,audio.currentTime+.12);g.gain.setValueAtTime(.03,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.22);o.start();o.stop(audio.currentTime+.24);}catch{}}
 function confetti(){const e=document.createElement('div');e.className='confetti';e.setAttribute('aria-hidden','true');e.innerHTML=Array.from({length:32},(_,i)=>`<i style="left:${Math.random()*100}%;background:${['#d4f36a','#739e5e','#d6b76b','#7a9bdc'][i%4]};animation-delay:${Math.random()*.4}s;--drift:${Math.random()*180-90}px"></i>`).join('');document.body.append(e);setTimeout(()=>e.remove(),2700);}
 function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unavailable on this device.');return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spokenMath(text)),voice=selectBritishVoice(voices,data.settings.voiceURI);if(voice)u.voice=voice;else if(!speak.warned){toast('No British voice is installed. This device will choose the voice.');speak.warned=true;}u.lang='en-GB';u.rate=data.settings.speechRate||.9;speechSynthesis.speak(u);}
@@ -365,7 +377,7 @@ function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unav
 function openDialog(content,{wide=false,focus=null}={}){returnFocus=document.activeElement;modalRoot.innerHTML=`<div class="dialog-backdrop"><section class="dialog ${wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1"><button class="icon-btn close-dialog" data-action="close-dialog" aria-label="Close">${icon('close',17)}</button>${content}</section></div>`;app.inert=true;requestAnimationFrame(()=>$(focus||'.dialog button,.dialog input,.dialog select,.dialog',modalRoot)?.focus());}
 function closeDialog(){if(!modalRoot.firstChild)return;shownExample=null;modalRoot.innerHTML='';app.inert=false;if(returnFocus?.isConnected)returnFocus.focus();}
 function profileForm(id=null){const p=data.profiles.find(x=>x.id===id),y=p?.year||year||1;openDialog(`<span class="eyebrow">${p?'Your player':'Join the academy'}</span><h2 id="dialog-title">${p?'Edit player':'Build your player'}</h2><form id="profile-form" data-id="${p?.id||''}"><div class="profile-builder"><div id="profile-preview">${avatarSVG(p||{look:{}},{size:145})}</div><div><div class="field-row"><label for="player-name">Nickname</label><input class="field" id="player-name" maxlength="24" required autocomplete="off" value="${esc(p?.name||'')}" placeholder="Your nickname"></div><div class="field-row"><label for="player-year">Practice year</label><select class="field" id="player-year">${Array.from({length:6},(_,i)=>i+1).map(n=>`<option value="${n}" ${y===n?'selected':''}>Year ${n}</option>`).join('')}</select></div><details class="profile-options" ${p?'open':''}><summary>Kit and style</summary><div class="custom-fields"><label>Kit number<input class="field" id="player-number" inputmode="numeric" type="number" min="1" max="99" value="${p?.look?.number||9}" required></label><label>Position<select class="field" id="player-position">${POSITIONS.map(n=>`<option ${p?.look?.position===n?'selected':''}>${n}</option>`).join('')}</select></label></div><label class="voice-field" for="player-skin">Skin tone<select class="field" id="player-skin">${Object.keys(SKIN_TONES).map(n=>`<option value="${n}" ${(p?.look?.skin||'warm')===n?'selected':''}>${n}</option>`).join('')}</select></label><div class="field-row"><label for="training-clock">Match pace</label><select class="field" id="training-clock"><option value="120" ${!p||!p.trainingSeconds||p.trainingSeconds===120?'selected':''}>Match pace · 2 minutes</option><option value="180" ${p?.trainingSeconds===180?'selected':''}>Steady pace · 3 minutes</option><option value="60" ${p?.trainingSeconds===60?'selected':''}>Sprint pace · 1 minute</option></select></div></details></div></div><div class="field-error" id="profile-error" role="alert"></div><div class="dialog-actions">${p?`<button type="button" class="text-btn text-danger" data-action="delete-player" data-id="${p.id}" style="margin-right:auto">Delete player</button>`:''}<button class="btn lime" type="submit">${p?'Save':'Create & play'}${icon('arrow',17)}</button></div></form>`,{focus:'#player-name'});}
-function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Mistakes get another try after other questions. Two difficult answers trigger a supporting skill. Due facts return on later days. Passing a round is not the same as lasting mastery.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
+function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Choose “I don’t know” to see the working. Coach can then practise a step that leads back to that skill. Facts you know return on later days.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
 function showReport(id){const p=data.profiles.find(x=>x.id===id);if(p)openDialog(reportContent(p),{wide:true});}
 function download(text,name,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);}
 function csv(p){const rows=[['Player','Date','Match','Goals','Shots','XP','Seconds','Complete','Hints','Paused'],...p.sessions.map(s=>[p.name,new Date(s.endedAt).toISOString(),s.mode==='check'?'Warm-up':recordLabel(s),s.correct,s.attempts,s.careerXP??s.points,s.elapsed,s.complete,s.hintsUsed,s.pausedEver])];return rows.map(row=>row.map(v=>{let s=String(v);if(/^[=+@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');}
@@ -495,6 +507,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
   requestAnimationFrame(()=>$('.help-box')?.scrollIntoView({block:'nearest'}));
  }break;
  case 'answer-choice':submit(b.dataset.value);break;
+ case 'dont-know':submit(null,true);break;
  case 'next':if(session?.phase==='feedback'&&!session.paused)nextQuestion();break;
  case 'key':pressKeypad(b.dataset.key);break;
  case 'fraction-whole':if(session?.phase==='question'&&!session.paused&&session.fractionParts){

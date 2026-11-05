@@ -44,7 +44,7 @@ export function rewardCandidate(profile, question, match, { correct, assisted, n
     return 0;
   }
   initRewards(profile);
-  if (!isCoachChallenge(profile, match)) return 0;
+  if (!isCoachChallenge(profile, match) || match.selection?.reason === 'support') return 0;
   const key = rewardFactKey(question);
   const previous = profile.rewardClaims[key];
   const revealedAt = profile.revealedFacts[key];
@@ -72,7 +72,7 @@ export function bankCareerXP(profile, match) {
 
 export function eligibleRecord(match) {
   return ['football-v2', 'football-v3', 'football-v4', MATCH_SCHEMA].includes(match.schema) &&
-    match.complete && match.mode === 'timed' && !match.hintsUsed && !match.pausedEver &&
+    match.complete && match.mode === 'timed' && !match.hintsUsed && !match.pausedEver && !match.rows?.some(row => row.unknown) &&
     match.attempts > 0 && match.correct > 0;
 }
 
