@@ -11,13 +11,17 @@ body.arcade {
  min-height:100dvh;
 }
 .arcade .shell.arcade-shell {max-width:1480px;padding-inline:30px}
-.arcade-with-menu {
- display:grid;grid-template-columns:178px minmax(0,1fr);
- grid-template-areas:"top top" "menu main" "menu foot";column-gap:22px;
+.arcade .arcade-topbar {
+ position:sticky;top:0;z-index:45;
+ display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+ grid-template-areas:"brand game tools";gap:14px;
+ min-height:66px;height:auto;padding:8px 0;
+ background:var(--night);border-color:var(--deck-line);
 }
-.arcade-topbar {grid-area:top;height:72px;border-color:var(--deck-line)}
-.arcade-page {grid-area:main;min-width:0;padding:20px 0 24px}
-.arcade-footer {grid-area:foot;color:var(--quiet);border-color:var(--deck-line)}
+.arcade-topbar>.brand {grid-area:brand}
+.arcade-topbar>.header-tools {grid-area:tools;justify-self:end}
+.arcade-page {min-width:0;padding:20px 0 24px}
+.arcade-footer {color:var(--quiet);border-color:var(--deck-line)}
 .arcade-footer :is(a,button) {color:var(--bright)}
 .arcade .brand {gap:9px}
 .arcade .brand-mark {
@@ -34,33 +38,29 @@ body.arcade {
 .arcade .profile-mini {display:flex;align-items:center;gap:7px;min-width:0}
 .arcade .profile-mini>span:last-child {min-width:0;overflow:hidden;text-overflow:ellipsis}
 .arcade .profile-dot {background:#314967;color:#f3f7ff}
-.arcade .reading-toggle.on {color:#142033;background:#fff0cb;border-color:#d6c19d}
-.arcade-credit {
- display:flex;align-items:center;gap:7px;min-height:42px;padding:6px 12px;
- border:1px solid #68583b;border-radius:12px;background:#2e2a2b;color:#ffe5a6;
-}
+.arcade .reading-preference.on {background:#fff0cb;color:#142033;border-color:#d6c19d}
+.pause-options {display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:7px}
+.pause-options .btn {min-height:42px}
 .credit-chip {
  display:inline-grid;flex:none;place-items:center;width:22px;height:22px;border-radius:50%;
  border:1px solid #fff6af;background:linear-gradient(#ffe294,#f3ab42);
  box-shadow:0 2px 0 #aa6f2b;color:#4b300e;font-size:12px;font-weight:900;line-height:1;
 }
-.header-nav.arcade-nav {
- grid-area:menu;position:sticky;align-self:start;top:16px;margin-top:20px;
- display:flex;flex-direction:column;align-items:stretch;gap:7px;
- background:var(--deck);border:1px solid var(--deck-line);border-radius:18px;padding:12px 9px;
- box-shadow:0 10px 26px #0002;min-height:0;
+.arcade-topbar>.arcade-nav {
+ grid-area:game;justify-self:center;display:grid;
+ grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:100%;max-width:560px;
+ padding:4px;background:var(--deck);border:1px solid var(--deck-line);border-radius:13px;
 }
-.arcade-nav-label {color:var(--quiet);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px}
 .arcade-nav .nav-btn {
- min-height:53px;justify-content:flex-start;gap:10px;flex:none;border:1px solid transparent;
- border-radius:11px;padding:7px 8px;color:var(--bright);font-size:13px;font-weight:800;
+ display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:44px;
+ padding:5px 6px;border:1px solid transparent;border-radius:8px;
+ color:var(--bright);font-size:13px;font-weight:800;line-height:1.15;
 }
 .arcade-nav .nav-btn:hover {background:#223450}
 .arcade-nav .nav-btn.active {background:#263b51;border-color:#5a785f;color:var(--game-accent)}
-.arcade-nav-icon {width:33px;height:33px;display:grid;place-items:center;flex:none;border-radius:8px;color:#c7d8ff;background:#223450}
+.arcade-nav-icon {width:27px;height:27px;display:grid;place-items:center;flex:none;border-radius:6px;color:#c7d8ff;background:#223450}
 .arcade-nav .nav-btn.active .arcade-nav-icon {background:var(--game-accent);color:#112026}
 .arcade-nav [data-view="locker"]:not(.active) .arcade-nav-icon {background:#3a3243;color:#ffde89}
-.arcade-nav .arcade-coach-link {margin-top:9px;border-top-color:var(--deck-line);color:#c1e8f4}
 .arcade .arcade-page>.heading h1,.arcade .arcade-section-title h2,.arcade .squad-select h1 {color:var(--bright)}
 .arcade .arcade-page>.heading .eyebrow,.arcade .squad-select .eyebrow {color:var(--game-accent)}
 .arcade .arcade-page>.heading p {color:var(--quiet)}
@@ -131,7 +131,6 @@ body.arcade {
 .lobby-stage-footer .xp i {background:linear-gradient(90deg,#75bdfa,var(--game-accent))}
 .lobby-stage-footer .wallet-shop {display:flex;gap:7px;min-height:43px;padding:7px 11px;background:#282a38;border:1px solid #776347;color:#ffe1a1}
 .lobby-stage-footer .wallet-shop>span.credit-chip {display:inline-grid}
-.lobby-stage-footer .wallet-shop small {font-size:10px;color:#f2dbb0}
 .arcade-section-title {display:flex;align-items:center;gap:13px;margin:17px 0 9px}
 .arcade-section-title h2 {font:27px/1.1 Matchday,Impact,sans-serif;letter-spacing:.035em;text-transform:uppercase;margin:0}
 .arcade-section-title i {height:1px;background:var(--deck-line);flex:1}
@@ -148,9 +147,7 @@ body.arcade {
 .mode-card::after {content:"";position:absolute;z-index:-1;inset:0;background:repeating-linear-gradient(126deg,transparent 0 26px,#ffffff0a 27px 48px)}
 .mode-card:hover {border-color:var(--tile-light);filter:brightness(1.08)}
 .mode-icon {position:absolute;top:6px;right:10px;color:var(--tile-light);opacity:.88;transform:rotate(-12deg)}
-.mode-copy b,.mode-copy small {display:block}
-.mode-copy b {font-size:14px;line-height:1.13}
-.mode-copy small {color:#e6edf9;font-size:10px;margin-top:3px;line-height:1.25}
+.mode-copy b {display:block;font-size:15px;line-height:1.2}
 .mode-arrow {display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:6px;background:#ffffff1c}
 .arcade .coach-locker {margin:0 0 13px;padding:13px;background:linear-gradient(155deg,#e6f8fd,#e2efe8);border:1px solid #a6cdda;border-radius:15px}
 .arcade .coach-locker-heading h2 {font-family:Matchday,Impact,sans-serif;font-size:28px;text-transform:uppercase}
@@ -294,40 +291,36 @@ body.arcade {
 
 @media(max-width:1190px) {
  .arcade .shell.arcade-shell {padding-inline:21px}
- .arcade-with-menu {grid-template-columns:158px minmax(0,1fr);column-gap:14px}
  .lobby-layout {grid-template-columns:minmax(0,1fr) minmax(220px,.34fr);gap:11px}
  .mode-cards {grid-template-columns:repeat(2,minmax(0,1fr))}
  .mode-card {min-height:94px}
  .arcade .game-shop-tabs {grid-template-columns:repeat(5,minmax(0,1fr))}
 }
-@media(max-width:900px) {
- .arcade-with-menu {display:block;padding-bottom:calc(75px + env(safe-area-inset-bottom))}
- .header-nav.arcade-nav {
-  position:fixed;top:auto;bottom:0;left:0;right:0;z-index:40;transform:none;width:100%;max-width:none;margin:0;min-height:65px;
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;
-  padding:5px max(7px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));
-  border-radius:15px 15px 0 0;background:#101c30fa;border-color:#395270;box-shadow:0 -6px 21px #030b17a1;
+@media(max-width:1000px) {
+ .arcade .arcade-topbar {
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"brand tools" "game game";gap:6px;
  }
- .arcade-nav .arcade-nav-label,.arcade-nav .nav-btn.arcade-coach-link {display:none}
- .arcade-nav .nav-btn {min-width:0;min-height:52px;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:3px 1px;font-size:11px;line-height:1.04;text-align:center}
- .arcade-nav .arcade-nav-icon {width:28px;height:27px;border-radius:6px}
- .arcade-nav .arcade-nav-icon svg {width:19px;height:19px}
+ .arcade-topbar>.arcade-nav {max-width:none}
+ .arcade-nav .nav-btn {min-height:44px}
  .arcade .arcade-page {padding-top:14px}
  .arcade .lobby-banner {min-height:305px}
 }
 @media(max-width:680px) {
  .arcade .shell.arcade-shell {padding-inline:11px}
- .arcade .arcade-topbar {height:61px;gap:5px}
+ .arcade .arcade-topbar {min-height:48px;padding:6px 0;gap:5px}
+ .arcade .arcade-topbar.has-game-menu {padding-top:max(6px,env(safe-area-inset-top))}
+ .arcade-topbar>.arcade-nav {gap:3px;padding:3px}
+ .arcade-nav .nav-btn {flex-direction:column;gap:2px;padding:2px;min-height:44px;font-size:11px;text-align:center}
+ .arcade-nav-icon {width:23px;height:22px}
+ .arcade-nav-icon svg {width:16px;height:16px}
  .arcade .brand-mark {width:29px;height:30px;border-radius:7px}
  .arcade .brand-mark svg {width:20px;height:20px}
  .arcade .brand {gap:6px}
  .arcade .brand-type,.arcade .header .brand-type {font-size:17px;max-width:none}
  .arcade .header-tools {gap:4px}
- .arcade .header-tools :is(.icon-btn,.reading-toggle,.profile-mini),.arcade-credit {min-height:36px;min-width:33px;height:36px;padding:4px 5px}
- .arcade .header-tools .reading-toggle span {display:none}
- .arcade .header-tools .profile-mini {max-width:65px;font-size:11px}
- .arcade-credit .credit-chip {width:17px;height:17px;font-size:9px}
- .arcade-credit b {font-size:12px}
+ .arcade .header-tools :is(.icon-btn,.profile-mini) {min-height:36px;min-width:35px;height:36px;padding:4px 6px}
+ .arcade .header-tools .profile-mini {max-width:96px;font-size:11px}
  .arcade .header-tools .profile-dot {width:20px;height:20px;font-size:10px}
  .arcade .arcade-welcome {min-height:355px;padding:27px 16px;background-position:64% 56%}
  .arcade .arcade-welcome .welcome-copy {max-width:67%}
@@ -355,7 +348,6 @@ body.arcade {
  .lobby-stage-footer {gap:8px;padding:8px 9px}
  .lobby-stage-footer .wallet-shop {padding:5px 6px;gap:5px;min-height:39px}
  .lobby-stage-footer .wallet-shop b {font-size:11px}
- .lobby-stage-footer .wallet-shop small {font-size:9px}
  .lobby-stage-footer .wallet-shop>svg {display:none}
  .arcade-section-title {margin:12px 0 7px}
  .mode-cards {gap:7px}
@@ -363,7 +355,6 @@ body.arcade {
  .mode-icon {right:9px;top:5px}
  .mode-icon svg {width:34px;height:34px}
  .mode-copy b {font-size:13px}
- .mode-copy small {font-size:9px}
  .arcade .shop-banner {min-height:180px;padding:13px 12px;grid-template-columns:minmax(0,1fr) minmax(80px,.55fr)}
  .arcade .shop-player>.block-player {width:min(100%,129px)}
  .arcade .shop-banner-actions {gap:5px;margin-top:10px}
@@ -393,15 +384,10 @@ body.arcade {
  .arcade .match-controls>#keypad,.arcade .match-controls>.desktop-record {display:none}
  .arcade .results {padding:16px 11px 21px;margin-top:9px}
 }
-@media(max-width:400px) {
- .arcade .header-tools .profile-mini {max-width:35px}
- .arcade .header-tools .profile-mini>span:last-child {display:none}
- .arcade .header-tools .profile-mini .profile-dot {display:grid}
-}
 @media(max-width:355px) {
- .arcade .header .brand-type {font-size:15px;max-width:80px;white-space:normal;line-height:1}
+ .arcade .header .brand-type {font-size:15px}
  .arcade .header-tools {gap:3px}
- .arcade-credit b {max-width:40px;overflow:hidden;text-overflow:ellipsis}
+ .arcade .header-tools .profile-mini {max-width:75px}
  .arcade .header .brand-mark {width:24px;height:28px}
  .arcade-nav .nav-btn {font-size:10px}
  .arcade .lobby-banner {grid-template-columns:minmax(0,1.4fr) 93px}
@@ -409,4 +395,35 @@ body.arcade {
 @media(max-width:680px) and (max-height:520px) {
  .arcade .match-pitch {position:relative;top:auto}
  .arcade .match-pitch .penalty-view {height:82px}
+}
+
+/* A short, year-specific unit picker sits above the practice cards. */
+.units-page {max-width:1060px;margin:auto}
+.units-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.units-heading h1 {color:var(--bright);font:clamp(32px,5vw,58px)/1.05 Matchday,Impact,sans-serif;margin:0;text-transform:uppercase}
+.units-heading label {display:grid;gap:3px;min-width:108px;color:var(--quiet);font-size:11px;font-weight:750}
+.units-heading select {min-height:40px;padding:6px 9px}
+.units-search .search {display:block;width:100%;min-height:43px;max-width:420px}
+.unit-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}
+.unit-choice {
+ min-width:0;min-height:61px;padding:7px 9px;display:flex;align-items:center;gap:8px;
+ text-align:left;font-weight:800;line-height:1.2;color:var(--bright);background:var(--deck);
+ border:1px solid var(--deck-line);border-radius:10px;
+}
+.unit-choice:hover {background:var(--deck-raised)}
+.unit-choice[aria-pressed="true"] {color:#13202b;background:var(--game-accent);border-color:var(--game-accent)}
+.unit-symbol {
+ width:36px;height:34px;display:grid;place-items:center;flex:none;
+ font-weight:900;background:#284563;color:#ddedff;border-radius:7px;font-size:14px;
+}
+.unit-choice[aria-pressed="true"] .unit-symbol {background:#26454d;color:#fff}
+#syllabus-bank {scroll-margin-top:120px}
+.units-links {display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:9px}
+.units-links .text-btn {color:var(--quiet);min-height:42px}
+.arcade.reading-mode .arcade-topbar {background:#f4eddf}
+.arcade.reading-mode :is(.units-heading h1,.units-heading label,.units-links .text-btn) {color:#244331}
+@media(max-width:680px) {
+ .unit-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .unit-choice {min-height:53px;padding:5px 7px;gap:5px;font-size:12px}
+ .unit-symbol {width:29px;height:29px;font-size:12px}
 }

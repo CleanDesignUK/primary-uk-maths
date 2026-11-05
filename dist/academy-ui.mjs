@@ -29,13 +29,13 @@ export function yearJourney(p,selectedYear=p.year){
  return `<section class="year-journey panel"><div class="section-head"><div><span class="eyebrow">Your academy pathway</span><h2>Every year. A stronger player.</h2></div><span class="year-count">${(p.completedYears||[]).length}<small> / 6 years</small></span></div><div class="year-path">${Array.from({length:6},(_,i)=>i+1).map(y=>`<button class="year-stop ${(p.completedYears||[]).includes(y)?'complete':y===p.year?'current':''}" data-action="view-year" data-year="${y}" aria-pressed="${y===selectedYear}" ${y===p.year?'aria-current="step"':''}><span>${(p.completedYears||[]).includes(y)?icon('check',21):y}</span><b>Year ${y}</b><small>${(p.completedYears||[]).includes(y)?'Complete':y===p.year?'Your year':'Explore'}</small></button>`).join('')}</div><div class="year-progress-detail"><div><b>Year ${selectedYear}</b><span>${explored}/${progress.total} skills explored · ${progress.secure} match fit</span></div><div class="dual-progress"><i style="width:${explored/progress.total*100}%"></i><b style="width:${progress.secure/progress.total*100}%"></b></div></div>${selectedYear===p.year?`<div class="promotion-summary"><span>${icon(progress.eligible?'trophy':'shield',17)}${progress.eligible?'Your promotion match is ready.':'Build recall. Show it again on later days.'}</span><button class="text-btn" data-action="promotion-info">Promotion goals ${icon('arrow',13)}</button></div>`:''}</section>`;
 }
 const gameModes=[
- ['open-tables','Times tables','Solo or mixed','times','blue'],
- ['open-written','Written maths','Work it out','edit','green'],
- ['open-shop','Kit shop','Change your look','shirt','purple'],
- ['open-league','League','Climb the table','trophy','gold']
+ ['open-tables','Times tables','times','blue'],
+ ['open-written','Written maths','edit','green'],
+ ['open-shop','Kit shop','shirt','purple'],
+ ['open-units','Maths units','grid','gold']
 ];
 function modeCards(){
- return `<section class="arcade-modes"><div class="arcade-section-title"><h2>Game modes</h2><i aria-hidden="true"></i></div><div class="mode-cards">${gameModes.map(([action,label,detail,symbol,colour])=>`<button class="mode-card ${colour}" data-action="${action}"><span class="mode-icon" aria-hidden="true">${icon(symbol,45)}</span><span class="mode-copy"><b>${label}</b><small>${detail}</small></span><span class="mode-arrow" aria-hidden="true">${icon('arrow',17)}</span></button>`).join('')}</div></section>`;
+ return `<section class="arcade-modes"><div class="arcade-section-title"><h2>Game modes</h2><i aria-hidden="true"></i></div><div class="mode-cards">${gameModes.map(([action,label,symbol,colour])=>`<button class="mode-card ${colour}" data-action="${action}"><span class="mode-icon" aria-hidden="true">${icon(symbol,45)}</span><span class="mode-copy"><b>${label}</b></span><span class="mode-arrow" aria-hidden="true">${icon('arrow',17)}</span></button>`).join('')}</div></section>`;
 }
 
 function scoutCard(p) {
@@ -62,9 +62,9 @@ export function homeView(p){
     <h1>GG, ${esc(p.name)}!</h1>
     <div class="lobby-kicker">${clubBadge(p)}<span>${esc(club.name)} · Year ${p.year}</span></div>
     <button class="btn lime lobby-play arcade-kickoff" data-action="${progress.eligible?'promotion':'play'}">${icon('play',24)} ${play}</button>
-    <small>${shots} shots ${progress.eligible?'· Play for the next year':p.placementComplete?'· Picked by Coach':'· Find your starting point'}</small>
+    <small>${shots} shots</small>
    </div><div class="lobby-player"><span class="lobby-jersey" aria-hidden="true">${p.look.number}</span>${avatarSVG(p,{size:267})}<button class="lobby-kit-btn" data-action="appearance" aria-label="Edit my player">${icon('shirt',17)} <span>${esc(p.look.position)} · No. ${p.look.number}</span></button></div></div>
-   <div class="lobby-stage-footer">${progressStrip(p)}<button class="wallet-shop" data-action="open-shop"><span class="credit-chip" aria-hidden="true">C</span><span><b>${credits(p)} credits</b><small>Open shop</small></span>${icon('arrow',16)}</button></div>
+   <div class="lobby-stage-footer">${progressStrip(p)}<button class="wallet-shop" data-action="open-shop" aria-label="Shop, ${credits(p)} credits"><span class="credit-chip" aria-hidden="true">C</span><span><b>${credits(p)} credits</b></span>${icon('arrow',16)}</button></div>
   </section>${modeCards()}
  </div><aside class="lobby-rail">
   <section class="coach-locker"><div class="coach-locker-heading"><div><span>${icon('whistle',17)} Coach</span><h2>Club scout</h2></div><button class="coach-news-btn" data-action="news" aria-label="Coach messages${news?', '+news+' unread':''}">${icon('book',18)}<span>Messages</span>${news?`<b>${news}</b>`:''}</button></div>
@@ -120,9 +120,37 @@ export function tablesView(p,{table=3,mode='auto',length=10}={}){
  if(table!=='all'&&!choices.includes(table))table=choices[0];const evidence=table==='all'?choices.map(t=>tableEvidence(p,t)).reduce((a,e)=>({total:a.total+e.total,direct:a.direct+e.direct,inverse:a.inverse+e.inverse,gaps:a.gaps+e.gaps,secure:a.secure+e.secure}),{total:0,direct:0,inverse:0,gaps:0,secure:0}):tableEvidence(p,table),modes=[['auto','Coach picks','Facts to work on'],['multiply','Multiply','3 × 8'],['divide','Divide','24 ÷ 3'],['missing','Missing factor','3 × ? = 24'],['mixed','Mixed facts','All three forms']];
  return `${heading(`Year ${p.year} · Training ground`,'Times tables')}<div class="table-gym-layout"><section class="table-session panel"><div class="tables-challenge-card"><div><span class="field-label">${icon('bolt',15)} XP match</span><b>Coach challenge</b><small>10 shots · Coach picks the facts</small></div><button class="btn lime" data-action="table-challenge">${icon('play',16)} Play</button></div><h2>Free practice</h2><div class="gym-table-tabs" role="group" aria-label="Choose a table">${choices.map(t=>`<button data-action="gym-table" data-table="${t}" class="${table===t?'active':''}" aria-pressed="${table===t}">×${t}</button>`).join('')}<button data-action="gym-table" data-table="all" class="${table==='all'?'active':''}">Mixed</button></div><div class="gym-modes">${modes.map(([id,title,detail])=>`<button data-action="gym-mode" data-mode="${id}" class="${mode===id?'selected':''}" aria-pressed="${mode===id}"><b>${title}</b><small>${detail}</small>${icon(mode===id?'check':'ball',17)}</button>`).join('')}</div><div class="gym-length"><span>Match length</span><button class="${length===10?'active':''}" data-action="gym-length" data-length="10">10 shots</button><button class="${length===25?'active':''}" data-action="gym-length" data-length="25">25 shots</button></div><button class="btn lime big full" data-action="gym-play">Start free practice ${icon('arrow',18)}</button></section><aside><section class="table-evidence panel"><span class="eyebrow">${table==='all'?'Mixed tables':'×'+table} / Your evidence</span><h2>Your table stats</h2><div class="evidence-row"><span>${icon('ball',18)}Multiplication</span><b>${evidence.direct}/${evidence.total}</b></div><div class="evidence-row"><span>${icon('reset',18)}Inverse division</span><b>${evidence.inverse}/${evidence.total}</b></div><div class="evidence-row"><span>${icon('help',18)}Missing factors</span><b>${evidence.gaps}/${evidence.total}</b></div><div class="evidence-row fit"><span>${icon('shield',18)}Match fit</span><b>${evidence.secure}/${evidence.total}</b></div><p>Facts return on later days. A missed fact comes back after other questions.</p></section><div class="coach-note">Coach introduces up to three new fact families in a match and revisits earlier facts. Multiplication and division evidence stay separate.</div></aside></div><div id="table-tracker-host">${factMapMarkup(p,table==='all'?choices[0]:table)}</div>`;
 }
+export function syllabusBank(p,year,domain,search){
+ const query=search.trim().toLowerCase();
+ if(domain==='all'&&!query)return '';
+ const ids=syllabusIds(year).filter(id=>{
+  const skill=skillById(id);
+  return `${skill.title} ${skill.focus||''}`.toLowerCase().includes(query);
+ });
+ return syllabusCards(p,ids,domain);
+}
+
 export function syllabusView(p,year=1,domain='all',search=''){
- const ids=syllabusIds(year).filter(id=>(skillById(id).title+' '+(skillById(id).focus||'')).toLowerCase().includes(search.toLowerCase()));
- return `${heading('Training ground',`Year ${year} curriculum`,p?'':`<div class="all-year-tabs" role="group" aria-label="Syllabus year">${Array.from({length:6},(_,i)=>i+1).map(y=>`<button class="${year===y?'active':''}" data-action="year" data-year="${y}" aria-pressed="${year===y}">${y}</button>`).join('')}</div>`)}${p?yearJourney(p,year):'<p class="syllabus-intro">Explore any year. Choose a player when you want to practise.</p>'}<div class="syllabus-tools"><input id="skill-search" class="search" type="search" aria-label="Find a skill" placeholder="Find a skill…" value="${esc(search)}"><a class="text-btn" href="../curriculum/">Curriculum guide ${icon('book',15)}</a></div><div class="filters" role="group" aria-label="Maths topic"><button class="filter ${domain==='all'?'active':''}" data-action="domain" data-domain="all">All</button>${DOMAINS.filter(d=>ids.some(id=>domainFor(skillById(id))===d.id)).map(d=>`<button class="filter ${domain===d.id?'active':''}" data-action="domain" data-domain="${d.id}">${d.title}</button>`).join('')}</div><div id="syllabus-bank">${syllabusCards(p,ids,domain)}</div>`;
+ const available=new Set(syllabusIds(year).map(id=>domainFor(skillById(id))));
+ return `<section class="units-page">
+  <div class="units-heading">
+   <h1>Maths units</h1>
+   <label for="unit-year"><span>Year group</span><select id="unit-year" class="field">
+    ${Array.from({length:6},(_,i)=>i+1).map(y=>`<option value="${y}" ${y===year?'selected':''}>Year ${y}</option>`).join('')}
+   </select></label>
+  </div>
+  <div class="units-search">
+   <input id="skill-search" class="search" type="search" aria-label="Find an exercise" placeholder="Find an exercise" value="${esc(search)}">
+  </div>
+  <div class="unit-grid" role="group" aria-label="Choose a maths unit">
+   ${DOMAINS.filter(d=>available.has(d.id)).map(d=>`<button class="unit-choice" data-action="domain" data-domain="${d.id}" aria-pressed="${d.id===domain}">
+    <span class="unit-symbol" aria-hidden="true">${esc(d.symbol)}</span><span>${esc(d.title)}</span>
+   </button>`).join('')}
+   ${p?`<button class="unit-choice" data-action="open-written"><span class="unit-symbol" aria-hidden="true">${icon('edit',19)}</span><span>Written maths</span></button>`:''}
+  </div>
+  <div id="syllabus-bank" tabindex="-1">${syllabusBank(p,year,domain,search)}</div>
+  <div class="units-links"><a class="text-btn" href="../curriculum/">Curriculum guide ${icon('book',15)}</a>${p?nav('stats','My progress','chart','text-btn'):''}</div>
+ </section>`;
 }
 export function syllabusCards(p,ids,domain='all'){
  return DOMAINS.filter(d=>domain==='all'||domain===d.id).map(d=>{const list=ids.filter(id=>domainFor(skillById(id))===d.id);if(!list.length)return '';return `<section class="domain-section"><div class="domain-title"><span class="domain-number">${d.symbol}</span><h2>${d.title}</h2><small>${list.length} skills</small></div><div class="curriculum-grid">${list.map(id=>{const sk=skillById(id),c=p?competency(p,id):{n:0,secure:false,ready:false};return `<article class="curriculum-card"><button data-action="skill" data-skill="${id}" aria-label="Practise ${esc(sk.title)}"><span class="curriculum-symbol">${sk.table?'×'+sk.table:d.symbol}</span><h3>${esc(sk.title)}${sk.digits?`<small>${sk.digits} digits${sk.regroup?' · exchange':' · no exchange'}</small>`:''}</h3>${icon('arrow',17)}<span class="status ${c.secure?'fit':c.n?'training':''}">${c.secure?'Match fit':c.ready?'Building on it':c.n?'Training':'New'}</span></button><div class="skill-card-tools"><details><summary>What this covers</summary><p>${esc(sk.focus||sk.description||sk.title)}</p></details><button class="text-btn" data-action="example" data-skill="${id}">Example ${icon('book',14)}</button></div></article>`;}).join('')}</div></section>`;}).join('')||'<div class="empty"><h3>No skills found.</h3><p>Try table, time or fraction.</p></div>';

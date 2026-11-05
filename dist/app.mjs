@@ -6,7 +6,7 @@ import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoach
 import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs';
 import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
-import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.0.1';
+import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.1.0';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6';
 import {avatarSVG} from './avatar.mjs';
 import {paintShot} from './shot.mjs';
@@ -45,16 +45,30 @@ function profileDot(p){return `<span class="profile-dot">${p?.look?.number||9}</
 function brand(){
  return `<a class="brand" href="#home" data-action="home" aria-label="Matchday Maths home"><span class="brand-mark">${icon('ball',26)}</span><span class="brand-type">Matchday <em>Maths</em></span></a>`;
 }
-const gameMenu=[['home','Play','play'],['tables','Times tables','times'],['locker','Shop','shop'],['league','League','trophy'],['syllabus','Curriculum','grid']];
+const gameMenu = [
+ ["home","Play","play"],
+ ["syllabus","Units","grid"],
+ ["locker","Shop","shop"],
+ ["tables","Tables","times"],
+ ["league","League","trophy"]
+];
 function gameNavigation(){
- return `<nav class="header-nav arcade-nav" aria-label="Main navigation"><span class="arcade-nav-label">Clubhouse</span>${gameMenu.map(([id,label,symbol])=>{
+ return `<nav class="arcade-nav" aria-label="Game navigation">${gameMenu.map(([id,label,symbol])=>{
   const active=view===id||id==='syllabus'&&view==='written'||id==='league'&&view==='world';
-  return `<button class="nav-btn ${active?'active':''}" data-action="nav" data-view="${id}" ${active?'aria-current="page"':''}><span class="arcade-nav-icon">${icon(symbol,21)}</span><span>${label}</span></button>`;
- }).join('')}<button class="nav-btn arcade-coach-link" data-action="nav" data-view="coach"><span class="arcade-nav-icon">${icon('whistle',21)}</span><span>Coach room</span></button></nav>`;
+  return `<button class="nav-btn ${active?'active':''}" data-action="${id==='syllabus'?'open-units':'nav'}" data-view="${id}" aria-label="${id==='tables'?'Times tables':label}" ${active?'aria-current="page"':''}>
+   <span class="arcade-nav-icon">${icon(symbol,20)}</span><span>${label}</span>
+  </button>`;
+ }).join('')}</nav>`;
 }
-function header(){
+function header(hasMenu){
  const p=player();
- return `<header class="header arcade-topbar">${brand()}<div class="header-tools">${p&&view!=='players'?`<button class="arcade-credit" data-action="open-shop" aria-label="Open shop, ${credits(p)} credits"><span aria-hidden="true" class="credit-chip">C</span><b>${credits(p)}</b></button>`:''}${readingButton()}${p&&data.activeId?`<button class="profile-mini" data-action="players" aria-label="Switch player">${profileDot(p)}<span>${esc(p.name)}</span></button>`:''}<button class="icon-btn coach-top" data-action="nav" data-view="coach" aria-label="Coach and settings">${icon('whistle',20)}</button></div></header>`;
+ return `<header class="header arcade-topbar ${hasMenu?'has-game-menu':''}">
+  ${brand()}${hasMenu?gameNavigation():''}
+  <div class="header-tools">
+   ${p&&data.activeId?`<button class="profile-mini" data-action="players" aria-label="Switch player">${profileDot(p)}<span>${esc(p.name)}</span></button>`:''}
+   <button class="icon-btn coach-top" data-action="nav" data-view="coach" aria-label="Coach and settings">${icon('settings',20)}</button>
+  </div>
+ </header>`;
 }
 function footer(){
  return `<footer class="footer arcade-footer"><span>${icon('shield',13)} Saved on this device</span><div><a href="../parents/">Parents</a><a href="../teachers/">Teachers</a><button class="text-btn" data-action="nav" data-view="coach">Grown-ups ${icon('settings',13)}</button></div></footer>`;
@@ -69,7 +83,7 @@ function render(){
  const content=!data.activeId&&!['coach','syllabus','league','world'].includes(view)?'players':view;
  const hasMenu=!!data.activeId&&content!=='players';
  const pages={players:playersPage,home:homePage,tables:()=>tablesView(player(),gym),syllabus:syllabusPage,written:writtenPage,world:worldPage,stats:statsPage,coach:coachPage,locker:()=>lockerView(player(),shopSlot),league:()=>leagueView(data,player(),leaguePeriod,leagueYear)};
- app.innerHTML=`<div class="shell arcade-shell ${hasMenu?'arcade-with-menu':''}">${header()}${hasMenu?gameNavigation():''}<main id="main" class="${content==='players'?'welcome':'page'} arcade-page" tabindex="-1">${storageWarning?`<div class="storage-warning" role="alert">${esc(storageWarning)}</div>`:''}${(pages[content]||playersPage)()}</main>${footer()}</div>`;
+ app.innerHTML=`<div class="shell arcade-shell">${header(hasMenu)}<main id="main" class="${content==='players'?'welcome':'page'} arcade-page" tabindex="-1">${storageWarning?`<div class="storage-warning" role="alert">${esc(storageWarning)}</div>`:''}${(pages[content]||playersPage)()}</main>${footer()}</div>`;
  applyAccessPreferences();
 }
 function playersPage(){return pickerView(data);}
@@ -78,7 +92,7 @@ function shortTitle(s){if(s.id.startsWith('col'))return `${s.title} · ${s.digit
 function symbolFor(s){if(s.table)return `×${s.table}`;if(['mix348','mixAll'].includes(s.id))return '×';if(s.kind==='div')return '÷';if(s.kind==='place')return '123';if(s.kind==='coladd'||s.kind==='add')return '+';if(s.kind==='colsub'||s.kind==='sub')return '−';if(s.kind==='bonds')return s.id==='bonds10'?'10':'20';return DOMAINS.find(d=>d.id===domainFor(s))?.symbol||'?';}
 function drillCard(id,clickable=true){const s=skillById(id),c=data.activeId?competency(player(),id):{secure:false,n:0,coverage:0};return `<${clickable?'button':'div'} class="drill-card" ${clickable?`data-action="skill" data-skill="${id}" aria-label="Practise ${esc(shortTitle(s))}"`:''}><span class="drill-icon">${symbolFor(s)}</span><h3>${esc(shortTitle(s))}</h3><div class="drill-meta"><span class="status ${c.secure?'fit':c.n?'training':''}">${c.secure?'Match fit':c.n?'Training':'New'}</span>${clickable?icon('arrow',14):icon('whistle',14)}</div><div class="skill-bar"><i style="width:${c.secure?100:Math.min(90,c.coverage||0)}%"></i></div></${clickable?'button':'div'}>`;}
 function homePage(){return homeView(player());}
-function syllabusBank(){const ids=syllabusIds(year).filter(id=>(shortTitle(skillById(id))+' '+(skillById(id).focus||'')).toLowerCase().includes(search.toLowerCase()));return syllabusCards(data.activeId?player():null,ids,domain);}
+
 function syllabusPage(){return syllabusView(data.activeId?player():null,year,domain,search);}
 const eligible=eligibleRecord;
 function recordKey(s){return s.recordKey||`${[...s.skillIds].sort().join(',')}|${s.duration}`;}
@@ -141,7 +155,7 @@ function renderGame() {
  const title=session.manual?shortTitle(skillById(session.manual)):session.progressCheck?'Check your progress':session.placement?`Year ${session.curriculumYear} warm-up`:`Year ${session.curriculumYear} ${session.promotion?'promotion':'match'}`;
  const numberKeys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="key" data-key="${n}" aria-label="${n}">${n}</button>`).join('');
  app.innerHTML=`<div class="game-shell">
-  <header class="game-header">${brand()}<div class="game-header-right"><span class="profile-mini">${profileDot(p)}${esc(p.name)}</span>${readingButton()}<button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
+  <header class="game-header">${brand()}<div class="game-header-right"><span class="profile-mini">${profileDot(p)}${esc(p.name)}</span><button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
   <main id="main" class="game-main">
    <div class="game-title"><div><div class="eyebrow">${label}</div><h1>${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${session.progressCheck?'∞':clock(session.duration-session.elapsed)}</strong><small id="timer-caption">${session.progressCheck?'No timer':'Time'}</small></div></div></div>
    <div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div>
@@ -160,8 +174,8 @@ function equationLabel(q,reveal=true){if(q.expression!==undefined)return q.expre
 function questionPrompt(q){if(q.prompt!==undefined)return q.prompt;return q.op==='place'?'Value of the green digit?':q.op==='bond'?`Make ${q.total}`:q.op?.startsWith('missing')?'Find the gap':q.key.startsWith('column')?'Start with the ones.':q.op==='double'||q.op==='half'?'':q.op==='×'?'Multiply':q.op==='÷'?'Divide':q.op==='+'?'Add':'Subtract';}
 function columnMarkup(q,done=false){return columnWorkspace(q,{digits:session.digits,notes:session.notes,history:session.noteHistory||[],done});}
 function writtenPage(){
- const p=player(),ids=syllabusIds(p.year).filter(id=>/^col(?:Add|Sub)/.test(id)||['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6'].includes(id));
- return `<div class="heading"><div><span class="eyebrow">Year ${p.year}</span><h1>Written maths</h1><p>Use the working boxes and start with an example.</p></div></div>${ids.length?syllabusCards(p,ids):`<div class="panel"><h2>Build your number methods</h2><p>Start with ${p.year===1?'numbers and equal groups':'adding and subtracting within 100'}.</p><button class="btn lime" data-action="skill" data-skill="${p.year===1?'add20':'mental2'}">Start practice</button></div>`}`;
+ const p=player(),ids=syllabusIds(year).filter(id=>/^col(?:Add|Sub)/.test(id)||['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6'].includes(id));
+ return `<div class="heading"><div><span class="eyebrow">Year ${year}</span><h1>Written maths</h1><p>Use the working boxes and start with an example.</p></div></div>${ids.length?syllabusCards(p,ids):`<div class="panel"><h2>Build your number methods</h2><p>Start with ${year===1?'numbers and equal groups':'adding and subtracting within 100'}.</p><button class="btn lime" data-action="skill" data-skill="${year===1?'add20':'mental2'}">Start practice</button></div>`}`;
 }
 let shownExample=null;
 function showSkillExample(id){
@@ -309,7 +323,7 @@ function updateLive() {
 }
 
 function pause(){if(!session)return;clearTimeout(goalTimer);session.paused=true;session.pausedEver=true;saveRound();showPauseOverlay();}
-function showPauseOverlay(){if($('.paused'))return;$('.game-main').inert=true;$('.game-header').inert=true;const el=document.createElement('div');el.className='paused';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','pause-title');el.innerHTML=`<div class="pause-inner">${icon('whistle',58)}<div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--muted)">TIME OUT</div><h2 id="pause-title">TAKE A BREATHER.</h2><p>${esc(player().name)}’s match is saved.</p><button class="btn lime big" data-action="resume">PLAY ON ${icon('play',18)}</button><button class="btn white" data-action="finish">Finish</button></div>`;app.append(el);requestAnimationFrame(()=>$('[data-action=resume]',el).focus());}
+function showPauseOverlay(){if($('.paused'))return;$('.game-main').inert=true;$('.game-header').inert=true;const el=document.createElement('div');el.className='paused';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','pause-title');el.innerHTML=`<div class="pause-inner">${icon('whistle',58)}<div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--muted)">TIME OUT</div><h2 id="pause-title">TAKE A BREATHER.</h2><p>${esc(player().name)}’s match is saved.</p><button class="btn lime big" data-action="resume">PLAY ON ${icon('play',18)}</button><div class="pause-options">${readingButton()}<button class="btn white" data-action="finish">Finish</button></div></div>`;app.append(el);requestAnimationFrame(()=>$('[data-action=resume]',el).focus());}
 function resume(){session.paused=false;$('.paused')?.remove();$('.game-main').inert=false;$('.game-header').inert=false;renderQuestion();paintPitch();startTick();saveRound();}
 function finishMatch(complete) {
  if(!session)return;
@@ -378,6 +392,9 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'browse':year=data.activeId?player().year:1;navigate('syllabus');break;
  case 'play':startMatch();break;
  case 'open-tables':navigate('tables');break;
+ case 'open-units':
+  if(view!=='syllabus')year=player()?.year||year;
+  domain='all';search='';navigate('syllabus');break;
  case 'open-shop':navigate('locker');break;
  case 'open-league':navigate('league');break;
  case 'world-league':navigate('world');break;
@@ -389,7 +406,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'world-start':startWorld();break;
  case 'world-next':nextWorld();break;
  case 'world-board':clearTimeout(goalTimer);clearInterval(worldTimer);world.match=null;world.feedback=null;world.loaded=false;render();scrollTo({top:0});break;
- case 'open-written':year=player().year;domain='calculation';search='';navigate('written');break;
+ case 'open-written':if(view!=='syllabus')year=player().year;domain='calculation';search='';navigate('written');break;
  case 'appearance':openDialog(appearanceView(player()),{wide:true});break;
  case 'shop-hair':shopSlot='hair';navigate('locker');break;
  case 'club-path':openDialog(clubJourneyView(player()));break;
@@ -399,8 +416,16 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'progress-check':startMatch(null,{progressCheck:true});break;
  case 'replay-shot':if(session?.phase==='feedback')paintPitch(true);break;
  case 'skill':if(!data.activeId){closeDialog();pendingSkill=b.dataset.skill;view='players';render();scrollTo({top:0});}else startMatch(b.dataset.skill);break;
- case 'year':year=Number(b.dataset.year);render();break;
- case 'domain':domain=b.dataset.domain;render();break;
+ case 'domain': {
+  domain=domain===b.dataset.domain?'all':b.dataset.domain;
+  search='';render();
+  if(domain!=='all'){
+   const bank=$('#syllabus-bank');
+   bank?.focus({preventScroll:true});
+   bank?.scrollIntoView({block:'start'});
+  }
+  break;
+ }
  case 'table-map':tableView=Number(b.dataset.table);$('#table-tracker-host')?$('#table-tracker-host').innerHTML=factMapMarkup(player(),tableView):render();break;
  case 'reading':data.settings.dyslexia=!data.settings.dyslexia;save();applyAccessPreferences();if(!session&&!result)render();break;
  case 'shop-tab':shopSlot=b.dataset.slot;render();break;
@@ -463,15 +488,17 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
    $('#answer-error').textContent='';
    saveRound();return;
   }
-  if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)-1}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus();next.select();}}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank();}});
+  if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)-1}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus();next.select();}}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank(data.activeId?player():null,year,domain,search);}});
  document.addEventListener('pointerdown',event=>{if(event.target.closest('[data-action="key"]')&&document.activeElement?.matches('.column-note,.work-note,[data-fraction-part]'))event.preventDefault();});
  document.addEventListener('focusin',event=>{if(event.target.classList?.contains('bar-input')&&session)session.lastBar=Number(event.target.dataset.bar);if(event.target.classList?.contains('column-digit')&&session){session.lastDigit=Number(event.target.dataset.digit);event.target.select();}});
- document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value;if(el.id==='kit-hair'||el.id==='kit-pattern')equipItem(p,value);else{const [slot,choices]=({'kit-hair-colour':['hairColour',HAIR_COLOURS],'kit-skin':['skin',SKIN_TONES],'kit-trim':['trim',KIT_TRIMS],'kit-theme':['theme',PLAYER_THEMES]})[el.id];if(Object.hasOwn(choices,value))p.look[slot]=value;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
+ document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value;if(el.id==='kit-hair'||el.id==='kit-pattern')equipItem(p,value);else{const [slot,choices]=({'kit-hair-colour':['hairColour',HAIR_COLOURS],'kit-skin':['skin',SKIN_TONES],'kit-trim':['trim',KIT_TRIMS],'kit-theme':['theme',PLAYER_THEMES]})[el.id];if(Object.hasOwn(choices,value))p.look[slot]=value;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='unit-year'){year=Number(el.value);domain='all';search='';render();$('#unit-year')?.focus({preventScroll:true});return;}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
  document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&session&&!session.paused)pause();});
  window.addEventListener('pagehide',()=>{clearTimeout(goalTimer);if(session){session.paused=true;session.pausedEver=true;saveRound();}save();});
 
-function readingButton(){return `<button class="reading-toggle ${data.settings.dyslexia?'on':''}" data-action="reading" aria-label="Dyslexia-friendly mode" aria-pressed="${!!data.settings.dyslexia}" title="Dyslexia-friendly layout"><b>Aa</b><span>Dyslexia</span></button>`;}
+function readingButton(){
+ return `<button class="btn white reading-preference ${data.settings.dyslexia?'on':''}" data-action="reading" aria-pressed="${!!data.settings.dyslexia}">Reading mode</button>`;
+}
 function applyAccessPreferences(){document.body.dataset.playerTheme=player()?.look?.theme||'pitch';document.body.classList.toggle('reduce-motion',!!data.settings.reduceMotion);document.body.classList.toggle('reading-mode',!!data.settings.dyslexia);$$('[data-action="reading"]').forEach(b=>{b.setAttribute('aria-pressed',String(!!data.settings.dyslexia));b.classList.toggle('on',!!data.settings.dyslexia);});}
 function profilePreview(){const id=$('#profile-form')?.dataset.id,old=data.profiles.find(p=>p.id===id),p={...(old||{}),look:{...(old?.look||{})}};initCareer(p);p.look.number=Math.max(1,Math.min(99,Number($('#player-number')?.value)||9));p.look.position=$('#player-position')?.value||'Striker';p.look.skin=$('#player-skin')?.value||'warm';if($('#profile-preview'))$('#profile-preview').innerHTML=avatarSVG(p,{size:145});}
 function showPromotion(){const p=player();if(!p)return profileForm();const progress=yearProgress(p),missing=progress.skills.filter(s=>!s.secure);openDialog(`<span class="eyebrow">Academy Year ${p.year}</span><h2 id="dialog-title">Your promotion goals</h2><div class="promotion-counts"><b>${progress.secure}/${progress.total}<small>Families match fit</small></b><b>${progress.checked}/${progress.practical.length}<small>Practical checks</small></b></div>${progress.eligible?'<p>Your 12-shot promotion match is ready. Aim for at least 90% independent accuracy.</p>':`<p>Keep showing independent recall on later days. A grown-up records practical work in Year goals.</p><div class="promotion-missing">${missing.slice(0,8).map(s=>`<span>${icon('ball',14)}${esc(s.title)}</span>`).join('')}${missing.length>8?`<small>And ${missing.length-8} more families on your year map.</small>`:''}</div>`}<div class="dialog-actions"><button class="btn white" data-action="close-dialog">Back</button>${progress.eligible?'<button class="btn lime" data-action="promotion">Play promotion match</button>':`<button class="btn" data-action="close-dialog">Keep training</button>`}</div>`);}
