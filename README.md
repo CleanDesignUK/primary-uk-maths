@@ -10,7 +10,7 @@ npm test
 npm run dev
 ```
 
-Use Node 22.13 or later for the local preview and league tests, which use built-in SQLite. `npm run dev` serves the full academy with a temporary league database. Static play can also be served with `python3 -m http.server 8080 --directory dist`. The repository’s root `index.html` opens the static build on GitHub Pages.
+Use Node 22.13 or later for the local preview and league tests, which use built-in SQLite. `npm run dev` serves the full academy with a temporary league database. Static play can also be served with `python3 -m http.server 8080 --directory dist`. The GitHub Pages root opens the game at `dist/play/`. Parents and teachers can access the resource pages from the game footer.
 
 `npm run build` regenerates 30 marketing and curriculum pages. Set `SITE_ORIGIN` to the exact public address, including any project path, before generating a public sitemap and canonical URLs. `npm run build:worker` produces the Worker entry point. The hosted edition needs a D1 binding named `DB` and the migration in `drizzle/`.
 
@@ -25,7 +25,7 @@ Use Node 22.13 or later for the local preview and league tests, which use built-
 
 ## The football career
 
-The phone layout has five tabs and a shot camera above the question. Goals and misses play immediately. Accurate streaks unlock power shots, fireballs and meteor strikes.
+The stadium clubhouse has a large kickoff button and dedicated tiles for tables, written maths, the kit shop and leagues. The phone menu has five tabs. The shot camera stays above the question on phones. Goals and misses play immediately. Accurate streaks unlock power shots, fireballs and meteor strikes.
 
 Players bank career XP after completing an eligible Coach match. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. Previous XP and owned kit are preserved.
 

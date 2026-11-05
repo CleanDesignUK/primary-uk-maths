@@ -96,8 +96,7 @@ export function planSummary(p){return ['foundation','tables','written','curricul
 export function progressCheckPlan(profile) {
  const skills = syllabusIds(profile.year || 1).map(id => ({id, ...competency(profile, id)}));
  const practised = skills.filter(skill => skill.n >= 3 && skill.accuracy >= 60);
- const usable = practised.length ? practised : skills.filter(skill => skill.n > 0 && skill.accuracy > 0);
- const ordered = usable.sort((a,b) => Number(a.secure) - Number(b.secure) || b.n - a.n).map(skill => skill.id);
+ const ordered = practised.sort((a,b) => Number(a.secure) - Number(b.secure) || b.n - a.n).map(skill => skill.id);
  const domains = [...new Set(ordered.map(id => domainFor(skillById(id))))];
  const varied = domains.map(domain => ordered.find(id => domainFor(skillById(id)) === domain));
  return [...varied, ...ordered.filter(id => !varied.includes(id))].slice(0,6);

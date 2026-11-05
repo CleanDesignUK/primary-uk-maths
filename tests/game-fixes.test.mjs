@@ -68,6 +68,8 @@ test('Year 6 Coach questions start in the selected year instead of assuming earl
 });
 test('progress checks select practised skills and learning notes require difficulty across matches',()=>{
  const p=newProfile('Test',6),pool=questionPool('longMul6');initLearning(p);
+ recordLearning(p,questionPool('place7')[0],true,false,2000,'warmup',now);
+ assert.equal(progressCheckPlan(p).length,0);
  for(let i=0;i<6;i++)recordLearning(p,pool[i],false,false,2000,'one',now);
  assert.equal(learningNotes(p).length,0);assert.equal(progressCheckPlan(p).length,0);
  recordLearning(p,pool[6],false,false,2000,'two',now+1000);

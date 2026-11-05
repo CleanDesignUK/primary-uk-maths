@@ -58,7 +58,7 @@ test('earned credits cannot be overspent or double-charged and equipped items mu
 test('levels start quickly and later gaps grow, while XP alone cannot buy a top club offer',()=>{
  const profile=p();for(let level=1;level<20;level++){profile.pointsTotal=xpForLevel(level);assert.equal(careerLevel(profile),level);assert.ok(xpForLevel(level+2)-xpForLevel(level+1)>xpForLevel(level+1)-xpForLevel(level));}
  profile.pointsTotal=100000;assert.equal(chooseClub(profile,'arsenal'),false);assert.ok(clubProgress(profile,CLUBS.find(c=>c.id==='arsenal')).remaining.some(g=>g.label==='Practice days'));
- const spurs=CLUBS.find(c=>c.id==='tottenham');assert.equal(spurs.level,7);assert.equal(chooseClub(profile,spurs.id),false);
+ const spurs=CLUBS.find(c=>c.id==='tottenham');assert.equal(spurs.level,7);assert.equal(chooseClub(profile,spurs.id),false);assert.equal(clubProgress(profile,spurs).percent,0);
  for(const q of questionPool('add10').slice(0,20))recordLearning(profile,q,true,false,1000,'match',now);assert.equal(chooseClub(profile,'local'),true);assert.deepEqual(careerNews(profile,1,now).map(c=>c.id),['local']);assert.equal(careerNews(profile,1,now).length,0);
 });
 test('XP, one easy match, or missing practical observations never award a completed year',()=>{
@@ -103,6 +103,7 @@ test('30 marketing pages have unique metadata, valid structured data and working
  for(const page of pages){const dir=path.join(root,page.slug),html=readFileSync(path.join(dir,'index.html'),'utf8');assert.ok(!titles.has(page.title));titles.add(page.title);assert.match(html,/<html lang="en-GB">/);assert.match(html,/<meta name="description" content="[^\"]+"/);assert.match(html,/<link rel="canonical"/);assert.ok(JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]).some(s=>s.isAccessibleForFree===true));
   for(const match of html.matchAll(/(?:href|src)="([^\"]+)"/g)){const href=match[1];if(/^(?:https?:|#|data:)/.test(href))continue;const file=path.resolve(dir,href.split(/[?#]/)[0]);assert.ok(file.startsWith(root),href);assert.ok(existsSync(file),`${page.slug}: ${href}`);}
  }
+ assert.match(readFileSync('index.html','utf8'),/url=\.\/dist\/play\//);
  assert.equal((readFileSync('dist/sitemap.xml','utf8').match(/<loc>/g)||[]).length,30);assert.match(readFileSync('dist/play/index.html','utf8'),/noindex,follow/);assert.match(readFileSync('dist/robots.txt','utf8'),/Disallow: \/play\//);
 });
 
