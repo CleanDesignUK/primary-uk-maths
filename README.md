@@ -16,16 +16,16 @@ Use Node 22.13 or later for the local preview and league tests, which use built-
 
 ## The learning route
 
-- Coach starts with the selected year and mixes current-year work, table facts and due reviews. Recent difficulty can trigger a supporting skill. Missed questions return after intervening practice.
+- Coach starts with the selected year and mixes current-year work, table facts and due reviews. “I don’t know” shows Coach’s working and can route the pupil to a supporting skill. Wrong answers can return after intervening practice.
 - The six [curriculum maps](docs/CURRICULUM_MAP.md) contain 247 named exercise families with worked examples. Physical measuring, construction and explanation have separate grown-up checklists.
 - Individual and mixed table practice covers facts through ×12, related division and missing factors. Year 2 emphasises 2, 5 and 10. Year 3 emphasises 3, 4 and 8. Later years consolidate all tables. Coach revisits facts over gaps of up to 60 days.
-- A short untimed progress check samples successfully practised skills. Grown-up reports flag persistent difficulty and suggest an exercise. Promotion requires the year’s practice evidence, practical checks and a mixed promotion match. These are game milestones.
+- A short untimed progress check uses three to six distinct questions the pupil has answered independently. Grown-up reports flag persistent difficulty and suggest an exercise. Promotion requires the year’s practice evidence, practical checks and a mixed promotion match. These are game milestones.
 - Column addition and subtraction show carries and exchanges. Written multiplication has aligned carry and partial-product rows. Division has bus-stop or long-division working, including remainders where appropriate. Fraction answers use stacked numerator and denominator fields, with a whole-number box for mixed answers. Working paper provides extra space.
 - The Aa button applies the dyslexia-friendly layout. Reduced motion has its own setting. Questions and working can be read aloud using an installed British voice when available.
 
 ## The football career
 
-The stadium clubhouse has a large kickoff button and dedicated tiles for tables, written maths, the kit shop and leagues. The phone menu has five tabs. The shot camera stays above the question on phones. Goals and misses play immediately. Accurate streaks unlock power shots, fireballs and meteor strikes.
+Play, Units, Shop, Tables and League are available during matches. Visiting a tab saves the current round for that player. The shot camera stays above the question on phones. Players can aim left, centre or right and complete rotating match objectives with independent answers. Accurate streaks unlock power shots, fireballs and meteor strikes.
 
 Players bank career XP after completing an eligible Coach match. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. Previous XP and owned kit are preserved.
 

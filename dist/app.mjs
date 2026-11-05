@@ -3,17 +3,17 @@ import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} fr
 import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions} from './adaptive.mjs?v=6.2.0';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
 import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.2.0';
-import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.1.1';
-import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.1.1';
+import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.3.0';
+import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.3.0';
 import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
 import {pickerView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.2.0';
-import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6';
+import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6';
 import {avatarSVG} from './avatar.mjs';
-import {paintShot} from './shot.mjs';
+import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
 import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs';
 import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs';
 import {focusTables} from './tables.mjs';
-import {workingText} from './coaching.mjs';
+import {workingText} from './coaching.mjs?v=6.3.0';
 import {spokenMath,selectBritishVoice} from './speech.mjs';
 import {columnWorkspace} from './column-method.mjs?v=6.1.1';
 import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} from './fraction-answer.mjs';
@@ -130,7 +130,7 @@ function recordKey(s){return s.recordKey||`${[...s.skillIds].sort().join(',')}|$
 function bestFor(key,p=player()){return p.records?.[key]||null;}
 function recordLabel(s){return s.manual?shortTitle(skillById(s.manual)):['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(s.schema)?`Coach training · League ${s.league||1}`:s.skillIds.length===1?skillById(s.skillIds[0]).title:'Mixed practice';}
 function recordsMarkup(p){const records=Object.values(p.records||{}).sort((a,b)=>b.endedAt-a.endedAt);return records.length?`<div class="records">${records.slice(0,10).map(s=>`<div class="record">${icon('trophy',22)}<div><b>${esc(recordLabel(s))}</b><small>${s.correct}/${s.attempts} goals · ${Math.round(s.elapsed)}s</small></div><strong>${s.points}</strong></div>`).join('')}</div>`:'<div class="empty">'+icon('trophy',33)+'<h3>Your first record is waiting.</h3><button class="btn soft" data-action="play" style="margin-top:17px">Kick off '+icon('arrow',15)+'</button></div>';}
-function medals(p){const s=profileSummary(p),ss=p.sessions,goals=totalGoals(p);return [['First kick','Finish a match','ball',ss.some(x=>x.complete)],['Hat-trick','3 goals in a row','flame',ss.some(x=>x.bestStreak>=3)],['Clean sheet','10/10 without help','shield',ss.some(x=>x.attempts>=10&&x.correct===x.attempts&&!x.hintsUsed)],['Golden boot','50 goals','trophy',goals>=50],['Match regular','Train on 3 days','clock',s.days.length>=3],['Record breaker','Set a personal best','star',Object.keys(p.records||{}).length>0],['Midfield master','Practise 3, 4 and 8','ball',[3,4,8].every(t=>p.learning[`table${t}`]?.correct>=5)],['Match fit','12 secure facts','shield',s.factsSecure>=12]];}
+function medals(p){const s=profileSummary(p),ss=p.sessions,goals=totalGoals(p);return [['First kick','Finish a match','ball',ss.some(x=>x.complete)],['Hat-trick','3 goals in a row','flame',ss.some(x=>x.bestStreak>=3)],['Clean sheet','10/10 without help','shield',ss.some(x=>x.attempts>=10&&x.correct===x.attempts&&!x.hintsUsed)],['Golden boot','50 goals','trophy',goals>=50],['Match regular','Train on 3 days','clock',s.days.length>=3],['Record breaker','Set a personal best','star',Object.keys(p.records||{}).length>0],['Midfield master','Practise 3, 4 and 8','ball',[3,4,8].every(t=>p.learning[`table${t}`]?.correct>=5)],['Match fit','12 secure facts','shield',s.factsSecure>=12],['Stadium star','Finish a match objective','star',ss.some(match=>match.complete&&missionProgress(match.mission,match.rows||[],match.bestStreak)?.complete)]];}
 function statsPage(){return progressView(player(),recordsMarkup(player()));}
 function historyMarkup(p){return p.sessions.length?`<div class="report-wrap"><table class="report"><thead><tr><th>Date</th><th>Match</th><th>Goals</th><th>XP</th><th>Time</th></tr></thead><tbody>${[...p.sessions].reverse().slice(0,20).map(s=>`<tr><td>${new Date(s.endedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td>${esc(s.mode==='check'?'Warm-up':recordLabel(s))}<small>${s.complete?'Full match':'Saved early'}${s.hintsUsed?' · Coach helped':''}${s.pausedEver?' · paused':''}</small></td><td>${s.correct}/${s.attempts}</td><td>${s.careerXP??s.points}</td><td>${Math.round(s.elapsed)}s</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><h3>A fresh start.</h3><p>Your match results appear here.</p></div>';}
 function coachPage(){return coachView(data,voices);}
@@ -151,6 +151,7 @@ function startMatch(manual=null,options={}) {
  const checkQuestions=progressCheckQuestions(p,checkPlan);
  if(options.progressCheck&&checkQuestions.length<3){toast('Practise a skill first.');return;}
  const progressCheck=checkPlan.length>0;
+ if(warmupProgress(p)>=probeIds(p).length)p.placementComplete=true;
  const placement=!manual&&!options.promotion&&!progressCheck&&!p.placementComplete;
  const probeStart=placement?warmupProgress(p):0;
  const league=Math.min(5,1+Math.floor(SKILLS.filter(s=>competency(p,s.id).ready).length/12));
@@ -165,6 +166,8 @@ function startMatch(manual=null,options={}) {
   focusTable:laneFocus(p,'tables'), clockHour:12,clockMinute:0,id:uid(),profileId:p.id,
   skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement||progressCheck?'check':'timed',duration,target,
   recordKey:`v5:${matchType}:y${p.year}:${target}:${duration}`, startedAt:Date.now(),
+  mission:progressCheck||options.promotion?null:matchMission(p.sessions.filter(match=>match.complete).length),
+  aimSeed:p.sessions.length%3,aim:null,
   elapsed:0,currentMs:0,attempts:0,correct:0,points:0,careerPending:0,streak:0,bestStreak:0,
   rows:[],seen:[],retries:[],paused:false,pausedEver:false,hintsUsed:0,assisted:false,phase:'question',q:null,selection:null,
   answer:'',digits:[],notes:[],drawing:[],bars:[],angle:30,work:{},scratch:'',remainder:''
@@ -181,12 +184,19 @@ function nextQuestion(renderHost=true){
  if(!next?.q)throw Error('No next exercise');
  if(next.retryKey){const i=session.retries.findIndex(r=>r.q.key===next.retryKey);if(i>=0)session.retries.splice(i,1);}
  if(next.advanceProbe)session.probeIndex++;
- session.q=next.q;session.selection=next;session.assisted=false;session.phase='question';session.answer='';session.fractionParts=null;session.digits=[];session.notes=[];session.noteHistory=[];session.drawing=[];session.bars=[];session.angle=30;session.clockHour=12;session.clockMinute=0;session.currentMs=0;session.lastDigit=null;session.work={};session.scratch='';session.remainder='';
+ session.q=next.q;session.selection=next;session.assisted=false;session.phase='question';session.aim=null;session.answer='';session.fractionParts=null;session.digits=[];session.notes=[];session.noteHistory=[];session.drawing=[];session.bars=[];session.angle=30;session.clockHour=12;session.clockMinute=0;session.currentMs=0;session.lastDigit=null;session.work={};session.scratch='';session.remainder='';
  session.seen.push(session.q.key);if(!session.skillIds.includes(session.q.skillId))session.skillIds.push(session.q.skillId);saveRound();
- if(renderHost&&$('#question-host')){renderQuestion();paintPitch();updateLive();}
+ if(renderHost&&$('#question-host')){
+  renderQuestion();paintPitch();updateLive();
+  if(window.matchMedia('(max-width: 680px)').matches)scrollTo({top:0,behavior:'instant'});
+ }
 }
 const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,Math.ceil(s))%60).padStart(2,'0')}`;
 function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].unknown?'played':session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
+function aimMarkup(){
+ if(!session.mission)return '';
+ return `<div class="aim-controls" role="group" aria-label="Aim your shot">${AIM_ZONES.map((zone,i)=>`<button type="button" data-action="aim" data-zone="${zone}" aria-pressed="false"><span aria-hidden="true">${['‹','·','›'][i]}</span><b>${zone}</b></button>`).join('')}</div><div class="match-mission" id="match-mission"></div>`;
+}
 function renderGame() {
  const p=player();
  const best=bestFor(session.recordKey);
@@ -200,7 +210,7 @@ function renderGame() {
    <div class="game-title"><div><div class="eyebrow">${label}</div><h1>${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${session.progressCheck?'∞':clock(session.duration-session.elapsed)}</strong><small id="timer-caption">${session.progressCheck?'No timer':'Time'}</small></div></div></div>
    <div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div>
    <div class="game-grid match-grid">
-    <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span><i class="live-dot" aria-hidden="true"></i> Shot cam</span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p)}<div class="pitch-hud"><span id="move-caption">Ready to shoot</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div></section>
+    <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span><i class="live-dot" aria-hidden="true"></i> <span id="match-stage">Kick-off</span></span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p,{aimGuide:!!session.mission})}${aimMarkup()}<div class="pitch-hud"><span id="move-caption" aria-live="polite">Ready to shoot</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div><div class="sideline-note" id="sideline-note" hidden></div></section>
     <section id="question-host" class="question-card" aria-label="Maths question"></section>
     <aside class="match-controls"><div class="desktop-record">${best?`Personal best · ${best.points} pts`:earns?'Finish the match to bank XP':'Practice goals'}</div><div id="keypad"><div class="numpad" role="group" aria-label="Number keypad">${numberKeys}<button class="key-muted" data-action="key" data-key="clear" aria-label="Clear answer">C</button><button data-action="key" data-key="0">0</button><button class="key-muted" data-action="key" data-key="back" aria-label="Delete last digit">${icon('erase',18)}</button></div><div class="symbol-keys" id="symbol-keys">${['.','/','−',',',' '].map(k=>`<button data-action="key" data-key="${k}" aria-label="${k===' '?'Space':k==='/'?'Fraction bar':k===','?'Comma':k==='−'?'Minus':'Decimal point'}">${k===' '?'␣':k}</button>`).join('')}</div></div><button class="text-btn finish-practice" data-action="finish">Save & finish ${icon('arrow',12)}</button></aside>
    </div>
@@ -276,12 +286,12 @@ function renderQuestion(){
   tail=`<div class="feedback ${last.unknown?'coach-stop':last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${last.unknown?'Coach will help':last.correct?'Goal!':'Let’s build it.'}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">${last.unknown?'Next question':'Next shot'} ${icon('arrow',15)}</button></div>${!last.correct?helpMarkup(q):''}${session.scratch?scratch:''}`;
  }else{
   const submitButton=options?'':`<button class="btn big shoot-button" type="submit">Shoot ${icon('arrow',18)}</button>`;
-  tail=`<div id="answer-error" class="field-error" role="alert"></div><div class="question-actions">${submitButton}<button class="dont-know" type="button" data-action="dont-know">I don’t know</button></div>${scratch}${session.assisted?helpMarkup(q):''}`;
+  tail=`<div id="answer-error" class="field-error" role="alert"></div>${submitButton?`<div class="question-actions">${submitButton}</div>`:''}${scratch}${session.assisted?helpMarkup(q):''}`;
  }
  const skill=skillById(q.skillId);
  const reason=session.selection.reason;
  const coachLabel=reason==='support'?'Build up':reason==='review'?'Recall':reason==='repair'?'Try again':session.selection.label;
- $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} Coach picked ${esc(skill.title.toLowerCase())}</p>`:''}`;
+ $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton+'<button class="dont-know" type="button" data-action="dont-know">I don’t know</button>'}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} Coach picked ${esc(skill.title.toLowerCase())}</p>`:''}`;
  $('#keypad').classList.toggle('hidden',done||!!options||['drawing','angle','plot','clock'].includes(q.format));
  $('#symbol-keys').classList.toggle('hidden',!q.format||q.format==='number'||q.format==='bars'||column||!!written||takesFraction(q));
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}
@@ -325,12 +335,19 @@ function submit(value=null,unknown=false) {
   }
  }else if(!unknown)session.answer=String(value);
  const p=player(),correct=!unknown&&answerMatches(q,value),assisted=session.assisted,now=Date.now();
+ const missionBefore=missionProgress(session.mission,session.rows,session.bestStreak);
  session.attempts++;session.correct+=Number(correct);session.streak=correct&&!assisted?session.streak+1:0;
  session.bestStreak=Math.max(session.bestStreak,session.streak);
  const earned=earnedXP(correct,assisted,session.streak);
  const candidate=rewardCandidate(p,q,session,{correct,assisted,now});
  session.points+=earned;session.careerPending=(session.careerPending||0)+candidate;
- const row={q:{...q},typed:value,correct,assisted,unknown,ms:Math.round(session.currentMs),earned,careerCandidate:candidate,reason:session.selection.reason,detail:session.selection.detail,newFact:!!session.selection.newFact};
+ const aim=session.aim;
+ const targetHit=!!session.mission&&correct&&!assisted&&aim===spotlightZone(session.mission,session.attempts-1,session.aimSeed);
+ const row={q:{...q},typed:value,correct,assisted,unknown,aim,targetHit,ms:Math.round(session.currentMs),earned,careerCandidate:candidate,reason:session.selection.reason,detail:session.selection.detail,newFact:!!session.selection.newFact};
+ if(correct&&!assisted){
+  const after=missionProgress(session.mission,[...session.rows,row],session.bestStreak);
+  row.celebration=after?.complete&&!missionBefore?.complete?'MISSION WON!':session.streak===8?'METEOR!':session.streak===5?'FIREBALL!':session.streak===3?'HAT-TRICK!':targetHit?'TOP BINS!':session.rows.at(-1)?.correct===false?'COMEBACK!':'';
+ }
  session.rows.push(row);
  recordLearning(p,q,correct,assisted,row.ms,session.id,now,session.selection.reason==='probe',unknown);
  if(session.selection.reason==='probe'){
@@ -352,12 +369,36 @@ function afterGoal(advance){
  clearTimeout(goalTimer);
  goalTimer=setTimeout(advance,GOAL_FEEDBACK_MS);
 }
+function updateAim(){
+ const mission=missionProgress(session.mission,session.rows,session.bestStreak);
+ if(!mission)return;
+ const done=session.phase==='feedback';
+ const zone=spotlightZone(session.mission,Math.max(0,session.attempts-Number(done)),session.aimSeed);
+ for(const button of $$('[data-action="aim"]')){
+  const target=button.dataset.zone===zone;
+  button.disabled=done;
+  button.classList.toggle('spotlight',target);
+  button.setAttribute('aria-label',`Aim ${button.dataset.zone}${target?' at the star':''}`);
+  button.setAttribute('aria-pressed',String(button.dataset.zone===session.aim));
+ }
+ const arena=$('.match-pitch .penalty-view');
+ arena.dataset.target=zone;arena.dataset.aim=session.aim||'';
+ $('#match-mission').innerHTML=`<span>${icon(mission.complete?'check':'star',14)} ${mission.name}</span><span class="mission-pips" aria-label="${mission.value} of ${mission.goal}">${Array.from({length:mission.goal},(_,i)=>`<i class="${i<mission.value?'hit':''}"></i>`).join('')}</span>`;
+}
 function paintPitch(replay=false) {
  const arena=$('.penalty-view'),round=session;
  if(!arena||!round)return;
  const row=round.phase==='feedback'?round.rows.at(-1):null;
- const move=paintShot(arena,{question:session.q,correct:row?.unknown?undefined:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay});
- $('#move-caption').textContent=row?(row.unknown?'Coach’s turn':row.correct?`${move.id==='normal'?'In the net':move.label}${session.streak>=3?' · '+session.streak+' in a row':''}`:'Coach has the replay'):'Ready to shoot';
+ const move=paintShot(arena,{question:session.q,correct:row?.unknown?undefined:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay,aim:row?.aim,callout:row?.celebration});
+ $('#move-caption').textContent=row?(row.unknown?'Coach’s turn':row.correct?row.celebration||move.label:'Coach has the replay'):session.mission?'Aim at the star':'Ready to shoot';
+ const shot=round.attempts+Number(!row);
+ const half=Math.ceil(round.target/2);
+ $('#match-stage').textContent=shot===round.target?'Last shot':shot>half?'Second half':shot===half&&row?'Half-time':shot===1?'Kick-off':'First half';
+ const sideline=$('#sideline-note');
+ const scout=round.mission&&shot===half+Number(!row)?CLUBS.find(club=>!clubProgress(player(),club).eligible):null;
+ sideline.hidden=!scout;
+ if(scout)sideline.textContent=`Coach · ${scout.name} offer ${clubProgress(player(),scout).percent}%`;
+ updateAim();
  $('.pitch-replay').hidden=!row||row.unknown;
  if(row?.correct&&!round.paused)afterGoal(()=>{
   if(session===round&&!round.paused&&round.phase==='feedback'&&round.rows.at(-1)===row)nextQuestion();
@@ -413,8 +454,8 @@ function finishMatch(complete,showResult=true) {
  if(saved.newRecord&&!data.settings.reduceMotion)confetti();
 }
 
-function renderResult(){const r=result,p=player(),accuracy=r.attempts?Math.round(r.correct/r.attempts*100):0,stars=r.complete&&r.attempts>=5?(accuracy>=95?3:accuracy>=80?2:accuracy>=60?1:0):0,errors=[...new Map(r.rows.filter(x=>!x.correct||x.assisted).map(x=>[x.q.key,x])).values()];
- app.innerHTML=`<div class="game-shell">${header(true)}<main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
+function renderResult(){const r=result,p=player(),mission=missionProgress(r.mission,r.rows,r.bestStreak),accuracy=r.attempts?Math.round(r.correct/r.attempts*100):0,stars=r.complete&&r.attempts>=5?(accuracy>=95?3:accuracy>=80?2:accuracy>=60?1:0):0,errors=[...new Map(r.rows.filter(x=>!x.correct||x.assisted).map(x=>[x.q.key,x])).values()];
+ app.innerHTML=`<div class="game-shell">${header(true)}<main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.complete&&mission?.complete?`<div class="mission-won">${icon('star',17)} ${mission.name} complete</div>`:''}${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
 function sound(good){if(!data.settings.sound)return;try{audio||=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.setValueAtTime(good?600:300,audio.currentTime);o.frequency.linearRampToValueAtTime(good?820:340,audio.currentTime+.12);g.gain.setValueAtTime(.03,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.22);o.start();o.stop(audio.currentTime+.24);}catch{}}
 function confetti(){const e=document.createElement('div');e.className='confetti';e.setAttribute('aria-hidden','true');e.innerHTML=Array.from({length:32},(_,i)=>`<i style="left:${Math.random()*100}%;background:${['#d4f36a','#739e5e','#d6b76b','#7a9bdc'][i%4]};animation-delay:${Math.random()*.4}s;--drift:${Math.random()*180-90}px"></i>`).join('');document.body.append(e);setTimeout(()=>e.remove(),2700);}
 function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unavailable on this device.');return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spokenMath(text)),voice=selectBritishVoice(voices,data.settings.voiceURI);if(voice)u.voice=voice;else if(!speak.warned){toast('No British voice is installed. This device will choose the voice.');speak.warned=true;}u.lang='en-GB';u.rate=data.settings.speechRate||.9;speechSynthesis.speak(u);}
@@ -521,6 +562,11 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'table-challenge':startMatch(null,{tableChallenge:true});break;
  case 'progress-check':startMatch(null,{progressCheck:true});break;
  case 'replay-shot':if(session?.phase==='feedback')paintPitch(true);break;
+ case 'aim':
+  if(session?.phase==='question'&&!session.paused&&session.mission&&AIM_ZONES.includes(b.dataset.zone)){
+   session.aim=b.dataset.zone;updateAim();saveRound();
+  }
+  break;
  case 'skill':if(!data.activeId){closeDialog();pendingSkill=b.dataset.skill;view='players';render();scrollTo({top:0});}else startMatch(b.dataset.skill);break;
  case 'domain': {
   domain=domain===b.dataset.domain?'all':b.dataset.domain;

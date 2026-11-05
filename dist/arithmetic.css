@@ -145,7 +145,7 @@
   color: var(--mark);
   font-size: 18px;
 }
-.remainder-field .work-note { width: 35px; }
+.arithmetic-paper .remainder-field .work-note { width: 35px; }
 
 .arithmetic-paper .division-rule { min-height: 2px; }
 .rule-segment {

@@ -143,8 +143,9 @@ function divisionRows(model, notes, done) {
     };
     const line = row(width, Array.from({length:width}, (_, i) => i >= start && i <= end
       ? '<span class="rule-segment"></span>' : '<span></span>'), 'division-rule');
+    const downStart = Math.max(0, downEnd - divisorWidth + Number(step.bring === null));
     return fields('back', 'Subtract the product', start, end, step.product, true) + line +
-      fields('down', step.bring === null ? 'Remainder' : 'Subtract and bring down', Math.max(0, downEnd - divisorWidth), downEnd, down);
+      fields('down', step.bring === null ? 'Remainder' : 'Subtract and bring down', downStart, downEnd, down);
   }).join('');
 }
 

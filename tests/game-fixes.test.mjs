@@ -151,3 +151,22 @@ test('skips and easy build-up questions cannot award career XP',()=>{
  assert.equal(attempt(p,q,challenge(p,{selection:{reason:'support'}})),0);
  assert.equal(attempt(p,q,challenge(p),{correct:false}),0);
 });
+
+test('match objectives require independent goals and the corner mission uses both sides',async()=>{
+ const {matchMission,missionProgress,spotlightZone}=await import('../dist/shot.mjs');
+ assert.deepEqual([0,1,2,3].map(matchMission),['targets','corners','combo','targets']);
+ assert.deepEqual([0,1,2].map(n=>spotlightZone('corners',n)),['left','right','left']);
+ const hits=[
+  {correct:true,targetHit:true,aim:'left'},
+  {correct:true,targetHit:true,aim:'left'},
+  {correct:true,assisted:true,targetHit:true,aim:'right'},
+  {correct:false,targetHit:true,aim:'right'}
+ ];
+ assert.equal(missionProgress('corners',hits).value,1);
+ assert.equal(missionProgress('targets',hits).value,2);
+ hits.push({correct:true,targetHit:true,aim:'right'});
+ assert.ok(missionProgress('corners',hits).complete);
+ assert.ok(missionProgress('targets',hits).complete);
+ assert.equal(missionProgress('combo',hits,2).complete,false);
+ assert.ok(missionProgress('combo',hits,3).complete);
+});

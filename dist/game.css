@@ -35,7 +35,7 @@ body[data-player-theme="rose"]{--game-dark:#492636;--game-accent:#ffaab7;--game-
 @keyframes match-power{0%,16%{transform:none}81%{transform:translate(var(--flight-x),var(--flight-y)) scale(.48)}100%{transform:translate(calc(var(--flight-x)*.95),calc(var(--flight-y)*.93)) scale(.41)}}
 @keyframes match-free{0%,17%{transform:none}60%{transform:translate(calc(var(--flight-x)*.45),var(--arc-y)) rotate(200deg) scale(.64)}100%{transform:translate(var(--flight-x),var(--flight-y)) rotate(360deg) scale(.45)}}
 @keyframes match-miss{0%,15%{transform:none}100%{transform:translate(var(--flight-x),calc(var(--flight-y)*.73)) rotate(220deg) scale(.48)}}
-@keyframes match-keeper{0%,18%{transform:none}100%{transform:translate(calc(var(--flight-x)*-.6),9px) rotate(-52deg)}}
+@keyframes match-keeper{0%,18%{transform:none}100%{transform:translate(var(--keeper-x),9px) rotate(-52deg)}}
 @keyframes match-callout{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @keyframes player-jump{50%{transform:translateY(-20px)}}@keyframes player-spin{50%{transform:scaleX(.15)}70%{transform:scaleX(-1)}}@keyframes player-slide{65%{transform:translate(24px,9px) rotate(-16deg)}}
 .reduce-motion .match-pitch [data-outcome]:not([data-outcome="ready"]) .goal-callout{opacity:1;transform:translate(-50%,-50%) scale(1)}
