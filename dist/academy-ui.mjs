@@ -23,7 +23,7 @@ export function firstShotView({index=0,goal=false}={}){
  return `<section class="pitch-card match-pitch first-shot" aria-labelledby="first-shot-title">
   <div class="match-card-top"><h2 id="first-shot-title">${icon('ball',16)} Try a shot</h2><span class="first-shot-tag">FREE PLAY</span></div>
   ${penaltyArena()}
-  <div class="first-shot-pad"><p class="first-shot-equation">${q.a} <span>${q.op}</span> ${q.b} <span>=</span> <strong>?</strong></p>
+  <div class="first-shot-pad"><p class="first-shot-equation">${q.a} <span>${q.op}</span> ${q.b} <span>=</span> <strong>${goal?q.answer:'?'}</strong></p>
    <div class="first-shot-answers" role="group" aria-label="Choose an answer">${q.choices.map(n=>`<button type="button" class="${goal&&n===q.answer?'scored':''}" data-action="first-shot" data-answer="${n}" ${goal?'disabled':''}>${n}</button>`).join('')}</div>
    <div class="first-shot-footer"><p id="first-shot-feedback" role="status">${goal?'Goal! In the net.':'Tap an answer to shoot.'}</p><button class="text-btn first-shot-next" data-action="first-shot-next" ${goal?'':'hidden'}>Next shot ${icon('arrow',14)}</button></div>
   </div>

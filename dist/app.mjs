@@ -6,7 +6,7 @@ import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoach
 import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.3.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.3.0';
 import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.4.0';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.4.1';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6';
 import {avatarSVG} from './avatar.mjs';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
@@ -128,6 +128,7 @@ function takeFirstShot(answer){
  paintShot($('.penalty-view',drill),{question,correct:goal,attempt:firstShot.index+1,aim:'centre',replay:true});
  $('#first-shot-feedback').textContent=goal?'Goal! In the net.':question.coach;
  if(goal){
+  $('.first-shot-equation strong',drill).textContent=String(answer);
   $$('[data-action="first-shot"]',drill).forEach(button=>{button.disabled=true;button.classList.toggle('scored',Number(button.dataset.answer)===answer);});
   const next=$('[data-action="first-shot-next"]',drill);
   next.hidden=false;next.focus({preventScroll:true});

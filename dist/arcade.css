@@ -537,12 +537,14 @@ body.arcade {
  box-shadow:0 3px 0 #061320;
 }
 .first-shot-answers button:not(:disabled):hover {background:#2e5070;border-color:#a2daf6}
-.first-shot-answers button.scored {background:var(--game-accent);color:#182e2a;border-color:#bde786}
+.first-shot-answers button.scored {background:var(--game-accent);color:#182e2a;border-color:#bde786;opacity:1}
 .first-shot-footer {
  min-height:44px;display:flex;align-items:center;justify-content:space-between;
  gap:6px;color:#e0edfd;font-size:13px;text-align:left;
 }
 .first-shot-next {min-height:44px;color:#e4ff9f;white-space:nowrap}
+.arcade .first-shot .first-shot-footer p {color:#e0edfd}
+.arcade .first-shot:has(.scored) .first-shot-footer p {color:#e9ffa5;font-weight:750}
 .first-shot-next[hidden] {display:none}
 @media(max-width:680px) {
  .kickoff-screen {grid-template-columns:minmax(0,1fr);grid-template-areas:"intro" "pitch";gap:9px;margin:8px auto 12px}
