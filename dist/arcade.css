@@ -1,0 +1,412 @@
+/* Football clubhouse, touch menu and scoreboard. Worksheet styles live in game.css. */
+body.arcade {
+ --night:#0b1423;
+ --deck:#131f32;
+ --deck-raised:#192841;
+ --deck-line:#2b3c56;
+ --bright:#f5f8ff;
+ --quiet:#b7c6dc;
+ --stadium:url("./assets/night-stadium.svg");
+ background:radial-gradient(ellipse at 70% 0,#182c49 0,transparent 55%),var(--night);
+ min-height:100dvh;
+}
+.arcade .shell.arcade-shell {max-width:1480px;padding-inline:30px}
+.arcade-with-menu {
+ display:grid;grid-template-columns:178px minmax(0,1fr);
+ grid-template-areas:"top top" "menu main" "menu foot";column-gap:22px;
+}
+.arcade-topbar {grid-area:top;height:72px;border-color:var(--deck-line)}
+.arcade-page {grid-area:main;min-width:0;padding:20px 0 24px}
+.arcade-footer {grid-area:foot;color:var(--quiet);border-color:var(--deck-line)}
+.arcade-footer :is(a,button) {color:var(--bright)}
+.arcade .brand {gap:9px}
+.arcade .brand-mark {
+ width:40px;height:40px;border-radius:10px 10px 13px 10px;
+ color:#101c28;background:var(--game-accent);box-shadow:0 3px 0 #0005,0 0 20px #d3f66e17;
+}
+.arcade .brand-type {font-size:25px;color:var(--bright);white-space:nowrap}
+.arcade .brand-type em {color:var(--game-accent);font-style:normal}
+.arcade .header-tools {gap:8px}
+.arcade .header-tools :is(.icon-btn,.reading-toggle,.profile-mini),
+.arcade .game-header :is(.icon-btn,.reading-toggle,.profile-mini) {
+ background:var(--deck);border:1px solid var(--deck-line);color:var(--bright);
+}
+.arcade .profile-mini {display:flex;align-items:center;gap:7px;min-width:0}
+.arcade .profile-mini>span:last-child {min-width:0;overflow:hidden;text-overflow:ellipsis}
+.arcade .profile-dot {background:#314967;color:#f3f7ff}
+.arcade .reading-toggle.on {color:#142033;background:#fff0cb;border-color:#d6c19d}
+.arcade-credit {
+ display:flex;align-items:center;gap:7px;min-height:42px;padding:6px 12px;
+ border:1px solid #68583b;border-radius:12px;background:#2e2a2b;color:#ffe5a6;
+}
+.credit-chip {
+ display:inline-grid;flex:none;place-items:center;width:22px;height:22px;border-radius:50%;
+ border:1px solid #fff6af;background:linear-gradient(#ffe294,#f3ab42);
+ box-shadow:0 2px 0 #aa6f2b;color:#4b300e;font-size:12px;font-weight:900;line-height:1;
+}
+.header-nav.arcade-nav {
+ grid-area:menu;position:sticky;align-self:start;top:16px;margin-top:20px;
+ display:flex;flex-direction:column;align-items:stretch;gap:7px;
+ background:var(--deck);border:1px solid var(--deck-line);border-radius:18px;padding:12px 9px;
+ box-shadow:0 10px 26px #0002;min-height:0;
+}
+.arcade-nav-label {color:var(--quiet);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px}
+.arcade-nav .nav-btn {
+ min-height:53px;justify-content:flex-start;gap:10px;flex:none;border:1px solid transparent;
+ border-radius:11px;padding:7px 8px;color:var(--bright);font-size:13px;font-weight:800;
+}
+.arcade-nav .nav-btn:hover {background:#223450}
+.arcade-nav .nav-btn.active {background:#263b51;border-color:#5a785f;color:var(--game-accent)}
+.arcade-nav-icon {width:33px;height:33px;display:grid;place-items:center;flex:none;border-radius:8px;color:#c7d8ff;background:#223450}
+.arcade-nav .nav-btn.active .arcade-nav-icon {background:var(--game-accent);color:#112026}
+.arcade-nav [data-view="locker"]:not(.active) .arcade-nav-icon {background:#3a3243;color:#ffde89}
+.arcade-nav .arcade-coach-link {margin-top:9px;border-top-color:var(--deck-line);color:#c1e8f4}
+.arcade .arcade-page>.heading h1,.arcade .arcade-section-title h2,.arcade .squad-select h1 {color:var(--bright)}
+.arcade .arcade-page>.heading .eyebrow,.arcade .squad-select .eyebrow {color:var(--game-accent)}
+.arcade .arcade-page>.heading p {color:var(--quiet)}
+
+/* The same player and pitch carry through selection and the lobby. */
+.arcade .arcade-welcome,.arcade .game-lobby {
+ background:#0c2339;border:1px solid #3c5a70;border-radius:21px;
+ box-shadow:0 14px 30px #0004;color:var(--bright);
+}
+.arcade .arcade-welcome {
+ position:relative;min-height:485px;padding:58px 54px;isolation:isolate;overflow:hidden;
+ background:linear-gradient(90deg,#071727 3%,#071727ce 30%,#07172735 70%),var(--stadium) 65% 56%/cover;
+}
+.arcade .arcade-welcome .welcome-copy {position:relative;z-index:2;max-width:68%}
+.arcade .arcade-welcome h1 {font-size:clamp(62px,9vw,132px);line-height:.86;letter-spacing:.025em;margin:25px 0 15px;color:var(--bright)}
+.arcade .arcade-welcome h1 em {color:var(--game-accent)}
+.arcade .arcade-welcome p {font-size:16px;color:#dce9fa;line-height:1.4;margin:0 0 20px}
+.arcade .arcade-welcome .welcome-character {position:absolute;z-index:1;right:8%;bottom:24px;display:grid;justify-items:center}
+.arcade .welcome-character .block-player {filter:drop-shadow(0 12px 8px #051423ab);width:clamp(165px,28vw,333px);height:auto}
+.welcome-ball {position:absolute;right:7%;bottom:12%;color:#fff;filter:drop-shadow(0 4px 4px #041322)}
+.arcade .welcome-foot,.arcade .welcome-foot .text-btn {color:var(--quiet)}
+.squad-select .section-head {margin:18px 0 12px}
+.arcade .squad-select h1 {font-family:Matchday,Impact,sans-serif;font-size:clamp(39px,6vw,72px);text-transform:uppercase;margin:4px 0}
+.arcade .squad-player {
+ color:var(--bright);background:linear-gradient(115deg,#13243c 25%,#12243a66),var(--stadium) 80% 66%/cover;
+ border:1px solid #45637b;border-radius:17px;box-shadow:0 6px 0 #050d18;
+}
+.arcade .squad-player:hover {border-color:var(--game-accent)}
+.arcade .squad-player :is(h2,small,.squad-info>span) {color:var(--bright)}
+.arcade .squad-player .squad-play {color:var(--game-accent)}
+.lobby-layout {display:grid;grid-template-columns:minmax(0,1fr) minmax(244px,.34fr);gap:17px;align-items:start}
+.lobby-main,.lobby-rail {min-width:0}
+.arcade .game-lobby::before {background:linear-gradient(90deg,#081b2cfa 0%,#081b2cc4 36%,#07162810 80%),var(--stadium) 69% 54%/cover}
+.arcade .lobby-banner {grid-template-columns:minmax(0,1fr) minmax(155px,.77fr);gap:2px;min-height:330px;padding:26px 27px 18px}
+.field-label {
+ display:inline-flex;align-items:center;gap:6px;width:fit-content;padding:5px 8px;
+ border:1px solid #bddff84a;border-radius:7px;background:#071827b8;color:#d9eafa;
+ font-size:10px;font-weight:850;letter-spacing:.075em;text-transform:uppercase;
+}
+.live-dot {width:7px;height:7px;display:inline-block;border-radius:50%;background:var(--game-accent);box-shadow:0 0 8px var(--game-accent)}
+.arcade .lobby-copy {position:relative;z-index:2;min-width:0}
+.arcade .lobby-copy h1 {font-size:clamp(37px,5.3vw,77px);line-height:.98;margin:10px 0}
+.arcade .lobby-copy .lobby-kicker {color:#e5f1ff;font-size:12px;gap:6px;line-height:1.3}
+.arcade .lobby-copy .club-badge {height:26px;min-width:25px;font-size:8px}
+.arcade .lobby-copy>small {font-size:11px;color:#ccdaeb;line-height:1.3}
+.arcade .arcade-kickoff {
+ border-radius:12px;min-height:55px;padding:10px 19px;background:var(--game-accent);color:#13202b;
+ font-size:16px;font-weight:900;box-shadow:0 5px 0 #0006,inset 0 2px 0 #ffffff50;
+}
+.arcade .arcade-kickoff:hover {filter:brightness(1.08)}
+.arcade .lobby-play {margin:16px 0 9px}
+.arcade .lobby-player {position:relative;align-self:stretch;align-content:end;isolation:isolate}
+.arcade .lobby-player::before {inset:22% 6% 5%;border:0;background:radial-gradient(ellipse,#9afcf932 0,transparent 65%);box-shadow:none}
+.arcade .lobby-player>.block-player {width:min(100%,238px);height:auto;z-index:1;filter:drop-shadow(0 13px 9px #031320af)}
+.arcade .lobby-player>.lobby-jersey {
+ position:absolute;z-index:0;right:-4%;top:5%;margin:0;padding:0;background:transparent;
+ font:clamp(78px,11vw,170px)/1 Matchday,Impact,sans-serif;color:#defaff38;
+ -webkit-text-stroke:1px #b4f6ff45;transform:skewX(-7deg);
+}
+.lobby-kit-btn {
+ z-index:2;display:flex;align-items:center;justify-content:center;gap:5px;min-height:39px;
+ padding:5px 9px;border:1px solid #bed6f868;border-radius:9px;background:#0c2035e8;color:#fff;font-size:11px;font-weight:800;
+}
+.lobby-stage-footer {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:15px;align-items:center;padding:12px 17px;background:#0a182be8;border-top:1px solid #adcced36}
+.lobby-stage-footer .career-progress {margin:0;color:var(--bright)}
+.lobby-stage-footer .career-progress>div:first-child>span,.lobby-stage-footer .career-progress>small {color:var(--quiet)}
+.lobby-stage-footer .xp {background:#2b405a}
+.lobby-stage-footer .xp i {background:linear-gradient(90deg,#75bdfa,var(--game-accent))}
+.lobby-stage-footer .wallet-shop {display:flex;gap:7px;min-height:43px;padding:7px 11px;background:#282a38;border:1px solid #776347;color:#ffe1a1}
+.lobby-stage-footer .wallet-shop>span.credit-chip {display:inline-grid}
+.lobby-stage-footer .wallet-shop small {font-size:10px;color:#f2dbb0}
+.arcade-section-title {display:flex;align-items:center;gap:13px;margin:17px 0 9px}
+.arcade-section-title h2 {font:27px/1.1 Matchday,Impact,sans-serif;letter-spacing:.035em;text-transform:uppercase;margin:0}
+.arcade-section-title i {height:1px;background:var(--deck-line);flex:1}
+.mode-cards {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.mode-card {
+ --tile:#304e85;--tile-deep:#122b53;--tile-light:#a7d0ff;
+ position:relative;isolation:isolate;overflow:hidden;min-width:0;min-height:116px;padding:11px 8px 11px 11px;
+ display:flex;align-items:end;justify-content:space-between;gap:4px;text-align:left;border:1px solid #ffffff33;border-radius:12px;
+ background:linear-gradient(140deg,var(--tile),var(--tile-deep) 78%);color:#fff;box-shadow:0 4px 0 #060e19;
+}
+.mode-card.green {--tile:#286355;--tile-deep:#10443f;--tile-light:#a3ffe5}
+.mode-card.purple {--tile:#653e81;--tile-deep:#3c225f;--tile-light:#f4beff}
+.mode-card.gold {--tile:#715332;--tile-deep:#472f2b;--tile-light:#ffd994}
+.mode-card::after {content:"";position:absolute;z-index:-1;inset:0;background:repeating-linear-gradient(126deg,transparent 0 26px,#ffffff0a 27px 48px)}
+.mode-card:hover {border-color:var(--tile-light);filter:brightness(1.08)}
+.mode-icon {position:absolute;top:6px;right:10px;color:var(--tile-light);opacity:.88;transform:rotate(-12deg)}
+.mode-copy b,.mode-copy small {display:block}
+.mode-copy b {font-size:14px;line-height:1.13}
+.mode-copy small {color:#e6edf9;font-size:10px;margin-top:3px;line-height:1.25}
+.mode-arrow {display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:6px;background:#ffffff1c}
+.arcade .coach-locker {margin:0 0 13px;padding:13px;background:linear-gradient(155deg,#e6f8fd,#e2efe8);border:1px solid #a6cdda;border-radius:15px}
+.arcade .coach-locker-heading h2 {font-family:Matchday,Impact,sans-serif;font-size:28px;text-transform:uppercase}
+.arcade .coach-locker-heading>div>span {color:#14536a}
+.arcade .coach-news-btn {background:#174959;border-color:#174959;color:#fff;padding-inline:8px;min-height:40px}
+.arcade .coach-news-btn b {background:#dcf987;color:#19362a}
+.arcade .coach-lobby-actions {display:flex;gap:6px;flex-wrap:wrap}
+.arcade .coach-lobby-actions .btn {min-height:40px;font-size:11px;padding:6px 8px}
+.arcade .scout-card {background:#fbfeff;border-color:#b8d5de;padding:10px 9px;gap:7px}
+.arcade .scout-badge {background:#d9f1f8;color:#15566a}
+.arcade .lobby-rail .compact-goals {display:block;margin:0;padding:13px;background:var(--deck);color:var(--bright);border:1px solid var(--deck-line);border-radius:14px}
+.arcade .lobby-rail .compact-goals .daily-heading :is(.eyebrow,.daily-total) {color:var(--game-accent)}
+.arcade .lobby-rail .compact-goals .quest-list {display:grid;grid-template-columns:1fr;gap:9px}
+.arcade .lobby-rail .compact-goals .quest {color:var(--bright);border-color:var(--deck-line)}
+.arcade .lobby-rail .compact-goals .quest b,.arcade .lobby-rail .compact-goals .quest strong {color:var(--bright)}
+.arcade .lobby-rail .compact-goals .quest-bar {background:#2b405a}
+.arcade .lobby-year-progress {color:var(--bright);background:var(--deck);border-color:var(--deck-line)}
+.arcade .lobby-year-progress summary b {color:var(--game-accent)}
+.arcade .lobby-year-progress .year-journey {color:var(--ink)}
+
+/* Put each Shop category in sight and give the avatar its own column. */
+.arcade .shop-banner {
+ grid-template-columns:minmax(0,1.6fr) minmax(150px,1fr);min-height:248px;padding:19px 28px;
+ border:1px solid #665b8a;border-radius:19px;
+ background:linear-gradient(95deg,#191c38 0,#242142d9 55%,#20173972),var(--stadium) 80% 30%/cover;
+}
+.arcade .shop-banner::before {background:radial-gradient(ellipse at 75% 70%,#b48cfd4d 0,transparent 49%)}
+.arcade .shop-headline {min-width:0}
+.arcade .shop-banner h1 {margin:7px 0;color:#fff;overflow-wrap:normal}
+.arcade .shop-banner .shop-balance {
+ position:static;display:inline-flex;align-items:center;gap:7px;padding:5px 9px;
+ border:1px solid #806b45;background:#352d35;color:#ffe1a0;
+}
+.arcade .shop-player {margin:0;pointer-events:none}
+.arcade .shop-player>.block-player {width:min(100%,190px);height:auto}
+.arcade .shop-player>span {color:#f0d7ff;background:#15162cd6}
+.arcade .shop-banner .btn.translucent {background:#24213bcf;border-color:#a896ca96}
+.arcade .game-shop-tabs {display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;overflow:visible;margin:13px 0;padding:0;border:0;background:none}
+.arcade .game-shop-tabs>button {
+ display:flex;align-items:center;justify-content:center;gap:4px;min-height:43px;background:var(--deck);color:var(--bright);
+ border:1px solid var(--deck-line);border-radius:9px;padding:5px 2px;font-size:11px;white-space:normal;
+}
+.arcade .game-shop-tabs>button.active {background:#d9c8fc;color:#251c45;border-color:#ede1ff}
+.arcade .shop-title :is(h2,span) {color:var(--bright)}
+.arcade .shop-title h2 {font-family:Matchday,Impact,sans-serif;text-transform:uppercase}
+.arcade .game-item {--rarity:#6386a3;background:var(--deck);border:1px solid #3d526f;color:var(--bright);border-radius:14px;box-shadow:0 4px 0 #050c16}
+.arcade .game-item.pro {--rarity:#5e84cc}
+.arcade .game-item.rare {--rarity:#9471d4}
+.arcade .game-item.elite {--rarity:#d7a84c}
+.arcade .game-item.equipped {border-color:var(--game-accent)}
+.arcade .game-item .item-card-top {color:var(--bright)}
+.arcade .game-item .item-card-top>span {background:var(--rarity);color:#101728}
+.arcade .game-item .item-card-top>b {display:inline-flex;align-items:center;gap:4px;color:#ffe6aa}
+.arcade .game-item .item-card-top .credit-chip {width:16px;height:16px;font-size:9px}
+.arcade .game-item .item-preview {background:radial-gradient(ellipse at 50% 72%,var(--rarity),#243754 45%,#0d192c 75%);border:1px solid #57739750;border-radius:10px}
+.arcade .game-item h3 {color:var(--bright)}
+.arcade .game-item .btn:disabled {color:#dce7f7;background:#263853;border-color:#415471;opacity:1}
+
+/* Mode selection, divisions and match camera. */
+.arcade .table-session .tables-challenge-card {background:linear-gradient(130deg,#193358,#255294);border:1px solid #6391c8;padding:12px}
+.arcade .tables-challenge-card .field-label {margin-bottom:5px}
+.arcade .table-session .gym-modes {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.arcade .table-session .gym-modes>button {min-width:0;min-height:58px}
+.arcade .table-session .gym-modes>button.selected {background:#e5efff;border-color:#6790cf}
+.arcade .table-session .gym-table-tabs>button.active {background:#214575;color:white}
+.arcade .league-hero,.arcade .world-banner {
+ display:flex;justify-content:space-between;align-items:center;gap:11px;min-height:170px;margin:0 0 12px;padding:19px 23px;border-radius:17px;
+ background:linear-gradient(93deg,#182435 8%,#1d3043b0 60%,#29405162),var(--stadium) 66% 44%/cover;
+ border:1px solid #59738a;color:var(--bright);
+}
+.arcade .league-hero h1,.arcade .world-banner h1 {font:clamp(38px,5.8vw,70px)/1 Matchday,Impact,sans-serif;text-transform:uppercase;color:var(--bright);margin:8px 0}
+.arcade .league-hero p,.arcade .world-banner p {color:#e0edfa;font-size:13px;margin:0}
+.league-cup {color:#ffdf7f;filter:drop-shadow(0 0 16px #eac45670);margin-right:12px}
+.arcade .league-world-callout {background:#202e51;border:1px solid #556c9c}
+.arcade .league-explainer {color:var(--bright);background:var(--deck);border-color:var(--deck-line)}
+.arcade .league-explainer :is(p,button) {color:var(--quiet)}
+.arcade .world-division-tabs>button {background:var(--deck);color:var(--bright);border-color:var(--deck-line)}
+.arcade .world-division-tabs>button.active {background:var(--game-accent);color:#13202b}
+.arcade .syllabus-tools .text-btn,.arcade .domain-title :is(h2,small),.arcade .syllabus-intro {color:var(--bright)}
+.arcade .game-shell {max-width:1240px}
+.arcade .game-header {height:67px;border-color:var(--deck-line)}
+.arcade .game-main {padding-top:16px}
+.arcade .game-title {padding:12px 15px;margin:0 0 8px;border:1px solid var(--deck-line);border-radius:13px;background:var(--deck);color:var(--bright)}
+.arcade .game-title h1 {color:var(--bright);line-height:1.1}
+.arcade .game-title .eyebrow {color:var(--game-accent)}
+.arcade .game-metrics {gap:7px}
+.arcade .game-metric {min-width:64px;display:grid;justify-items:center;padding:5px 8px;border:1px solid #3d5270;border-radius:8px;background:#0f1b2f}
+.arcade .game-metric strong {font-variant-numeric:tabular-nums;color:#f8fbff}
+.arcade .game-metric small {color:#c2d4ec}
+.arcade .game-metric:nth-child(2) strong {color:#ffe49e}
+.arcade .shot-track i {background:#31435d}
+.arcade .shot-track i.goal {background:#8ed375}
+.arcade .shot-track i.miss {background:#f3a471}
+.arcade .shot-track i.active {background:var(--game-accent)}
+.arcade .shot-count {color:var(--quiet)}
+.arcade .match-grid {grid-template-columns:minmax(0,1fr) minmax(295px,.75fr);gap:11px 14px}
+.arcade .match-pitch {padding:8px 10px;border:1px solid #496683;border-radius:13px;background:#102338;box-shadow:0 5px 0 #050c1680}
+.arcade .match-card-top {min-height:24px;letter-spacing:.09em}
+.arcade .match-card-top>span {display:inline-flex;gap:6px;align-items:center}
+.arcade .match-pitch .penalty-view {height:218px;background:linear-gradient(#1022351f,#102a3442),var(--stadium) 53% 37%/cover;border:1px solid #507c8c77;border-radius:8px}
+.arcade .match-pitch .goal-callout {color:#ecff7e;text-shadow:0 3px 0 #113521,0 0 14px #071b16}
+.arcade .match-pitch [data-outcome="miss"] .goal-callout {color:#ffe1ac;text-shadow:0 3px 0 #54372c,0 0 14px #221810}
+.arcade .pitch-hud {color:#e5edfa}
+.arcade .pitch-hud>strong {color:var(--game-accent)}
+.arcade .match-grid>.question-card {min-height:335px;border:1px solid #b5c6dd;border-radius:16px;box-shadow:0 4px 0 #395168}
+.arcade .question-card .coach-assist {background:#d6f6ff;border-color:#8cc9db;color:#15495b;box-shadow:0 2px 0 #a7d6e2}
+.arcade .question-card .coach-assist[aria-expanded="true"] {background:#ffedb4;border-color:#ddc687}
+.arcade .question-card .shoot-button {background:#d3f66e;color:#122730;border:1px solid #9db94f;box-shadow:0 3px 0 #b2ca6c}
+.arcade .match-controls .desktop-record,.arcade .finish-practice {color:var(--bright)}
+.arcade .match-controls .numpad>button {border-color:#3c5270;background:#16283f;color:var(--bright)}
+.arcade .match-controls .symbol-keys>button {background:#24364e;color:var(--bright)}
+.arcade .results {margin-top:18px;background:var(--deck);border:1px solid var(--deck-line);border-radius:19px;color:var(--bright)}
+.arcade .results :is(h1,h2,.eyebrow) {color:var(--bright)}
+.arcade .results>p {color:var(--quiet)}
+.arcade .results .daily-goals {color:var(--ink)}
+.arcade .results .result-symbol {background:#d6ed99;color:#23432c}
+.arcade .results .result-metrics>div {background:#e5eef8;color:#19364d}
+.arcade .results .level-line :is(strong,span),.arcade .results>.muted {color:var(--quiet)}
+.profile-options {margin-top:10px;padding:8px 10px;border:1px solid #c7d4e3;border-radius:10px}
+.profile-options>summary {cursor:pointer;min-height:32px;font-weight:800;color:#234967;font-size:13px}
+.profile-options .field-row {margin-top:8px}
+.arcade .paused .pause-inner {border:1px solid #abc9e2;box-shadow:0 16px 30px #0005}
+.arcade :focus-visible {outline:3px solid #7ccce6;outline-offset:3px}
+
+/* The optional cream reading surface keeps its contrast. */
+.arcade.reading-mode {background:#f4eddf}
+.arcade.reading-mode .arcade-topbar .brand-type,
+.arcade.reading-mode .arcade-page>.heading :is(h1,.eyebrow,p),
+.arcade.reading-mode .arcade-section-title h2,
+.arcade.reading-mode .squad-select :is(h1,.eyebrow),
+.arcade.reading-mode .welcome-foot .text-btn,
+.arcade.reading-mode .shop-title :is(h2,span),
+.arcade.reading-mode .syllabus-tools .text-btn,
+.arcade.reading-mode .domain-title :is(h2,small),
+.arcade.reading-mode .arcade-footer :is(span,a,button),
+.arcade.reading-mode .match-controls :is(.desktop-record,.finish-practice) {color:#244331}
+.arcade.reading-mode .arcade-topbar .brand-type em {color:#285d46}
+.arcade.reading-mode .game-item {background:#fff9eb;color:#223829}
+.arcade.reading-mode .game-item h3 {color:#223829}
+.arcade.reading-mode .game-item .item-card-top>b {color:#664515}
+
+@media(max-width:1190px) {
+ .arcade .shell.arcade-shell {padding-inline:21px}
+ .arcade-with-menu {grid-template-columns:158px minmax(0,1fr);column-gap:14px}
+ .lobby-layout {grid-template-columns:minmax(0,1fr) minmax(220px,.34fr);gap:11px}
+ .mode-cards {grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mode-card {min-height:94px}
+ .arcade .game-shop-tabs {grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media(max-width:900px) {
+ .arcade-with-menu {display:block;padding-bottom:calc(75px + env(safe-area-inset-bottom))}
+ .header-nav.arcade-nav {
+  position:fixed;top:auto;bottom:0;left:0;right:0;z-index:40;transform:none;width:100%;max-width:none;margin:0;min-height:65px;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;
+  padding:5px max(7px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));
+  border-radius:15px 15px 0 0;background:#101c30fa;border-color:#395270;box-shadow:0 -6px 21px #030b17a1;
+ }
+ .arcade-nav .arcade-nav-label,.arcade-nav .nav-btn.arcade-coach-link {display:none}
+ .arcade-nav .nav-btn {min-width:0;min-height:52px;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:3px 1px;font-size:11px;line-height:1.04;text-align:center}
+ .arcade-nav .arcade-nav-icon {width:28px;height:27px;border-radius:6px}
+ .arcade-nav .arcade-nav-icon svg {width:19px;height:19px}
+ .arcade .arcade-page {padding-top:14px}
+ .arcade .lobby-banner {min-height:305px}
+}
+@media(max-width:680px) {
+ .arcade .shell.arcade-shell {padding-inline:11px}
+ .arcade .arcade-topbar {height:61px;gap:5px}
+ .arcade .brand-mark {width:29px;height:30px;border-radius:7px}
+ .arcade .brand-mark svg {width:20px;height:20px}
+ .arcade .brand {gap:6px}
+ .arcade .brand-type,.arcade .header .brand-type {font-size:17px;max-width:none}
+ .arcade .header-tools {gap:4px}
+ .arcade .header-tools :is(.icon-btn,.reading-toggle,.profile-mini),.arcade-credit {min-height:36px;min-width:33px;height:36px;padding:4px 5px}
+ .arcade .header-tools .reading-toggle span {display:none}
+ .arcade .header-tools .profile-mini {max-width:65px;font-size:11px}
+ .arcade-credit .credit-chip {width:17px;height:17px;font-size:9px}
+ .arcade-credit b {font-size:12px}
+ .arcade .header-tools .profile-dot {width:20px;height:20px;font-size:10px}
+ .arcade .arcade-welcome {min-height:355px;padding:27px 16px;background-position:64% 56%}
+ .arcade .arcade-welcome .welcome-copy {max-width:67%}
+ .arcade .arcade-welcome .welcome-character {right:-6%;bottom:38px}
+ .arcade .arcade-welcome h1 {font-size:clamp(53px,13vw,76px);margin:20px 0 10px}
+ .arcade .arcade-welcome p {font-size:13px;margin-bottom:13px;max-width:170px}
+ .arcade .welcome-character .block-player {width:clamp(130px,45vw,220px)}
+ .welcome-ball {right:12%}
+ .welcome-ball svg {width:33px;height:33px}
+ .arcade .arcade-welcome .arcade-kickoff {font-size:14px;min-height:48px;padding:7px 11px}
+ .arcade .squad-select .section-head {gap:7px}
+ .arcade .squad-select .section-head .btn {padding-inline:8px}
+ .lobby-layout {display:block}
+ .lobby-rail {margin-top:15px}
+ .arcade .game-lobby {border-radius:15px}
+ .arcade .lobby-banner {min-height:245px;padding:13px 12px 11px;grid-template-columns:minmax(0,1.35fr) minmax(94px,1fr)}
+ .arcade .lobby-copy h1 {font-size:clamp(34px,10vw,58px);margin:8px 0}
+ .arcade .lobby-copy .lobby-kicker,.arcade .lobby-copy>small {font-size:10px}
+ .arcade .lobby-play {min-height:47px;font-size:13px;padding:7px 10px;margin-top:12px;gap:4px}
+ .arcade .lobby-play svg {width:19px;height:19px}
+ .arcade .lobby-player>.block-player {width:min(100%,166px)}
+ .arcade .lobby-player>.lobby-jersey {font-size:clamp(65px,19vw,110px);right:0;top:13%}
+ .lobby-kit-btn {font-size:9px;min-height:34px;padding:4px 5px}
+ .lobby-kit-btn svg {width:13px;height:13px}
+ .lobby-stage-footer {gap:8px;padding:8px 9px}
+ .lobby-stage-footer .wallet-shop {padding:5px 6px;gap:5px;min-height:39px}
+ .lobby-stage-footer .wallet-shop b {font-size:11px}
+ .lobby-stage-footer .wallet-shop small {font-size:9px}
+ .lobby-stage-footer .wallet-shop>svg {display:none}
+ .arcade-section-title {margin:12px 0 7px}
+ .mode-cards {gap:7px}
+ .mode-card {min-height:85px;padding:8px}
+ .mode-icon {right:9px;top:5px}
+ .mode-icon svg {width:34px;height:34px}
+ .mode-copy b {font-size:13px}
+ .mode-copy small {font-size:9px}
+ .arcade .shop-banner {min-height:180px;padding:13px 12px;grid-template-columns:minmax(0,1fr) minmax(80px,.55fr)}
+ .arcade .shop-player>.block-player {width:min(100%,129px)}
+ .arcade .shop-banner-actions {gap:5px;margin-top:10px}
+ .arcade .shop-banner-actions .btn {min-height:38px;font-size:11px;padding:5px 7px}
+ .arcade .game-shop-tabs {grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .arcade .game-shop-tabs>button {min-height:39px;font-size:11px}
+ .arcade .shop-title h2 {font-size:24px}
+ .arcade .shop-title>span {font-size:9px}
+ .arcade .league-hero,.arcade .world-banner {min-height:125px;padding:11px 12px}
+ .league-cup {margin:0}
+ .league-cup svg {width:49px;height:49px}
+ .arcade .game-shell {padding-inline:9px}
+ .arcade .game-header {height:51px}
+ .arcade .game-main {padding-top:7px}
+ .arcade .game-title {padding:5px 6px;margin-bottom:6px;gap:4px}
+ .arcade .game-title h1 {font-size:clamp(15px,4vw,21px);margin:0}
+ .arcade .game-title .eyebrow {font-size:8px}
+ .arcade .game-metrics {gap:3px}
+ .arcade .game-metric {min-width:36px;padding:3px 4px}
+ .arcade .game-metric strong {font-size:20px}
+ .arcade .game-metric small {font-size:7px}
+ .arcade .match-grid {grid-template-columns:minmax(0,1fr);grid-template-areas:"pitch" "question" "controls";gap:7px}
+ .arcade .match-pitch {position:sticky;top:2px;padding:4px 6px}
+ .arcade .match-card-top {min-height:20px}
+ .arcade .match-pitch .penalty-view {height:116px}
+ .arcade .match-grid>.question-card {min-height:0}
+ .arcade .match-controls>#keypad,.arcade .match-controls>.desktop-record {display:none}
+ .arcade .results {padding:16px 11px 21px;margin-top:9px}
+}
+@media(max-width:400px) {
+ .arcade .header-tools .profile-mini {max-width:35px}
+ .arcade .header-tools .profile-mini>span:last-child {display:none}
+ .arcade .header-tools .profile-mini .profile-dot {display:grid}
+}
+@media(max-width:355px) {
+ .arcade .header .brand-type {font-size:15px;max-width:80px;white-space:normal;line-height:1}
+ .arcade .header-tools {gap:3px}
+ .arcade-credit b {max-width:40px;overflow:hidden;text-overflow:ellipsis}
+ .arcade .header .brand-mark {width:24px;height:28px}
+ .arcade-nav .nav-btn {font-size:10px}
+ .arcade .lobby-banner {grid-template-columns:minmax(0,1.4fr) 93px}
+}
+@media(max-width:680px) and (max-height:520px) {
+ .arcade .match-pitch {position:relative;top:auto}
+ .arcade .match-pitch .penalty-view {height:82px}
+}

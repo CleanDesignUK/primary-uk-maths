@@ -125,21 +125,22 @@ export function clubProgress(p,club){
  const days=new Set(facts.flatMap(f=>f.days||[])).size;
  const target=club.level<=1?{unique:0,days:0,secure:0}:club.level<=2?{unique:20,days:1,secure:0}:club.level<=4?{unique:60,days:3,secure:10}:club.level<=7?{unique:120,days:5,secure:30}:club.level<=9?{unique:180,days:7,secure:50}:club.level<=12?{unique:250,days:10,secure:80}:{unique:400,days:14,secure:150};
  const goals=[{label:'Level',value:careerLevel(p),target:club.level},{label:'Different facts',value:unique,target:target.unique},{label:'Practice days',value:days,target:target.days},{label:'Recall-secure facts',value:secure,target:target.secure}].filter(g=>g.target>0);
- return {eligible:goals.every(g=>g.value>=g.target),goals,remaining:goals.filter(g=>g.value<g.target)};
+ // An offer is only as close as its slowest requirement. Level progress starts at zero XP.
+ const fractions=goals.map(goal=>goal.label==='Level'&&club.level>1?careerXP(p)/xpForLevel(club.level):goal.value/goal.target);
+ return {eligible:goals.every(g=>g.value>=g.target),goals,remaining:goals.filter(g=>g.value<g.target),percent:Math.floor(100*Math.min(1,...fractions))};
 }
 export function chooseClub(p,id){initCareer(p);const club=CLUBS.find(c=>c.id===id);if(!club||!clubProgress(p,club).eligible)return false;p.look.club=id;return true;}
 export function careerNews(p,previousLevel,now=Date.now()){
  initCareer(p);const newClubs=CLUBS.filter(c=>!p.offeredClubs.includes(c.id)&&clubProgress(p,c).eligible);
- if(newClubs.length){newClubs.forEach(c=>p.offeredClubs.push(c.id));p.inbox.push({key:'clubs:'+newClubs.map(c=>c.id).join(':'),kind:'club',title:'You earned a club offer',text:`Your independent practice and recall have earned ${newClubs.map(c=>c.name).join(' or ')} in your game career. Visit the locker room.`,at:now,read:false});}
+ if(newClubs.length){newClubs.forEach(c=>p.offeredClubs.push(c.id));p.inbox.push({key:'clubs:'+newClubs.map(c=>c.id).join(':'),kind:'club',title:'You earned a club offer',text:`Your independent practice and recall have earned ${newClubs.map(c=>c.name).join(' or ')} in your game career. Visit Club offers in the Shop.`,at:now,read:false});}
  const next=CLUBS.find(club=>!clubProgress(p,club).eligible);
  if(next&&careerXP(p)>0){
   const progress=clubProgress(p,next);
-  const fraction=progress.goals.reduce((sum,goal)=>sum+Math.min(1,goal.value/goal.target),0)/progress.goals.length;
-  const milestone=[75,50,25].find(mark=>fraction*100>=mark);
+  const milestone=[75,50,25].find(mark=>progress.percent>=mark);
   const key=`scout:${next.id}:${milestone}`;
   if(milestone&&!p.inbox.some(note=>note.key===key)){
    const goal=progress.remaining.find(g=>g.label==='Different facts')||progress.remaining[0];
-   p.inbox.push({key,kind:'coach',title:`Coach · ${next.name} scout watch`,text:`GG, ${p.name}! You’re ${Math.round(fraction*100)}% of the way to this club offer. Next target: ${goal.label.toLowerCase()} ${goal.value}/${goal.target}.`,at:now,read:false});
+   p.inbox.push({key,kind:'coach',title:`Coach · ${next.name} scout watch`,text:`GG, ${p.name}! You’re ${progress.percent}% of the way to this club offer. Next target: ${goal.label.toLowerCase()} ${goal.value}/${goal.target}.`,at:now,read:false});
   }
  }
  p.inbox=p.inbox.slice(-100);
