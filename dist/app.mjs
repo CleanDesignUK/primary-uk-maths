@@ -27,6 +27,8 @@ if(data.profiles.length===3&&data.profiles.every(p=>['Ace','Carter','Cruz'].incl
 try{const reading=localStorage.getItem('matchday.reading');if(reading!==null)data.settings.dyslexia=reading==='true';}catch{}
 for(const p of data.profiles){initCareer(p);if(p.year===0)p.year=1;initLearning(p);initRewards(p);initLeague(p);}
 const routeMap={today:'home',skills:'syllabus',progress:'stats',grownups:'coach'};
+const GOAL_FEEDBACK_MS=1200;
+let goalTimer;
 let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(initialRoute)?initialRoute:'home');
 try{const s=JSON.parse(localStorage.getItem(DRAFT)||'null');if(['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(s?.schema)&&data.profiles.some(p=>p.id===s.profileId)&&Number.isFinite(s.elapsed)&&s.q&&s.skillIds.every(skillById)){session=s;session.paused=true;session.pausedEver=true;data.activeId=s.profileId;}}catch{}
 const player=()=>data.profiles.find(p=>p.id===(session?.profileId||data.activeId));
@@ -57,7 +59,7 @@ function header(){
 function footer(){
  return `<footer class="footer arcade-footer"><span>${icon('shield',13)} Saved on this device</span><div><a href="../parents/">Parents</a><a href="../teachers/">Teachers</a><button class="text-btn" data-action="nav" data-view="coach">Grown-ups ${icon('settings',13)}</button></div></footer>`;
 }
-function navigate(next){if(view==='world'&&next!=='world'){clearInterval(worldTimer);world.match=null;world.feedback=null;}if(next==='world')world.loaded=false;if(session){pause();return;}closeDialog();result=null;view=next;location.hash=next;render();scrollTo({top:0});}
+function navigate(next){if(view==='world'&&next!=='world'){clearTimeout(goalTimer);clearInterval(worldTimer);world.match=null;world.feedback=null;}if(next==='world')world.loaded=false;if(session){pause();return;}closeDialog();result=null;view=next;location.hash=next;render();scrollTo({top:0});}
 window.addEventListener('hashchange',()=>{if(location.hash==='#main')return;if(!session&&!result){view=routeMap[location.hash.slice(1)]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(location.hash.slice(1))?location.hash.slice(1):'home');render();}});
 function render(){
  applyAccessPreferences();
@@ -119,6 +121,7 @@ function startMatch(manual=null,options={}) {
 }
 
 function nextQuestion(renderHost=true){
+ clearTimeout(goalTimer);
  if(!session)return;
  if(session.attempts>=session.target){finishMatch(true);return;}
  const next=nextAdaptive(player(),session);if(!next?.q)throw Error('No next exercise');
@@ -277,13 +280,21 @@ function submit(value=null) {
 
 function answerError(message,input=$('#answer')){$('#answer-error').textContent=message;input?.focus();}
 function startTick(){clearInterval(tickId);lastTick=performance.now();tickId=setInterval(()=>{if(!session||session.paused)return;const now=performance.now(),delta=Math.max(0,(now-lastTick)/1000);lastTick=now;session.elapsed+=clockDelta(session,delta);if(session.phase==='question')session.currentMs+=delta*1000;if(session.elapsed>=session.duration){session.elapsed=session.duration;finishMatch(true);return;}updateLive();if(now-lastSave>1100){saveRound();lastSave=now;}},150);}
+// Keep the goal and celebration visible before clearing the question.
+function afterGoal(advance){
+ clearTimeout(goalTimer);
+ goalTimer=setTimeout(advance,GOAL_FEEDBACK_MS);
+}
 function paintPitch(replay=false) {
- const arena=$('.penalty-view');
- if(!arena||!session)return;
- const row=session.phase==='feedback'?session.rows.at(-1):null;
+ const arena=$('.penalty-view'),round=session;
+ if(!arena||!round)return;
+ const row=round.phase==='feedback'?round.rows.at(-1):null;
  const move=paintShot(arena,{question:session.q,correct:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay});
  $('#move-caption').textContent=row?(row.correct?`${move.id==='normal'?'In the net':move.label}${session.streak>=3?' · '+session.streak+' in a row':''}`:'Coach has the replay'):'Ready to shoot';
  $('.pitch-replay').hidden=!row;
+ if(row?.correct&&!round.paused)afterGoal(()=>{
+  if(session===round&&!round.paused&&round.phase==='feedback'&&round.rows.at(-1)===row)nextQuestion();
+ });
 }
 function updateLive() {
  if(!session)return;
@@ -297,12 +308,12 @@ function updateLive() {
  if($('#shot-track'))$('#shot-track').innerHTML=shotTrack();
 }
 
-function pause(){if(!session)return;session.paused=true;session.pausedEver=true;saveRound();showPauseOverlay();}
+function pause(){if(!session)return;clearTimeout(goalTimer);session.paused=true;session.pausedEver=true;saveRound();showPauseOverlay();}
 function showPauseOverlay(){if($('.paused'))return;$('.game-main').inert=true;$('.game-header').inert=true;const el=document.createElement('div');el.className='paused';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','pause-title');el.innerHTML=`<div class="pause-inner">${icon('whistle',58)}<div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--muted)">TIME OUT</div><h2 id="pause-title">TAKE A BREATHER.</h2><p>${esc(player().name)}’s match is saved.</p><button class="btn lime big" data-action="resume">PLAY ON ${icon('play',18)}</button><button class="btn white" data-action="finish">Finish</button></div>`;app.append(el);requestAnimationFrame(()=>$('[data-action=resume]',el).focus());}
 function resume(){session.paused=false;$('.paused')?.remove();$('.game-main').inert=false;$('.game-header').inert=false;renderQuestion();paintPitch();startTick();saveRound();}
 function finishMatch(complete) {
  if(!session)return;
- clearInterval(tickId);window.speechSynthesis?.cancel();
+ clearTimeout(goalTimer);clearInterval(tickId);window.speechSynthesis?.cancel();
  const p=player(),previousLevel=careerLevel(p),priorXP=careerXP(p),old=bestFor(session.recordKey);
  const before=new Set(medals(p).filter(x=>x[3]).map(x=>x[0]));
  const saved={...session,complete:complete&&session.attempts===session.target,endedAt:Date.now(),elapsed:Math.round(session.elapsed*10)/10};
@@ -377,7 +388,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'world-confirm-leave':closeDialog();leaveWorld();break;
  case 'world-start':startWorld();break;
  case 'world-next':nextWorld();break;
- case 'world-board':clearInterval(worldTimer);world.match=null;world.feedback=null;world.loaded=false;render();scrollTo({top:0});break;
+ case 'world-board':clearTimeout(goalTimer);clearInterval(worldTimer);world.match=null;world.feedback=null;world.loaded=false;render();scrollTo({top:0});break;
  case 'open-written':year=player().year;domain='calculation';search='';navigate('written');break;
  case 'appearance':openDialog(appearanceView(player()),{wide:true});break;
  case 'shop-hair':shopSlot='hair';navigate('locker');break;
@@ -419,7 +430,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
   requestAnimationFrame(()=>$('.help-box')?.scrollIntoView({block:'nearest'}));
  }break;
  case 'answer-choice':submit(b.dataset.value);break;
- case 'next':if(session&&!session.paused)nextQuestion();break;
+ case 'next':if(session?.phase==='feedback'&&!session.paused)nextQuestion();break;
  case 'key':pressKeypad(b.dataset.key);break;
  case 'fraction-whole':if(session?.phase==='question'&&!session.paused&&session.fractionParts){
   const parts=session.fractionParts;
@@ -458,7 +469,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value;if(el.id==='kit-hair'||el.id==='kit-pattern')equipItem(p,value);else{const [slot,choices]=({'kit-hair-colour':['hairColour',HAIR_COLOURS],'kit-skin':['skin',SKIN_TONES],'kit-trim':['trim',KIT_TRIMS],'kit-theme':['theme',PLAYER_THEMES]})[el.id];if(Object.hasOwn(choices,value))p.look[slot]=value;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
  document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&session&&!session.paused)pause();});
- window.addEventListener('pagehide',()=>{if(session){session.paused=true;session.pausedEver=true;saveRound();}save();});
+ window.addEventListener('pagehide',()=>{clearTimeout(goalTimer);if(session){session.paused=true;session.pausedEver=true;saveRound();}save();});
 
 function readingButton(){return `<button class="reading-toggle ${data.settings.dyslexia?'on':''}" data-action="reading" aria-label="Dyslexia-friendly mode" aria-pressed="${!!data.settings.dyslexia}" title="Dyslexia-friendly layout"><b>Aa</b><span>Dyslexia</span></button>`;}
 function applyAccessPreferences(){document.body.dataset.playerTheme=player()?.look?.theme||'pitch';document.body.classList.toggle('reduce-motion',!!data.settings.reduceMotion);document.body.classList.toggle('reading-mode',!!data.settings.dyslexia);$$('[data-action="reading"]').forEach(b=>{b.setAttribute('aria-pressed',String(!!data.settings.dyslexia));b.classList.toggle('on',!!data.settings.dyslexia);});}
@@ -531,17 +542,20 @@ async function submitWorld(value){
  if(state.busy||!state.match||state.feedback||view!=='world')return;
  state.answer=String(value||'').trim().replace('−','-');
  if(!/^-?\d+(?:\.\d+)?$/.test(state.answer)){state.error='Enter a number.';render();return;}
- state.busy=true;state.error='';state.lastQuestion=state.match.question;
+ const match=state.match;
+ state.busy=true;state.error='';state.lastQuestion=match.question;
  const submitButton=$('#world-answer-form button[type="submit"]');
  if(submitButton)submitButton.disabled=true;
  try{
-  const shot=await leagueApi('shot',{token:state.identity.token,body:{id:state.match.id,index:state.match.index,answer:state.answer}});
+  const shot=await leagueApi('shot',{token:state.identity.token,body:{id:match.id,index:match.index,answer:state.answer}});
+  if(world!==state||view!=='world'||state.match!==match)return;
   state.match=shot;state.feedback=shot;state.outcomes[shot.index-1]=shot.goal?'goal':'miss';state.streak=shot.goal?state.streak+1:0;state.answer='';
   if(shot.unlocked)state.unlocked=shot.unlocked;
  }catch(error){state.error=error.message;}
  finally{state.busy=false;if(view==='world'&&world===state)render();}
 }
 function nextWorld(){
+ clearTimeout(goalTimer);
  if(!world.feedback)return;
  if(world.feedback.complete){
   world.report=world.feedback;world.tier=world.match.tier;
@@ -553,7 +567,11 @@ function renderWorldMatch(){
  const p=player();
  if(!p){world.match=null;render();return;}
  app.innerHTML=worldMatchView(p,world);
- paintShot($('.penalty-view'),{question:world.feedback?world.lastQuestion:world.match.question,correct:world.feedback?.goal,attempt:world.match.index,streak:world.streak,celebration:p.look.celebration});
+ const state=world,feedback=state.feedback;
+ paintShot($('.penalty-view'),{question:feedback?state.lastQuestion:state.match.question,correct:feedback?.goal,attempt:state.match.index,streak:state.streak,celebration:p.look.celebration});
+ if(feedback?.goal)afterGoal(()=>{
+  if(view==='world'&&world===state&&state.feedback===feedback&&state.match)nextWorld();
+ });
  clearInterval(worldTimer);
  if(!world.feedback?.complete)worldTimer=setInterval(()=>{
   if(view!=='world'||!world.match){clearInterval(worldTimer);return;}
