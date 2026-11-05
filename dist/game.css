@@ -65,3 +65,20 @@ body[data-player-theme="rose"]{--game-dark:#492636;--game-accent:#ffaab7;--game-
 .fraction-rule{height:3px;margin:0 -4px;border-radius:3px;background:#284d36}
 .fraction-whole-toggle{min-height:42px;margin:2px auto 0}
 .feedback p .fraction{font-size:1.15em}
+
+:is(.celebration-preview.celebrate-open-arms,.penalty-view[data-celebration="celebrate-open-arms"]) :is(.arm-left,.arm-right) {
+ transform-box:fill-box;
+ transform-origin:50% 7%;
+}
+.penalty-view[data-outcome="goal"][data-celebration="celebrate-open-arms"] .kicker-avatar .arm-left {
+ --celebrate-angle:77deg;
+ animation:open-arms .72s .38s ease-out both;
+}
+.penalty-view[data-outcome="goal"][data-celebration="celebrate-open-arms"] .kicker-avatar .arm-right {
+ --celebrate-angle:-77deg;
+ animation:open-arms .72s .38s ease-out both;
+}
+@keyframes open-arms {
+ 0% {transform:rotate(0)}
+ 55%,100% {transform:rotate(var(--celebrate-angle))}
+}

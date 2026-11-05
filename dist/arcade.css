@@ -172,7 +172,7 @@ body.arcade {
 .arcade .shop-player>.block-player {width:min(100%,190px);height:auto}
 .arcade .shop-player>span {color:#f0d7ff;background:#15162cd6}
 .arcade .shop-banner .btn.translucent {background:#24213bcf;border-color:#a896ca96}
-.arcade .game-shop-tabs {display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;overflow:visible;margin:13px 0;padding:0;border:0;background:none}
+.arcade .game-shop-tabs {display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:6px;overflow:visible;margin:13px 0;padding:0;border:0;background:none}
 .arcade .game-shop-tabs>button {
  display:flex;align-items:center;justify-content:center;gap:4px;min-height:43px;background:var(--deck);color:var(--bright);
  border:1px solid var(--deck-line);border-radius:9px;padding:5px 2px;font-size:11px;white-space:normal;
@@ -557,3 +557,18 @@ body.arcade {
  .arcade .first-shot .penalty-view {height:clamp(113px,20vh,160px)}
  .first-shot-equation {font-size:36px}
 }
+
+.arcade .game-shop-tabs>button[data-slot="footballers"]:not(.active) {
+ border-color:#8e7348;color:#ffedbc;background:#352f37;
+}
+.arcade .game-shop-tabs>button[data-slot="starter"]:not(.active) {
+ border-color:#66856a;color:#d9f6a2;background:#223e40;
+}
+.game-item .player-inspiration {
+ min-height:2.3em;margin:0 0 9px;color:#e5edfa;font-size:12px;line-height:1.35;
+}
+.player-inspiration>span {color:#c4d4e8}
+.game-item .wear-number {min-height:44px;color:#d9ecff;justify-content:center;font-size:12px}
+.arcade.reading-mode .game-item :is(.player-inspiration,.player-inspiration>span,.wear-number) {color:#314b44}
+.celebration-preview.celebrate-open-arms .arm-left {transform:rotate(77deg)}
+.celebration-preview.celebrate-open-arms .arm-right {transform:rotate(-77deg)}

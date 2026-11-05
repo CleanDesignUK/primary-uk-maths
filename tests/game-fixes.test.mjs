@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DAY,newProfile,questionPool,skillById} from '../dist/engine.mjs';
+import {DAY,newProfile,questionPool,skillById,initialData,validateImport} from '../dist/engine.mjs';
 import {syllabusIds,answerMatches} from '../dist/curriculum.mjs';
 import {initLearning,nextAdaptive,recordLearning,progressCheckPlan,learningNotes} from '../dist/adaptive.mjs';
 import {initCareer,buyItem,credits,validateCareer,ITEMS} from '../dist/career.mjs';
@@ -44,11 +44,23 @@ test('switching the profile to an easier year keeps practice and blocks a second
  const p=newProfile('Test',6);initRewards(p);p.year=1;initRewards(p);
  assert.equal(p.rewardYear,6);assert.equal(attempt(p,questionPool('add10')[5],challenge(p)),0);
 });
-test('legacy bought kits load at their original prices while new prices are enforced',()=>{
- const p=newProfile('Test',3);initCareer(p);p.pointsTotal=340;
- assert.equal(buyItem(p,'kit-blue').ok,false);
- p.inventory=['kit-blue'];p.look.kit='kit-blue';p.creditsSpent=25;p.purchases=[{id:'kit-blue',cost:25,at:now}];
- assert.ok(validateCareer(p));assert.equal(credits(p),9);
+test('starter discounts preserve both previous catalogues and charge the new price once',()=>{
+ const backup=initialData();
+ for(const [catalogue,cost] of [[undefined,25],[2,125]]){
+  const player=newProfile(`Previous ${cost}`,3);initCareer(player);player.pointsTotal=1500;
+  player.inventory=['kit-blue'];player.look.kit='kit-blue';player.creditsSpent=cost;
+  player.purchases=[{id:'kit-blue',cost,at:now,catalogue}];
+  assert.ok(validateCareer(player));assert.equal(credits(player),150-cost);
+  backup.profiles.push(player);
+ }
+ const starter=newProfile('Starter',3);initCareer(starter);starter.pointsTotal=150;
+ assert.equal(buyItem(starter,'kit-blue').ok,false);
+ assert.equal(buyItem(starter,'boots-power-7').ok,true);
+ assert.equal(buyItem(starter,'boots-power-7').alreadyOwned,true);
+ assert.equal(credits(starter),1);
+ assert.deepEqual(starter.purchases.map(({catalogue,cost})=>[catalogue,cost]),[[3,14]]);
+ backup.profiles.push(starter);
+ assert.deepEqual(validateImport(structuredClone(backup)).profiles.map(credits),[125,25,1]);
  assert.ok(ITEMS.length>=60);assert.ok(ITEMS.filter(item=>item.slot==='hair').length>=10);
 });
 test('the new league omits easy legacy scores and zero XP rounds',()=>{

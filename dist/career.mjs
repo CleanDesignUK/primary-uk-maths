@@ -40,7 +40,7 @@ const ORIGINAL_ITEMS=[
 ];
 const LEGACY_PRICE = Object.fromEntries(ORIGINAL_ITEMS.map(item => [item.id,item.price]));
 const newItem = (id, slot, name, price, level, colour, extra={}) => ({id,slot,name,price,level,colour,...extra});
-export const ITEMS = [
+const CATALOGUE_2 = [
  ...ORIGINAL_ITEMS.map(item=>({...item,price:item.price*5})),
  newItem('kit-sash','kit','Stadium sash',185,5,'#295b47',{accent:'#f3de9d',pattern:'sash'}),
  newItem('kit-halves','kit','Two-tone away',235,6,'#2c4f91',{accent:'#98d9ff',pattern:'halves'}),
@@ -60,7 +60,7 @@ export const ITEMS = [
  newItem('hair-fade','hair','High fade',120,4),
  newItem('hair-fringe','hair','Swept fringe',190,5),
  newItem('hair-locs','hair','Short locs',220,6),
- newItem('hair-bun','hair','Top knot',260,7),
+ newItem('hair-bun','hair','Top knot',260,7,null,{player:'Erling Haaland',number:9}),
  newItem('hair-mohawk','hair','Mohawk',325,8),
  newItem('hair-long','hair','Long waves',410,10),
  newItem('accessory-cap','accessory','Training cap',155,5,'#335b4c'),
@@ -79,9 +79,26 @@ export const ITEMS = [
  newItem('pattern-halves','pattern','Split colours',230,6),
  newItem('pattern-chevron','pattern','Captain chevrons',340,8),
  newItem('celebrate-fist','celebration','Fist pump',0,1),
- newItem('celebrate-jump','celebration','Victory jump',175,5,'#bada6f'),
+ newItem('celebrate-jump','celebration','Victory jump',175,5,'#bada6f',{player:'Cristiano Ronaldo',number:7}),
  newItem('celebrate-slide','celebration','Knee slide',320,8,'#92d8fc'),
  newItem('celebrate-spin','celebration','Champion turn',580,12,'#d1a8f0')
+];
+const CATALOGUE_2_PRICE = Object.fromEntries(CATALOGUE_2.map(item => [item.id,item.price]));
+const SHOP_DISCOUNTS = {
+ 'hair-sweep':{price:6,level:1},
+ 'shorts-white':{price:8,level:1},
+ 'accessory-headband':{price:9,level:1},
+ 'boots-lime':{price:10,level:1},
+ 'kit-blue':{price:16,level:1},
+ 'hair-bun':{price:22,level:2},
+ 'celebrate-jump':{price:24,level:2}
+};
+export const ITEMS = [
+ ...CATALOGUE_2.map(item => ({...item,...SHOP_DISCOUNTS[item.id]})),
+ newItem('kit-sky-10','kit','Sky Playmaker',18,1,'#8ccff3',{accent:'#f9fbff',pattern:'stripes',player:'Lionel Messi',number:10}),
+ newItem('boots-power-7','boots','Power 7 Boots',14,1,'#e8c577',{player:'Cristiano Ronaldo',number:7}),
+ newItem('kit-midfield-5','kit','Midfield Five',38,3,'#f1f3f8',{accent:'#6c55c8',pattern:'chevron',player:'Jude Bellingham',number:5}),
+ newItem('celebrate-open-arms','celebration','Open Arms',34,3,'#a3cdf7',{player:'Jude Bellingham',number:5})
 ];
 export const CLUBS=[
  {id:'academy',name:'Academy XI',level:1,colour:'#2d704c',short:'AXI'},
@@ -115,7 +132,7 @@ export function buyItem(p,id){
  if(owns(p,item))return {ok:true,alreadyOwned:true,message:'Already in your locker.'};
  if(careerLevel(p)<item.level)return {ok:false,message:`Unlocks at level ${item.level}.`};
  if(credits(p)<item.price)return {ok:false,message:`Earn ${item.price-credits(p)} more credits.`};
- p.creditsSpent+=item.price;p.inventory.push(id);p.purchases.push({id,cost:item.price,catalogue:2,at:Date.now()});return {ok:true,message:`${item.name} is yours.`};
+ p.creditsSpent+=item.price;p.inventory.push(id);p.purchases.push({id,cost:item.price,catalogue:3,at:Date.now()});return {ok:true,message:`${item.name} is yours.`};
 }
 export function equipItem(p,id){initCareer(p);const item=itemById(id);if(!item||!owns(p,item))return false;p.look[item.slot]=id;return true;}
 // Club offers require breadth and later-day recall as well as XP.
@@ -146,6 +163,11 @@ export function careerNews(p,previousLevel,now=Date.now()){
  p.inbox=p.inbox.slice(-100);
  return newClubs;
 }
+function validPurchase(t){
+ if(!t||!itemById(t.id)||!Number.isFinite(t.at))return false;
+ const price=t.catalogue===3?itemById(t.id).price:t.catalogue===2?CATALOGUE_2_PRICE[t.id]:LEGACY_PRICE[t.id]??CATALOGUE_2_PRICE[t.id];
+ return Number.isSafeInteger(t.cost)&&t.cost===price;
+}
 export function validateCareer(p){
  if(p.look){const l=p.look;if(!SKIN_TONES[l.skin]||!HAIR_COLOURS[l.hairColour]||!Number.isInteger(l.number)||l.number<1||l.number>99||!POSITIONS.includes(l.position)||!CLUBS.some(c=>c.id===l.club))throw Error('Invalid player customisation.');for(const slot of ['kit','shorts','boots','hair','accessory','ball','trail'])if(!ITEMS.some(i=>i.id===l[slot]&&i.slot===slot))throw Error('Invalid equipped item.');}
  if(p.offeredClubs!==undefined&&(!Array.isArray(p.offeredClubs)||p.offeredClubs.some(id=>!CLUBS.some(c=>c.id===id))||new Set(p.offeredClubs).size!==p.offeredClubs.length))throw Error('Invalid club offers.');
@@ -153,7 +175,7 @@ export function validateCareer(p){
  for(const slot of ['pattern','celebration'])if(p.look?.[slot]!==undefined&&(!ITEMS.some(item=>item.id===p.look[slot]&&item.slot===slot)||!owns(p,itemById(p.look[slot]))))throw Error('Invalid player equipment.');
  if(p.inventory!==undefined&&(!Array.isArray(p.inventory)||new Set(p.inventory).size!==p.inventory.length||p.inventory.some(id=>!itemById(id))))throw Error('Invalid player inventory.');
  if(p.creditsSpent!==undefined&&(!Number.isSafeInteger(p.creditsSpent)||p.creditsSpent<0||p.creditsSpent>Math.floor(careerXP(p)/10)))throw Error('Invalid credit balance.');
- if(p.purchases!==undefined&&(!Array.isArray(p.purchases)||p.purchases.length>ITEMS.length||p.purchases.some(t=>!t||!itemById(t.id)||t.cost!==(t.catalogue===2?itemById(t.id).price:LEGACY_PRICE[t.id]??itemById(t.id).price)||!Number.isFinite(t.at))))throw Error('Invalid shop history.');
+ if(p.purchases!==undefined&&(!Array.isArray(p.purchases)||p.purchases.length>ITEMS.length||p.purchases.some(t=>!validPurchase(t))))throw Error('Invalid shop history.');
  if(p.purchases&&new Set(p.purchases.map(t=>t.id)).size!==p.purchases.length)throw Error('Duplicate shop purchases.');
  if(p.purchases&&p.purchases.reduce((n,t)=>n+t.cost,0)!==(p.creditsSpent||0))throw Error('Shop balance does not match purchases.');
  if(p.inventory?.some(id=>itemById(id).price>0&&!p.purchases?.some(t=>t.id===id)))throw Error('Inventory has an unpurchased item.');

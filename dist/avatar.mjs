@@ -1,5 +1,5 @@
 import {esc} from './visuals.mjs';
-import {initCareer,itemById,SKIN_TONES,HAIR_COLOURS,KIT_TRIMS,clubById} from './career.mjs';
+import {initCareer,itemById,SKIN_TONES,HAIR_COLOURS,KIT_TRIMS,clubById} from './career.mjs?v=6.5.0';
 
 export function avatarSVG(profile,{size=200,pose='stand',preview=null}={}){
  const p=profile?{...profile,look:{...(profile.look||{})}}:{look:{}};initCareer(p);if(preview){const item=itemById(preview);if(item)p.look[item.slot]=item.id;}

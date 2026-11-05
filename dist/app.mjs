@@ -1,16 +1,16 @@
-import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs';
+import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=6.5.0';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
 import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions} from './adaptive.mjs?v=6.2.0';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
 import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.2.0';
 import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.3.0';
-import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.3.0';
+import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.4.1';
-import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6';
-import {avatarSVG} from './avatar.mjs';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.5.0';
+import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.5.0';
+import {avatarSVG} from './avatar.mjs?v=6.5.0';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
-import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs';
+import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=6.5.0';
 import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs';
 import {focusTables} from './tables.mjs';
 import {workingText} from './coaching.mjs?v=6.3.0';
@@ -21,7 +21,7 @@ import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} fro
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
 const app=$('#app'),modalRoot=$('#modal-root');
-let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='kit',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,pendingMatch=null,audio;
+let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='starter',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,pendingMatch=null,audio;
 const draftRounds=new Map();
 const firstShot={index:0,goal:false};
 try{const raw=localStorage.getItem(STORAGE);data=raw?validateImport(JSON.parse(raw)):initialData();}catch{data=initialData();storageWarning='Progress could not be loaded. Restore a backup in Coach.';}
@@ -608,6 +608,11 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'shop-tab':shopSlot=b.dataset.slot;render();break;
  case 'buy':{const bought=buyItem(player(),b.dataset.item);if(bought.ok){equipItem(player(),b.dataset.item);save();render();}toast(bought.message);break;}
  case 'equip':if(equipItem(player(),b.dataset.item)){save();render();}break;
+ case 'wear-number':{
+  const item=itemById(b.dataset.item),p=player();
+  if(item?.number&&p&&owns(p,item)){p.look.number=item.number;save();render();}
+  break;
+ }
  case 'skin':if(SKIN_TONES[b.dataset.value]){player().look.skin=b.dataset.value;save();render();}break;
  case 'hair-colour':if(HAIR_COLOURS[b.dataset.value]){player().look.hairColour=b.dataset.value;save();render();}break;
  case 'club':if(chooseClub(player(),b.dataset.club)){save();closeDialog();render();toast('Your new club is ready.');}break;

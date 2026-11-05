@@ -29,7 +29,7 @@ Play, Units, Shop, Tables and League are available during matches. Visiting a ta
 
 Players bank career XP after completing an eligible Coach match. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. Previous XP and owned kit are preserved.
 
-The Shop has 67 choices across kit, hair, boots, shorts, accessories, shirt designs, balls, trails and celebrations. Players can also change shirt number, position, trim, skin tone and clubhouse colour. The first paid kit costs 125 credits. Levels start at 85 XP and the gaps grow. Club offers require a combination of levels, varied facts, practice days and secure recall. Club offers are fictional game rewards.
+Starter gear costs 6 to 18 credits. Footballer Picks includes original shirts, boots, hairstyles and celebrations inspired by favourite players. Players can change shirt number, position, trim, skin tone and clubhouse colour. Levels start at 85 XP and the gaps grow. Club offers require a combination of levels, varied facts, practice days and secure recall. Club offers are fictional game rewards.
 
 ## Profiles and leagues
 

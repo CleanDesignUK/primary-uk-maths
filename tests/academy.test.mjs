@@ -51,7 +51,7 @@ test('table match fitness needs all 12 facts, inverse forms and genuinely spaced
  const q=questionPool('table8')[0];recordLearning(profile,q,false,false,1000,'miss',now+5*DAY);assert.equal(tableEvidence(profile,8).matchFit,false);
 });
 test('earned credits cannot be overspent or double-charged and equipped items must be owned',()=>{
- const profile=p();profile.pointsTotal=1360;assert.equal(credits(profile),136);assert.equal(equipItem(profile,'kit-blue'),false);assert.equal(buyItem(profile,'kit-blue').ok,true);assert.equal(credits(profile),11);assert.equal(equipItem(profile,'kit-blue'),true);assert.equal(buyItem(profile,'kit-blue').alreadyOwned,true);assert.equal(credits(profile),11);assert.equal(buyItem(profile,'kit-red').ok,false);assert.ok(validateCareer(profile));
+ const profile=p();profile.pointsTotal=270;assert.equal(credits(profile),27);assert.equal(equipItem(profile,'kit-blue'),false);assert.equal(buyItem(profile,'kit-blue').ok,true);assert.equal(credits(profile),11);assert.equal(equipItem(profile,'kit-blue'),true);assert.equal(buyItem(profile,'kit-blue').alreadyOwned,true);assert.equal(credits(profile),11);assert.equal(buyItem(profile,'kit-red').ok,false);assert.ok(validateCareer(profile));
  const raw=initialData();raw.profiles=[profile];assert.equal(validateImport(structuredClone(raw)).profiles[0].look.kit,'kit-blue');
  for(const mutate of [p=>p.creditsSpent=999,p=>p.look.number=100,p=>p.inventory.push('kit-gold'),p=>p.purchases.push({...p.purchases[0]})]){const invalid=structuredClone(profile);mutate(invalid);assert.throws(()=>validateCareer(invalid));}
 });

@@ -2,11 +2,11 @@ import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs';
 import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs';
 import {competency,planSummary,probeIds,learningNotes,progressCheckPlan} from './adaptive.mjs?v=6.2.0';
 import {esc,icon,mathText} from './visuals.mjs?v=6';
-import {avatarSVG,clubBadge} from './avatar.mjs';
-import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,PLAYER_THEMES,KIT_TRIMS} from './career.mjs?v=6';
+import {avatarSVG,clubBadge} from './avatar.mjs?v=6.5.0';
+import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,PLAYER_THEMES,KIT_TRIMS} from './career.mjs?v=6.5.0';
 import {yearProgress,leagueTable} from './promotion.mjs';
 import {focusTables,tableEvidence} from './tables.mjs';
-import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=6.3.0';
+import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {matchMission,missionProgress} from './shot.mjs?v=6.3.0';
 import {britishVoices} from './speech.mjs';
 
@@ -97,28 +97,32 @@ export function homeView(p){
  <details class="lobby-year-progress"><summary>Year ${p.year} progress <b>${progress.secure}/${progress.total} match fit</b></summary>${yearJourney(p)}</details>`;
 }
 
-const shopCategories=[['kit','Kits','shirt'],['hair','Hair','coach'],['boots','Boots','bolt'],['shorts','Shorts','grid'],['accessory','Extras','star'],['pattern','Designs','edit'],['ball','Balls','ball'],['trail','Trails','bolt'],['celebration','Moves','trophy']];
+const shopCategories=[['starter','Starter','bolt'],['footballers','Footballers','star'],['kit','Kits','shirt'],['hair','Hair','coach'],['boots','Boots','bolt'],['shorts','Shorts','grid'],['accessory','Extras','star'],['pattern','Designs','edit'],['ball','Balls','ball'],['trail','Trails','bolt'],['celebration','Moves','trophy']];
 
 function itemArt(p,item){
  if(item.slot==='ball'||item.slot==='trail'){
   const ball=item.slot==='ball'?item:itemById(p.look.ball);
   return `<div class="shop-ball-art" style="--preview-ball:${ball.colour};--preview-trail:${item.slot==='trail'?item.colour:'transparent'}">${icon('ball',61)}</div>`;
  }
- if(item.slot==='celebration')return `<div class="celebration-preview ${item.id}">${avatarSVG(p,{size:96})}${icon('star',24)}</div>`;
- return avatarSVG(p,{size:103,preview:item.id});
+ const preview=item.number?{...p,look:{...p.look,number:item.number}}:p;
+ if(item.slot==='celebration')return `<div class="celebration-preview ${item.id}">${avatarSVG(preview,{size:96})}${icon('star',24)}</div>`;
+ return avatarSVG(preview,{size:103,preview:item.id});
 }
 
-export function lockerView(p,slot='kit') {
+export function lockerView(p,slot='starter') {
  initCareer(p);
  const balance=credits(p),level=careerLevel(p),club=clubById(p.look.club);
+ const title=slot==='starter'?'Starter gear':slot==='footballers'?'Footballer Picks':shopCategories.find(([id])=>id===slot)?.[1]||'Kits';
+ const items=slot==='starter'?ITEMS.filter(item=>item.level===1&&item.price>0).sort((a,b)=>a.price-b.price)
+  :ITEMS.filter(item=>slot==='footballers'?item.player:item.slot===slot);
  return `<section class="shop-banner"><div class="shop-headline"><span class="field-label">${icon('shirt',17)} Kit locker</span><h1>Shop</h1><div class="shop-balance"><span class="credit-chip" aria-hidden="true">C</span> ${balance} credits</div><div class="shop-banner-actions"><button class="btn lime" data-action="appearance">${icon('edit',16)} Edit my player</button><button class="btn translucent" data-action="club-path">${icon('shield',16)} Club offers</button></div></div><div class="shop-player">${avatarSVG(p,{size:204})}<span>${esc(club.name)}</span></div></section>
  <div class="shop-tabs game-shop-tabs" role="group" aria-label="Shop category">${shopCategories.map(([id,label,symbol])=>`<button class="${id===slot?'active':''}" data-action="shop-tab" data-slot="${id}" aria-pressed="${id===slot}">${icon(symbol,18)}<span>${label}</span></button>`).join('')}</div>
- <div class="shop-title"><h2>${shopCategories.find(([id])=>id===slot)?.[1]||'Kits'}</h2><span>${icon('ball',16)} Earn credits in Coach matches</span></div>
- <div class="shop-grid game-shop-grid">${ITEMS.filter(item=>item.slot===slot).map(item=>{
+ <div class="shop-title"><h2>${title}</h2><span>${icon('ball',16)} ${slot==='starter'?'From 6 credits':slot==='footballers'?'Original player-inspired gear':'Earn credits in Coach matches'}</span></div>
+ <div class="shop-grid game-shop-grid">${items.map(item=>{
   const owned=owns(p,item),equipped=p.look[item.slot]===item.id,locked=level<item.level,short=Math.max(0,item.price-balance);
-  const grade=item.level>=13?'elite':item.level>=7?'rare':item.price?'pro':'starter';
+  const grade=item.level>=13?'elite':item.level>=7?'rare':item.level>1?'pro':'starter';
   const label=equipped?'Wearing':owned?'Equip':locked?`Level ${item.level}`:short?`Need ${short} more`:`Buy · ${item.price}`;
-  return `<article class="shop-item game-item ${grade} ${equipped?'equipped':''}"><div class="item-card-top"><span>${grade==='elite'?'Elite':grade==='rare'?'Rare':grade==='pro'?'Pro':'Starter'}</span><b>${owned?(equipped?'Equipped':'Owned'):`<span class="credit-chip" aria-hidden="true">C</span> ${item.price}`}</b></div><div class="item-preview">${itemArt(p,item)}</div><h3>${esc(item.name)}</h3><button class="btn ${owned?'white':'lime'}" data-action="${owned?'equip':'buy'}" data-item="${item.id}" ${equipped||locked||!owned&&short?'disabled':''}>${label}</button></article>`;
+  return `<article class="shop-item game-item ${grade} ${equipped?'equipped':''}"><div class="item-card-top"><span>${grade==='elite'?'Elite':grade==='rare'?'Rare':grade==='pro'?'Pro':'Starter'}</span><b>${owned?(equipped?'Equipped':'Owned'):`<span class="credit-chip" aria-hidden="true">C</span> ${item.price}`}</b></div><div class="item-preview">${itemArt(p,item)}</div><h3>${esc(item.name)}</h3>${item.player?`<p class="player-inspiration"><span>Inspired by</span> <b>${esc(item.player)}</b></p>`:''}<button class="btn ${owned?'white':'lime'}" data-action="${owned?'equip':'buy'}" data-item="${item.id}" ${equipped||!owned&&(locked||short)?'disabled':''}>${label}</button>${owned&&item.number&&p.look.number!==item.number?`<button class="text-btn wear-number" data-action="wear-number" data-item="${item.id}">Wear No. ${item.number}</button>`:''}</article>`;
  }).join('')}</div><div class="shop-foot">${scoutCard(p)}<button class="btn white" data-action="play">${icon('play',17)} Play Coach match</button></div>`;
 }
 
