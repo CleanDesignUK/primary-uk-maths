@@ -53,7 +53,7 @@ function repeatedDifficulty(sample){
  const missed=sample.filter(row=>!independent(row));
  return new Set(missed.map(row=>row.key)).size>=2&&missed.length>=sample.length/2;
 }
-const recentDifficulty=(p,id,now)=>repeatedDifficulty(recentEvidence(p,id,now).slice(-5));
+export const recentDifficulty=(p,id,now)=>repeatedDifficulty(recentEvidence(p,id,now).slice(-5));
 function foundationStatus(p,id,now){
  const sample=recentEvidence(p,id,now).slice(-5);
  if(sample.at(-1)?.coachFor&&!independent(sample.at(-1)))return 'practice';

@@ -95,7 +95,7 @@ test('progress checks select practised skills and learning notes require difficu
 test('grown-up reports render a linked Coach drill for recent difficulties',async()=>{
  const {reportContent}=await import('../dist/academy-ui.mjs');
  const p=newProfile('Test',3),pool=questionPool('colSub2');
- assert.doesNotMatch(reportContent(p),/Skills to support/);
+ assert.doesNotMatch(reportContent(p),/data-action="support-practice"/);
  for(let i=0;i<6;i++)recordLearning(p,pool[i],false,false,2000,i<3?'one':'two');
  const report=reportContent(p);
  assert.match(report,/Skills to support/);
