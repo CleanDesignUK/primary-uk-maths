@@ -10,13 +10,14 @@ import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,table
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.5.0';
 import {avatarSVG} from './avatar.mjs?v=6.5.0';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
-import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=6.5.0';
+import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=6.8.2';
 import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs';
 import {focusTables} from './tables.mjs';
 import {workingText} from './coaching.mjs?v=6.3.0';
 import {spokenMath,selectBritishVoice} from './speech.mjs';
 import {columnWorkspace} from './column-method.mjs?v=6.1.1';
 import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} from './fraction-answer.mjs';
+import {setMatchDock} from './match-dock.mjs?v=6.8.2';
 
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
@@ -216,8 +217,18 @@ function nextQuestion(renderHost=true){
  session.seen.push(session.q.key);if(!session.skillIds.includes(session.q.skillId))session.skillIds.push(session.q.skillId);saveRound();
  if(renderHost&&$('#question-host')){
   renderQuestion();paintPitch();updateLive();
-  if(window.matchMedia('(max-width: 680px)').matches)scrollTo({top:0,behavior:'instant'});
+  keepQuestionInView();
  }
+}
+
+function keepQuestionInView(){
+ if(!touchMatch.matches||scrollY===0)return;
+ const prompt=$('#question-host :is(.q-prompt,.q-equation)')||$('#question-host');
+ const rect=prompt?.getBoundingClientRect(),pitch=$('.match-pitch');
+ if(!rect)return;
+ const cameraBottom=pitch&&getComputedStyle(pitch).position==='sticky'?pitch.getBoundingClientRect().bottom:0;
+ const visibleTop=Math.max(0,cameraBottom)+8;
+ if(rect.bottom<visibleTop)scrollTo({top:Math.max(0,scrollY+rect.top-visibleTop),behavior:'instant'});
 }
 const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,Math.ceil(s))%60).padStart(2,'0')}`;
 function matchTimer() {
@@ -235,8 +246,17 @@ function aimMarkup(){
 function keypadMarkup() {
  const numbers=[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-action="key" data-key="${n}">${n}</button>`).join('');
  return `<div id="keypad" class="match-keypad" role="group" aria-label="Match keypad" hidden>
-  <div class="numpad" role="group" aria-label="Number keys">${numbers}<button type="button" class="key-muted" data-action="key" data-key="clear" aria-label="Clear answer">C</button><button type="button" data-action="key" data-key="0">0</button><button type="button" class="key-muted" data-action="key" data-key="back" aria-label="Delete last digit">${icon('erase',18)}</button></div>
-  <div class="pad-actions"><div class="symbol-keys">${padSymbols.map(([key,label])=>`<button type="button" data-action="key" data-key="${key}" aria-label="${label}">${key}</button>`).join('')}</div><span class="pad-clock" hidden><strong id="pad-time"></strong><small id="pad-time-caption"></small></span><button class="btn lime pad-shoot" type="button" data-action="key" data-key="shoot">Shoot ${icon('arrow',15)}</button></div>
+  <div class="pad-inputs"><div class="numpad" role="group" aria-label="Number keys">${numbers}<button type="button" class="key-muted" data-action="key" data-key="clear" aria-label="Clear answer">C</button><button type="button" data-action="key" data-key="0">0</button><button type="button" class="key-muted" data-action="key" data-key="back" aria-label="Delete last digit">${icon('erase',18)}</button></div>
+   <div class="pad-guide" hidden><span>${icon('whistle',20)} <b id="pad-guide-text"></b></span></div>
+   <div class="pad-choices" hidden></div>
+   <span class="sr-only" id="pad-announcement" role="status"></span>
+  </div>
+  <div class="pad-actions">
+   <div class="symbol-keys">${padSymbols.map(([key,label])=>`<button type="button" data-action="key" data-key="${key}" aria-label="${label}">${key}</button>`).join('')}</div>
+   <div class="pad-feedback-side" hidden><span id="pad-result"></span><button class="btn white" type="button" data-action="show-working" hidden>Working</button></div>
+   <span class="pad-clock" hidden><strong id="pad-time"></strong><small id="pad-time-caption"></small></span>
+   <button class="btn lime pad-shoot" type="button" data-action="key" data-key="shoot">Shoot ${icon('arrow',15)}</button>
+  </div>
  </div>`;
 }
 function questionPadSymbols(q) {
@@ -247,16 +267,17 @@ function questionPadSymbols(q) {
  if(q.format==='decimal'||typeof q.answer==='number'&&!Number.isInteger(q.answer))return ['−','.'];
  return ['−'];
 }
-function updateKeypad(visible,enabled,symbols) {
- const pad=$('#keypad'),touch=touchMatch.matches;
- pad.hidden=!visible;
- pad.inert=!enabled;
- pad.classList.toggle('touch-pad',touch);
- pad.closest('.game-main').classList.toggle('touch-keypad',touch&&visible);
- $$('.symbol-keys button',pad).forEach(button=>{button.hidden=!symbols.includes(button.dataset.key);});
- $('.symbol-keys',pad).hidden=!symbols.length;
- $('.pad-clock',pad).hidden=!touch||symbols.length>0;
- if(touch)for(const field of $$(padFields,$('#question-host'))){
+function updateKeypad(state) {
+ const touch=touchMatch.matches;
+ const pad=$('#keypad'),host=$('#question-host');
+ const options=$('.pad-choices',pad);
+ options.replaceChildren();
+ if(touch&&state.choices){
+  const choices=$('.choices',host);
+  if(choices)options.append(choices);
+ }
+ setMatchDock(pad,{...state,touch});
+ if(touch)for(const field of $$(padFields,host)){
   field.inputMode='none';
   field.readOnly=true;
   field.dataset.touchAnswer='';
@@ -321,7 +342,10 @@ function helpMarkup(q,small=false){const hints=q.hint||explain(q).steps,model=wo
 function renderQuestion(){
  if(!session)return;const q=session.q,done=session.phase==='feedback',extra=skillById(q.skillId).extra,column=q.key.startsWith('column'),written=writtenTask(q),options=written?null:q.options;
  const skill=skillById(q.skillId),reason=session.selection.reason,isCheck=reason==='support';
- const unknown=done&&session.rows.at(-1).unknown;
+ const host=$('#question-host'),last=done?session.rows.at(-1):null;
+ const scratchOpen=host.dataset.questionKey===q.key?$('.scratch-paper',host)?.open:!!session.scratch;
+ host.dataset.questionKey=q.key;
+ host.dataset.feedback=done?(last.correct?'goal':last.unknown?'unknown':'miss'):'';
  let content='',input='',isWords=false;
  if(written){
   const work={entered:session.digits,notes:session.work||{},done,remainder:session.remainder||''};
@@ -338,33 +362,31 @@ function renderQuestion(){
   session.fractionParts??=fractionParts(session.answer,{mixed,completed:done});
   input=fractionAnswerMarkup(session.fractionParts,{mixed,done,correct:session.rows.at(-1)?.correct});
  }else if(!['drawing','plot','clock'].includes(q.format)&&!column&&!written)input=`<div class="answer-line">${q.unit==='£'?'<span class="unit">£</span>':''}<input class="answer-input ${q.format==='pair'||Number(q.answer)>9999?'wide':''} ${done?(session.rows.at(-1).correct?'correct':'incorrect'):''}" id="answer" aria-label="Your answer" inputmode="${q.format==='pair'||Number(q.answer)<0||String(q.answer).includes(':')?'text':q.format==='decimal'?'decimal':'numeric'}" autocomplete="off" maxlength="24" value="${esc(session.answer)}" placeholder="?" ${done?'disabled':''}>${q.unit&&q.unit!=='£'?`<span class="unit">${esc(q.unit)}</span>`:''}</div>`;
- if(unknown&&(column||written)){
-  content=`<div class="q-equation compact">${mathText(equationLabel(q,false))}</div>`;
-  input='';
- }else if(unknown)input='';
- const coachButton=`<button class="coach-assist" type="button" data-action="hint" aria-expanded="${!!session.assisted}">${icon('whistle',17)} Coach help</button>`;
- const scratch=`<details class="scratch-paper" ${session.scratch?'open':''}><summary>${icon('edit',16)} Working paper</summary><textarea id="scratch-work" maxlength="1000" aria-label="Working paper" placeholder="Write your working here…" ${done?'readonly':''}>${esc(session.scratch||'')}</textarea></details>`;
- let tail='';
+ const coachButtons=`<button class="coach-assist" type="button" data-action="hint" aria-expanded="${!!session.assisted}" ${done?'disabled':''}>${icon('whistle',17)} Coach help</button><button class="dont-know" type="button" data-action="dont-know" ${done?'disabled':''}>I don’t know</button>`;
+ const scratch=`<details class="scratch-paper" ${scratchOpen?'open':''}><summary>${icon('edit',16)} Working paper</summary><textarea id="scratch-work" maxlength="1000" aria-label="Working paper" placeholder="Write your working here…" ${done?'readonly':''}>${esc(session.scratch||'')}</textarea></details>`;
+ let tail='',dockCaption='',dockResult='',dockNext='Next shot',dockAnnouncement='';
  if(done){
-  const last=session.rows.at(-1);
   const target=answerLabel(q);
   const nextCheck=!last.correct?nextFoundationCheck(player(),session):null;
   const passed=last.correct&&!last.assisted;
   const feedback=last.unknown?'See how Coach does it.':last.correct?(isCheck?(passed?'Ready to try the skill again.':'Keep practising this step.'):last.careerCandidate?`+${last.careerCandidate} XP to bank`:`+${last.earned} points${isCoachChallenge(player(),session)?' · Recall practice':''}`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
   const title=last.unknown?'Coach will help':last.correct?(isCheck?(passed?'Check passed':'With Coach’s help'):'Goal!'):'Let’s build it.';
   const nextStep=nextCheck?`Check ${shortTitle(skillById(nextCheck.id)).toLowerCase()} first.`:isCheck&&!passed?`Practise ${shortTitle(skill).toLowerCase()} after the match.`:'';
-  const button=nextCheck?'Skill check':last.unknown?'Next question':'Next shot';
-  tail=`<div class="feedback ${last.unknown?'coach-stop':last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${title}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">${button} ${icon('arrow',15)}</button></div>${nextStep?`<p class="coach-brief">${icon('whistle',16)} ${esc(nextStep)}</p>`:''}${!last.correct?helpMarkup(q):''}${session.scratch?scratch:''}`;
+  dockNext=nextCheck?'Skill check':last.unknown?'Next question':'Next shot';
+  dockResult=title;
+  dockCaption=last.correct?`${title} · ${feedback}`:nextStep||'Coach’s working is ready';
+  if(last.correct)dockAnnouncement=dockCaption;
+  tail=`${scratch}<div class="feedback ${last.unknown?'coach-stop':last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${title}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">${dockNext} ${icon('arrow',15)}</button></div>${nextStep?`<p class="coach-brief">${icon('whistle',16)} ${esc(nextStep)}</p>`:''}${!last.correct||session.assisted?helpMarkup(q):''}`;
  }else{
   const submitButton=options?'':`<button class="btn big shoot-button" type="submit">Shoot ${icon('arrow',18)}</button>`;
-  tail=`<div id="answer-error" class="field-error" role="alert"></div>${submitButton?`<div class="question-actions">${submitButton}</div>`:''}${scratch}${session.assisted?helpMarkup(q):''}`;
+  tail=`${submitButton?`<div class="question-actions">${submitButton}</div>`:''}${scratch}${session.assisted?helpMarkup(q):''}`;
  }
  const coachLabel=isCheck?'Skill check':reason==='review'?'Recall':reason==='repair'?'Second chance':session.selection.label;
  const checkTarget=skillById(session.selection.coachFor);
  const coachLine=checkTarget?`Helps with ${shortTitle(checkTarget).toLowerCase()}`:reason==='repair'?'New question, same skill':`Coach picked ${skill.title.toLowerCase()}`;
- $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${isCheck?'skill-check':reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton+'<button class="dont-know" type="button" data-action="dont-know">I don’t know</button>'}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} ${esc(coachLine)}</p>`:''}`;
+ host.innerHTML=`<div class="q-toolbar"><span class="q-label ${isCheck?'skill-check':reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${coachButtons}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}<div id="answer-error" class="field-error" role="alert"></div>${tail}</form>${!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} ${esc(coachLine)}</p>`:''}`;
  const typed=!options&&!['drawing','angle','plot','clock'].includes(q.format);
- updateKeypad(typed&&(!done||touchMatch.matches&&session.rows.at(-1).correct),typed&&!done,questionPadSymbols(q));
+ updateKeypad({typed,done,choices:!!options,symbols:questionPadSymbols(q),caption:dockCaption,resultLabel:dockResult,nextLabel:dockNext,working:done&&!last.correct,announce:touchMatch.matches?dockAnnouncement:''});
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}
  if(!done&&!touchMatch.matches)requestAnimationFrame(()=>{
   const first=$('[data-start-digit]')||$$('.column-digit').at(-1);
@@ -431,8 +453,7 @@ function submit(value=null,unknown=false) {
  }
  session.phase='feedback';save();saveRound();renderQuestion();updateLive();paintPitch(!unknown);
  if(unknown){
-  $('.feedback')?.scrollIntoView({block:'nearest'});
-  $('[data-action="next"]')?.focus({preventScroll:true});
+  $(touchMatch.matches?'.pad-shoot':'.feedback [data-action="next"]')?.focus({preventScroll:true});
  }else sound(correct);
 }
 
@@ -600,7 +621,7 @@ function handleTouchAnswerKey(event) {
  if(!event.target.hasAttribute?.('data-touch-answer')||event.ctrlKey||event.metaKey||event.altKey)return false;
  const key={Enter:'shoot',Backspace:'back',Delete:'clear','-':'−'}[event.key]??event.key;
  const buttons=$$('#keypad button');
- if(!buttons.some(button=>button.dataset.key===key&&!button.hidden))return false;
+ if(!buttons.some(button=>button.dataset.key===key&&!button.hidden&&!button.disabled))return false;
  event.preventDefault();
  pressKeypad(key);
  return true;
@@ -713,13 +734,14 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  }break;
  case 'answer-choice':submit(b.dataset.value);break;
  case 'dont-know':submit(null,true);break;
+ case 'show-working':$('.clean-solution',$('#question-host'))?.scrollIntoView({block:'start',behavior:'instant'});break;
  case 'next':if(session?.phase==='feedback'&&!session.paused)nextQuestion();break;
  case 'key':pressKeypad(b.dataset.key);break;
  case 'fraction-whole':if(session?.phase==='question'&&!session.paused&&session.fractionParts){
   const parts=session.fractionParts;
   parts.whole=parts.whole===null?'':null;
   saveRound();renderQuestion();
-  ($('#fraction-whole')||$('#fraction-numerator'))?.focus();
+  ($('#fraction-whole')||$('#fraction-numerator'))?.focus({preventScroll:true});
  }break;
  case 'draw-point':if(session&&session.phase==='question'){const point=[Number(b.dataset.x),Number(b.dataset.y)],idx=session.drawing.findIndex(p=>p[0]===point[0]&&p[1]===point[1]);if(idx>=0)session.drawing.splice(idx,1);else if(session.drawing.length<session.q.visual.sides)session.drawing.push(point);saveRound();renderQuestion();}break;
  case 'draw-undo':if(session){session.drawing.pop();renderQuestion();saveRound();}break;
@@ -743,16 +765,21 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  document.addEventListener('submit',event=>{if(event.target.id==='world-answer-form'){event.preventDefault();submitWorld(new FormData(event.target).get('answer'));return;}if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){const saved=draftRounds.get(p.id);if(saved){session=saved;finishMatch(false,false);}initRewards(p);p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;initRewards(p);p.trainingSeconds=trainingSeconds;initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);initRewards(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=trainingSeconds;data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
  document.addEventListener('input',event=>{const el=event.target;
   if(el.matches('#world-answer-form input')){world.answer=el.value;return;}
+  if(el.id==='world-scratch-work'){world.scratch=el.value.slice(0,1000);return;}
   if(session?.phase==='question'&&el.dataset.fractionPart){
    session.fractionParts[el.dataset.fractionPart]=el.value;
    $('#answer-error').textContent='';
    saveRound();return;
   }
-  if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)+($('.division-board')?1:-1)}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus();next.select();}}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank(data.activeId?player():null,year,domain,search);}});
+  if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)+($('.division-board')?1:-1)}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus({preventScroll:true});next.select();}}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank(data.activeId?player():null,year,domain,search);}});
  document.addEventListener('focusin',event=>{if(event.target.matches?.(padFields))lastPadField=event.target;if(event.target.classList?.contains('bar-input')&&session)session.lastBar=Number(event.target.dataset.bar);if(event.target.classList?.contains('column-digit')&&session){session.lastDigit=Number(event.target.dataset.digit);event.target.select();}});
  document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value;if(el.id==='kit-hair'||el.id==='kit-pattern')equipItem(p,value);else{const [slot,choices]=({'kit-hair-colour':['hairColour',HAIR_COLOURS],'kit-skin':['skin',SKIN_TONES],'kit-trim':['trim',KIT_TRIMS],'kit-theme':['theme',PLAYER_THEMES]})[el.id];if(Object.hasOwn(choices,value))p.look[slot]=value;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='unit-year'){year=Number(el.value);domain='all';search='';render();$('#unit-year')?.focus({preventScroll:true});return;}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
  document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(handleTouchAnswerKey(event))return;if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&session&&!session.paused)pause();});
+ touchMatch.addEventListener('change',()=>{
+  if(session&&!session.paused){renderQuestion();updateLive();}
+  else if(view==='world'&&world.match)renderWorldMatch();
+ });
  window.addEventListener('pagehide',()=>{clearTimeout(goalTimer);if(session){session.paused=true;session.pausedEver=true;saveRound();}save();});
 
 function readingButton(){
@@ -816,7 +843,7 @@ async function startWorld(){
  state.busy=true;state.error='';render();
  try{
   state.match=await leagueApi('start',{token:state.identity.token,body:{year:p.year,tier:state.tier}});
-  state.feedback=null;state.streak=0;state.answer='';state.report=null;state.outcomes=[];
+  state.feedback=null;state.streak=0;state.answer='';state.scratch='';state.report=null;state.outcomes=[];
  }catch(error){state.error=error.message;}
  finally{
   state.busy=false;
@@ -829,9 +856,11 @@ async function submitWorld(value){
  state.answer=String(value||'').trim().replace('−','-');
  if(!/^-?\d+(?:\.\d+)?$/.test(state.answer)){state.error='Enter a number.';render();return;}
  const match=state.match;
- state.busy=true;state.error='';state.lastQuestion=match.question;
+ state.busy=true;state.error='';state.lastQuestion=match.question;state.lastAnswer=state.answer;
  const submitButton=$('#world-answer-form button[type="submit"]');
  if(submitButton)submitButton.disabled=true;
+ const dockButton=$('.pad-shoot');
+ if(dockButton)dockButton.disabled=true;
  try{
   const shot=await leagueApi('shot',{token:state.identity.token,body:{id:match.id,index:match.index,answer:state.answer}});
   if(world!==state||view!=='world'||state.match!==match)return;
@@ -846,8 +875,9 @@ function nextWorld(){
  if(world.feedback.complete){
   world.report=world.feedback;world.tier=world.match.tier;
   world.match=null;world.feedback=null;world.loaded=false;clearInterval(worldTimer);
- }else world.feedback=null;
+ }else{world.feedback=null;world.scratch='';}
  render();
+ if(world.match)keepQuestionInView();
 }
 function renderWorldMatch(){
  const p=player();
@@ -856,8 +886,16 @@ function renderWorldMatch(){
  const state=world,feedback=state.feedback;
  if(touchMatch.matches){
   $('#question-host').insertAdjacentHTML('beforeend',keypadMarkup());
-  updateKeypad(!feedback||feedback.goal,!feedback&&!state.busy,['−','.']);
+  const caption=feedback?(feedback.goal?'Goal!':`Answer ${feedback.answer}`):'';
+  updateKeypad({typed:true,done:!!feedback,busy:state.busy,symbols:['−','.'],caption,advance:'world-next',
+   nextLabel:feedback?.complete?'Standings':'Next shot',announce:feedback?.goal?caption:''});
  }
+ const updateTime=()=>{
+  const time=worldClock(state.match.expiresAt);
+  for(const id of ['world-time','pad-time']){const node=document.getElementById(id);if(node)node.textContent=time;}
+ };
+ updateTime();
+ if($('#pad-time-caption'))$('#pad-time-caption').textContent='Time';
  paintShot($('.penalty-view'),{question:feedback?state.lastQuestion:state.match.question,correct:feedback?.goal,attempt:state.match.index,streak:state.streak,celebration:p.look.celebration});
  if(feedback?.goal)afterGoal(()=>{
   if(view==='world'&&world===state&&state.feedback===feedback&&state.match)nextWorld();
@@ -865,7 +903,7 @@ function renderWorldMatch(){
  clearInterval(worldTimer);
  if(!world.feedback?.complete)worldTimer=setInterval(()=>{
   if(view!=='world'||!world.match){clearInterval(worldTimer);return;}
-  const time=$('#world-time');if(time)time.textContent=worldClock(world.match.expiresAt);
+  updateTime();
   if(Date.now()>=world.match.expiresAt&&!world.busy){
    clearInterval(worldTimer);world.match=null;world.feedback=null;world.error='Time is up. Open a new match when you’re ready.';render();
   }

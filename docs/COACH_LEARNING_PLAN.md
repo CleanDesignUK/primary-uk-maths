@@ -34,7 +34,7 @@ The teaching map covers all 247 digital skill families. It connects concepts wit
 |---|---|
 | Written subtraction | Count objects → subtract within 10 → subtract across 10 → two-digit exchange → larger column calculations |
 | Multiplication | Equal groups → 2 times table → 4 times table → 8 times table → mixed multiplication and inverse division |
-| Fractions | Equal parts → read fractions → same-denominator calculations → different denominators → mixed numbers |
+| Fractions | Equal parts → read fractions → same-denominator calculations → different denominators → mixed-number calculations |
 | Time | Read hours and half hours → five-minute intervals → durations → time conversions and timetable questions |
 | Position | Read positions → first-quadrant coordinates → four-quadrant coordinates → reflection and translation |
 | Data | Read simple charts → compare data → interpret line graphs or use fractions and angle facts to read pie charts |
@@ -47,5 +47,5 @@ The pupil starts at their selected practice year. Repeated difficulty can trigge
 2. **Build three-step coaching sequences.** Show one concise worked example with a ten frame, place-value counters or a fraction strip. Let the pupil complete one missing step. Then give a fresh problem to solve alone. Keep “I don’t know” visible throughout and record independent success separately.
 3. **Carry second chances into later sessions.** Schedule a new version of the repaired skill the next day and a week later. Include a different representation or short word problem so the pupil has to recognise when the skill applies. Surface that return in the Play lobby.
 4. **Deepen the times-table pathway.** Teach a usable connection, such as doubling a known 4-times fact to find an 8-times fact. Check direct multiplication, a missing factor and both inverse divisions before mixed recall. Use a short accuracy round before a timed challenge where recall is still developing.
-5. **Extend and audit the prerequisite map.** Work through the remaining Year 1–6 families against the DfE and NCETM sequences. Start with decimal place value, units and time, then geometry and statistics. Keep the grown-up report clear about which evidence came from independent answers, hints and practical observations.
+5. **Review the prerequisite routes with primary teachers.** Compare the recommended starting points with examples of pupil work. Begin with decimal place value, units and time, then geometry and statistics. Use the parent report to check that the suggested step matches the evidence.
 6. **Reward the return to a hard skill.** Try a small football celebration or comeback badge when a pupil independently solves the original type of problem on a later day. Keep rewards for easier checks and hints separate from competitive records. Compare completion, help use, next-day accuracy and one-week transfer across years and reading preferences.
