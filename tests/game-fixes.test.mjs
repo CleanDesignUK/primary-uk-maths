@@ -92,6 +92,16 @@ test('progress checks select practised skills and learning notes require difficu
  const next=nextAdaptive(p,{progressCheck:true,checkPlan:progressCheckPlan(p),rows:[]},now+3000,()=>.1);
  assert.equal(next.q.skillId,'longMul6');assert.ok(p.facts[next.q.key].history.some(row=>row.correct));
 });
+test('grown-up reports render a linked Coach drill for recent difficulties',async()=>{
+ const {reportContent}=await import('../dist/academy-ui.mjs');
+ const p=newProfile('Test',3),pool=questionPool('colSub2');
+ assert.doesNotMatch(reportContent(p),/Skills to support/);
+ for(let i=0;i<6;i++)recordLearning(p,pool[i],false,false,2000,i<3?'one':'two');
+ const report=reportContent(p);
+ assert.match(report,/Skills to support/);
+ assert.match(report,/Check Subtraction across 10 first/);
+ assert.match(report,/data-skill="bridgeSub" data-target="colSub2"/);
+});
 test('written multiplication and division workspaces match the entire integer question pools',()=>{
  for(const id of ['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6']){
   for(const q of questionPool(id)){

@@ -1,12 +1,12 @@
 import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=6.5.0';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
-import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions} from './adaptive.mjs?v=6.7.0';
+import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation} from './adaptive.mjs?v=6.7.1';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
 import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.7.0';
 import {isWrittenSkill,writtenAllowance,writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.6.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
-import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=6.6.0';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.5.0';
+import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=6.7.1';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=6.7.1';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.5.0';
 import {avatarSVG} from './avatar.mjs?v=6.5.0';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
@@ -36,7 +36,7 @@ const routeMap={today:'home',skills:'syllabus',progress:'stats',grownups:'coach'
 const GOAL_FEEDBACK_MS=1200;
 let goalTimer;
 function newWorkTime(round) {
- return round.progressCheck||isWrittenSkill(round.manual)?0:writtenAllowance(round.q);
+ return round.progressCheck||round.coachDrill||isWrittenSkill(round.manual)?0:writtenAllowance(round.q);
 }
 let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(initialRoute)?initialRoute:'home');
 try{
@@ -143,7 +143,6 @@ function takeFirstShot(answer){
  }
 }
 function metric(value,label,symbol){return `<div class="metric"><span class="metric-icon">${icon(symbol,23)}</span><div><strong>${value}</strong><small>${label}</small></div></div>`;}
-function shortTitle(s){if(s.id.startsWith('col'))return `${s.title} · ${s.digits} digits${!s.regroup?' · no exchange':''}`;return s.title;}
 function symbolFor(s){if(s.table)return `×${s.table}`;if(['mix348','mixAll'].includes(s.id))return '×';if(s.kind==='div')return '÷';if(s.kind==='place')return '123';if(s.kind==='coladd'||s.kind==='add')return '+';if(s.kind==='colsub'||s.kind==='sub')return '−';if(s.kind==='bonds')return s.id==='bonds10'?'10':'20';return DOMAINS.find(d=>d.id===domainFor(s))?.symbol||'?';}
 function drillCard(id,clickable=true){const s=skillById(id),c=data.activeId?competency(player(),id):{secure:false,n:0,coverage:0};return `<${clickable?'button':'div'} class="drill-card" ${clickable?`data-action="skill" data-skill="${id}" aria-label="Practise ${esc(shortTitle(s))}"`:''}><span class="drill-icon">${symbolFor(s)}</span><h3>${esc(shortTitle(s))}</h3><div class="drill-meta"><span class="status ${c.secure?'fit':c.n?'training':''}">${c.secure?'Match fit':c.n?'Training':'New'}</span>${clickable?icon('arrow',14):icon('whistle',14)}</div><div class="skill-bar"><i style="width:${c.secure?100:Math.min(90,c.coverage||0)}%"></i></div></${clickable?'button':'div'}>`;}
 function homePage(){return homeView(player());}
@@ -180,20 +179,22 @@ function startMatch(manual=null,options={}) {
  const probeStart=placement?warmupProgress(p):0;
  const league=Math.min(5,1+Math.floor(SKILLS.filter(s=>competency(p,s.id).ready).length/12));
  const written=isWrittenSkill(manual);
+ const coachDrill=!!(manual&&options.coachDrill);
+ const seen=coachDrill?(p.learning[manual]?.recent||[]).slice(-3).map(row=>row.key):[];
  const pace=[60,120,180].includes(p.trainingSeconds)?p.trainingSeconds:120;
  const duration=options.promotion||written?600:placement?300:options.length===25?180:manual?(skill.extra?180:60):p.year>=5&&!options.tableChallenge?420:pace;
- const target=options.promotion?12:progressCheck?Math.min(6,checkQuestions.length):placement?probeIds(p).length-probeStart:written?4:options.length||10;
+ const target=options.promotion?12:progressCheck?Math.min(6,checkQuestions.length):placement?probeIds(p).length-probeStart:coachDrill?3:written?4:options.length||10;
  const matchType=manual?`practice:${manual}:${options.tableMode||'auto'}`:options.tableChallenge?'table-challenge':options.promotion?'promotion':`coach:${league}`;
  session={
   schema:MATCH_SCHEMA, curriculumYear:p.year, promotion:!!options.promotion,
-  progressCheck, checkPlan, checkQuestions, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
+  progressCheck, checkPlan, checkQuestions, coachDrill, coachTarget:coachDrill?options.coachTarget:null, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
   focusTable:laneFocus(p,'tables'), clockHour:12,clockMinute:0,id:uid(),profileId:p.id,
-  skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement||progressCheck?'check':'timed',duration,target,
+  skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement||progressCheck?'check':coachDrill?'practice':'timed',duration,target,
   recordKey:`v5:${matchType}:y${p.year}:${target}:${duration}`, startedAt:Date.now(),
   mission:progressCheck||options.promotion?null:matchMission(p.sessions.filter(match=>match.complete).length),
   aimSeed:p.sessions.length%3,aim:null,
   elapsed:0,clockElapsed:0,currentMs:0,attempts:0,correct:0,points:0,careerPending:0,streak:0,bestStreak:0,
-  rows:[],seen:[],retries:[],paused:false,pausedEver:false,hintsUsed:0,assisted:false,phase:'question',q:null,selection:null,
+  rows:[],seen,retries:[],paused:false,pausedEver:false,hintsUsed:0,assisted:false,phase:'question',q:null,selection:null,
   answer:'',digits:[],notes:[],drawing:[],bars:[],angle:30,work:{},scratch:'',remainder:''
  };
  nextQuestion(false);renderGame();startTick();saveRound();scrollTo({top:0});
@@ -221,8 +222,9 @@ const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,M
 function matchTimer() {
  const working=session.phase==='question'&&session.workTimeLeft>0;
  const remaining=working?session.workTimeLeft:matchTimeLeft(session);
- const caption=session.progressCheck?'No timer':working?'Work time':session.phase==='feedback'?'Coach time':'Time';
- return {working,remaining,caption,display:session.progressCheck?'∞':clock(remaining)};
+ const untimed=session.progressCheck||session.coachDrill;
+ const caption=untimed?'No timer':working?'Work time':session.phase==='feedback'?'Coach time':'Time';
+ return {working,remaining,caption,display:untimed?'∞':clock(remaining)};
 }
 function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].unknown?'played':session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
 function aimMarkup(){
@@ -263,7 +265,7 @@ function renderGame() {
  const p=player();
  const best=bestFor(session.recordKey);
  const earns=isCoachChallenge(p,session);
- const label=session.promotion?'Promotion match':session.progressCheck?'Progress check':session.placement?'Warm-up':session.manual?'Free practice':session.tableChallenge?'Tables challenge':'Coach match';
+ const label=session.promotion?'Promotion match':session.progressCheck?'Progress check':session.placement?'Warm-up':session.coachDrill?'Coach drill':session.manual?'Free practice':session.tableChallenge?'Tables challenge':'Coach match';
  const title=session.manual?shortTitle(skillById(session.manual)):session.progressCheck?'Check your progress':session.placement?`Year ${session.curriculumYear} warm-up`:`Year ${session.curriculumYear} ${session.promotion?'promotion':'match'}`;
  const timer=matchTimer();
  app.innerHTML=`<div class="game-shell">
@@ -317,6 +319,7 @@ function basicHelpVisual(q){if(q.op==='×')return `<div class="math-array" style
 function helpMarkup(q,small=false){const hints=q.hint||explain(q).steps,model=workedMarkup(q);return `<div class="help-box clean-solution"><h3>${icon('whistle',16)} Coach’s working</h3>${model||`<ol class="solution-steps">${hints.map((t,i)=>`<li><span>${i+1}</span><div>${mathText(t)}</div></li>`).join('')}</ol>`}${model?`<details class="more-help"><summary>Explain the steps</summary><ol class="solution-steps">${hints.map((t,i)=>`<li><span>${i+1}</span><div>${mathText(t)}</div></li>`).join('')}</ol></details>`:''}<button class="text-btn" data-action="hear-help">${icon('sound',15)} Hear the working</button></div>`;}
 function renderQuestion(){
  if(!session)return;const q=session.q,done=session.phase==='feedback',extra=skillById(q.skillId).extra,column=q.key.startsWith('column'),written=writtenTask(q),options=written?null:q.options;
+ const skill=skillById(q.skillId),reason=session.selection.reason,isCheck=reason==='support';
  const unknown=done&&session.rows.at(-1).unknown;
  let content='',input='',isWords=false;
  if(written){
@@ -344,16 +347,21 @@ function renderQuestion(){
  if(done){
   const last=session.rows.at(-1);
   const target=answerLabel(q);
-  const feedback=last.unknown?'See how Coach does it.':last.correct?(last.careerCandidate?`+${last.careerCandidate} XP to bank`:`+${last.earned} points${isCoachChallenge(player(),session)?' · Recall practice':''}`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
-  tail=`<div class="feedback ${last.unknown?'coach-stop':last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${last.unknown?'Coach will help':last.correct?'Goal!':'Let’s build it.'}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">${last.unknown?'Next question':'Next shot'} ${icon('arrow',15)}</button></div>${!last.correct?helpMarkup(q):''}${session.scratch?scratch:''}`;
+  const nextCheck=!last.correct?nextFoundationCheck(player(),session):null;
+  const passed=last.correct&&!last.assisted;
+  const feedback=last.unknown?'See how Coach does it.':last.correct?(isCheck?(passed?'Ready to try the skill again.':'Keep practising this step.'):last.careerCandidate?`+${last.careerCandidate} XP to bank`:`+${last.earned} points${isCoachChallenge(player(),session)?' · Recall practice':''}`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
+  const title=last.unknown?'Coach will help':last.correct?(isCheck?(passed?'Check passed':'With Coach’s help'):'Goal!'):'Let’s build it.';
+  const nextStep=nextCheck?`Check ${shortTitle(skillById(nextCheck.id)).toLowerCase()} first.`:isCheck&&!passed?`Practise ${shortTitle(skill).toLowerCase()} after the match.`:'';
+  const button=nextCheck?'Skill check':last.unknown?'Next question':'Next shot';
+  tail=`<div class="feedback ${last.unknown?'coach-stop':last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${title}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">${button} ${icon('arrow',15)}</button></div>${nextStep?`<p class="coach-brief">${icon('whistle',16)} ${esc(nextStep)}</p>`:''}${!last.correct?helpMarkup(q):''}${session.scratch?scratch:''}`;
  }else{
   const submitButton=options?'':`<button class="btn big shoot-button" type="submit">Shoot ${icon('arrow',18)}</button>`;
   tail=`<div id="answer-error" class="field-error" role="alert"></div>${submitButton?`<div class="question-actions">${submitButton}</div>`:''}${scratch}${session.assisted?helpMarkup(q):''}`;
  }
- const skill=skillById(q.skillId);
- const reason=session.selection.reason;
- const coachLabel=reason==='support'?'Build up':reason==='review'?'Recall':reason==='repair'?'Try again':session.selection.label;
- $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton+'<button class="dont-know" type="button" data-action="dont-know">I don’t know</button>'}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} Coach picked ${esc(skill.title.toLowerCase())}</p>`:''}`;
+ const coachLabel=isCheck?'Skill check':reason==='review'?'Recall':reason==='repair'?'Second chance':session.selection.label;
+ const checkTarget=skillById(session.selection.coachFor);
+ const coachLine=checkTarget?`Helps with ${shortTitle(checkTarget).toLowerCase()}`:reason==='repair'?'New question, same skill':`Coach picked ${skill.title.toLowerCase()}`;
+ $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${isCheck?'skill-check':reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton+'<button class="dont-know" type="button" data-action="dont-know">I don’t know</button>'}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} ${esc(coachLine)}</p>`:''}`;
  const typed=!options&&!['drawing','angle','plot','clock'].includes(q.format);
  updateKeypad(typed&&(!done||touchMatch.matches&&session.rows.at(-1).correct),typed&&!done,questionPadSymbols(q));
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}
@@ -454,7 +462,8 @@ function paintPitch(replay=false) {
  const arena=$('.penalty-view'),round=session;
  if(!arena||!round)return;
  const row=round.phase==='feedback'?round.rows.at(-1):null;
- const move=paintShot(arena,{question:session.q,correct:row?.unknown?undefined:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay,aim:row?.aim,callout:row?.celebration});
+ const callout=row?.reason==='support'&&row.correct?(row.assisted?'PRACTICE!':'CHECK PASSED!'):row?.celebration;
+ const move=paintShot(arena,{question:session.q,correct:row?.unknown?undefined:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay,aim:row?.aim,callout});
  $('#move-caption').textContent=row?(row.unknown?'Coach’s turn':row.correct?row.celebration||move.label:'Coach has the replay'):session.mission?'Aim at the star':'Ready to shoot';
  const shot=round.attempts+Number(!row);
  const half=Math.ceil(round.target/2);
@@ -476,7 +485,7 @@ function updateLive() {
  for(const [id,value] of Object.entries(values)){const el=document.getElementById(id);if(el)el.textContent=value;}
  const earns=isCoachChallenge(player(),session);
  if($('#live-xp'))$('#live-xp').innerHTML=`${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small>`;
- $('#timer-box')?.classList.toggle('low',!session.progressCheck&&!timer.working&&timer.remaining<16&&session.phase==='question');
+ $('#timer-box')?.classList.toggle('low',!session.progressCheck&&!session.coachDrill&&!timer.working&&timer.remaining<16&&session.phase==='question');
  $('#timer-box')?.classList.toggle('work-clock',timer.working);
  $('#timer-box')?.classList.toggle('clock-rest',session.phase==='feedback');
  if($('#shot-track'))$('#shot-track').innerHTML=shotTrack();
@@ -521,7 +530,8 @@ function finishMatch(complete,showResult=true) {
 }
 
 function renderResult(){const r=result,p=player(),mission=missionProgress(r.mission,r.rows,r.bestStreak),accuracy=r.attempts?Math.round(r.correct/r.attempts*100):0,stars=r.complete&&r.attempts>=5?(accuracy>=95?3:accuracy>=80?2:accuracy>=60?1:0):0,errors=[...new Map(r.rows.filter(x=>!x.correct||x.assisted).map(x=>[x.q.key,x])).values()];
- app.innerHTML=`<div class="game-shell">${header(true)}<main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.complete&&mission?.complete?`<div class="mission-won">${icon('star',17)} ${mission.name} complete</div>`:''}${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}<section class="panel"><h3>${r.mode==='check'?'Coach’s next move':'Keep your match fitness'}</h3><p>${r.mode==='check'?'Your next round targets gaps in the warm-up. Facts you know return later.':'Mistakes get a replay. Other facts return on later days.'}</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section></main></div>`;scrollTo({top:0});}
+ const next=(r.curriculumYear||p.year)===p.year&&!r.promotionResult?.promoted?roundRecommendation(p,r):null;
+ app.innerHTML=`<div class="game-shell">${header(true)}<main id="main" class="results"><div class="result-symbol">${icon(r.newRecord?'trophy':'ball',55)}</div><div class="eyebrow">${r.progressCheck?'Progress check':r.coachDrill?'Coach drill':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.correct>=8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${r.complete&&mission?.complete?`<div class="mission-won">${icon('star',17)} ${mission.name} complete</div>`:''}${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits earned</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-locker">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="result-home">Clubhouse</button></div>${goalsMarkup(p,true)}${r.manual?'<p class="muted">Free practice saves goals and recall. Play a Coach match to earn credits.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}${coachNextCard(p,next)||`<section class="panel"><h3>Keep your match fitness</h3><p>Facts you know return on later days.</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section>`}</main></div>`;scrollTo({top:0});}
 function sound(good){if(!data.settings.sound)return;try{audio||=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.setValueAtTime(good?600:300,audio.currentTime);o.frequency.linearRampToValueAtTime(good?820:340,audio.currentTime+.12);g.gain.setValueAtTime(.03,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.22);o.start();o.stop(audio.currentTime+.24);}catch{}}
 function confetti(){const e=document.createElement('div');e.className='confetti';e.setAttribute('aria-hidden','true');e.innerHTML=Array.from({length:32},(_,i)=>`<i style="left:${Math.random()*100}%;background:${['#d4f36a','#739e5e','#d6b76b','#7a9bdc'][i%4]};animation-delay:${Math.random()*.4}s;--drift:${Math.random()*180-90}px"></i>`).join('');document.body.append(e);setTimeout(()=>e.remove(),2700);}
 function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unavailable on this device.');return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spokenMath(text)),voice=selectBritishVoice(voices,data.settings.voiceURI);if(voice)u.voice=voice;else if(!speak.warned){toast('No British voice is installed. This device will choose the voice.');speak.warned=true;}u.lang='en-GB';u.rate=data.settings.speechRate||.9;speechSynthesis.speak(u);}
@@ -529,7 +539,7 @@ function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unav
 function openDialog(content,{wide=false,focus=null}={}){returnFocus=document.activeElement;modalRoot.innerHTML=`<div class="dialog-backdrop"><section class="dialog ${wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1"><button class="icon-btn close-dialog" data-action="close-dialog" aria-label="Close">${icon('close',17)}</button>${content}</section></div>`;app.inert=true;requestAnimationFrame(()=>$(focus||'.dialog button,.dialog input,.dialog select,.dialog',modalRoot)?.focus());}
 function closeDialog(){if(!modalRoot.firstChild)return;shownExample=null;modalRoot.innerHTML='';app.inert=false;if(returnFocus?.isConnected)returnFocus.focus();}
 function profileForm(id=null){const p=data.profiles.find(x=>x.id===id),y=p?.year||year||1;openDialog(`<span class="eyebrow">${p?'Your player':'Join the academy'}</span><h2 id="dialog-title">${p?'Edit player':'Build your player'}</h2><form id="profile-form" data-id="${p?.id||''}"><div class="profile-builder"><div id="profile-preview">${avatarSVG(p||{look:{}},{size:145})}</div><div><div class="field-row"><label for="player-name">Nickname</label><input class="field" id="player-name" maxlength="24" required autocomplete="off" value="${esc(p?.name||'')}" placeholder="Your nickname"></div><div class="field-row"><label for="player-year">Practice year</label><select class="field" id="player-year">${Array.from({length:6},(_,i)=>i+1).map(n=>`<option value="${n}" ${y===n?'selected':''}>Year ${n}</option>`).join('')}</select></div><details class="profile-options" ${p?'open':''}><summary>Kit and style</summary><div class="custom-fields"><label>Kit number<input class="field" id="player-number" inputmode="numeric" type="number" min="1" max="99" value="${p?.look?.number||9}" required></label><label>Position<select class="field" id="player-position">${POSITIONS.map(n=>`<option ${p?.look?.position===n?'selected':''}>${n}</option>`).join('')}</select></label></div><label class="voice-field" for="player-skin">Skin tone<select class="field" id="player-skin">${Object.keys(SKIN_TONES).map(n=>`<option value="${n}" ${(p?.look?.skin||'warm')===n?'selected':''}>${n}</option>`).join('')}</select></label><div class="field-row"><label for="training-clock">Match pace</label><select class="field" id="training-clock"><option value="120" ${!p||!p.trainingSeconds||p.trainingSeconds===120?'selected':''}>Match pace · 2 minutes</option><option value="180" ${p?.trainingSeconds===180?'selected':''}>Steady pace · 3 minutes</option><option value="60" ${p?.trainingSeconds===60?'selected':''}>Sprint pace · 1 minute</option></select></div></details></div></div><div class="field-error" id="profile-error" role="alert"></div><div class="dialog-actions">${p?`<button type="button" class="text-btn text-danger" data-action="delete-player" data-id="${p.id}" style="margin-right:auto">Delete player</button>`:''}<button class="btn lime" type="submit">${p?'Save':'Create & play'}${icon('arrow',17)}</button></div></form>`,{focus:'#player-name'});}
-function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Choose “I don’t know” to see the working. Coach can then practise a step that leads back to that skill. Facts you know return on later days.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
+function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Choose “I don’t know” to see the working. Coach may check a smaller skill or give you a fresh question to try. Facts you know return on later days.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
 function showReport(id){const p=data.profiles.find(x=>x.id===id);if(p)openDialog(reportContent(p),{wide:true});}
 function download(text,name,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);}
 function csv(p){const rows=[['Player','Date','Match','Goals','Shots','XP','Seconds','Complete','Hints','Paused'],...p.sessions.map(s=>[p.name,new Date(s.endedAt).toISOString(),s.mode==='check'?'Warm-up':recordLabel(s),s.correct,s.attempts,s.careerXP??s.points,s.elapsed,s.complete,s.hintsUsed,s.pausedEver])];return rows.map(row=>row.map(v=>{let s=String(v);if(/^[=+@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');}
@@ -640,7 +650,11 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'shop-hair':shopSlot='hair';navigate('locker');break;
  case 'club-path':openDialog(clubJourneyView(player()));break;
  case 'example':showSkillExample(b.dataset.skill);break;
- case 'support-practice':data.activeId=b.dataset.profile;closeDialog();startMatch(b.dataset.skill);break;
+ case 'support-practice':{
+  const p=data.profiles.find(profile=>profile.id===b.dataset.profile);
+  if(!p)break;
+  data.activeId=p.id;closeDialog();startMatch(b.dataset.skill,{coachDrill:true,coachTarget:b.dataset.target});break;
+ }
  case 'table-challenge':startMatch(null,{tableChallenge:true});break;
  case 'progress-check':startMatch(null,{progressCheck:true});break;
  case 'replay-shot':if(session?.phase==='feedback')paintPitch(true);break;
@@ -710,7 +724,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'resume':resume();break;
  case 'finish':finishMatch(false);break;
  case 'result-home':result=null;navigate('home');break;
- case 'next-match':{const manual=result?.manual||null,options=manual?{tableMode:result.tableMode,length:result.target}:{tableChallenge:result?.tableChallenge};startMatch(manual,options);break;}
+ case 'next-match':{const manual=result?.manual||null,options=manual?{tableMode:result.tableMode,length:result.target,coachDrill:result.coachDrill,coachTarget:result.coachTarget}:{tableChallenge:result?.tableChallenge};startMatch(manual,options);break;}
  case 'review-example':{const q=result.rows.find(r=>r.q.key===b.dataset.key).q;modalRoot.dataset.question=(q.hint||explain(q).steps).join('. ');openDialog(`<h2 id="dialog-title">COACH’S REPLAY</h2><div class="q-prompt" style="margin-top:25px">${esc(questionPrompt(q))}</div><div class="q-equation compact">${mathText(equationLabel(q,true))}</div>${q.visual?diagram(q.visual):''}${helpMarkup(q)}<div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',15)}</button></div>`);break;}
  case 'how':showHow();break;
  case 'report':showReport(b.dataset.id);break;

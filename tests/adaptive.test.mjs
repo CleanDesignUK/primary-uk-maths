@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newProfile,questionPool,DAY} from '../dist/engine.mjs';
-import {initLearning,recordLearning,competency,nextAdaptive,resolvePrerequisite,probeIds,validateLearningGraph,laneFocus,coachRecommendation,nextFoundationCheck,matchRecommendation} from '../dist/adaptive.mjs';
+import {initLearning,recordLearning,competency,nextAdaptive,resolvePrerequisite,probeIds,validateLearningGraph,laneFocus,coachRecommendation,nextFoundationCheck,matchRecommendation,roundRecommendation} from '../dist/adaptive.mjs';
 import {syllabusIds} from '../dist/curriculum.mjs';
 import {SKILLS} from '../dist/engine.mjs';
 
@@ -61,6 +61,7 @@ test('a difficult foundation check defers the target and recommends focused prac
  s.rows.push({q:questionPool('add10')[0],correct:true});
  assert.notEqual(nextAdaptive(p,s,now).q.skillId,q.skillId);
  assert.deepEqual(matchRecommendation(p,s.rows,now),{id:'bridgeSub',target:'colSub2',kind:'practice'});
+ assert.equal(resolvePrerequisite(p,'colSub2',now),'bridgeSub');
 });
 test('a passed check recommends a fresh original problem until it is solved independently',()=>{
  const p=newProfile('Test',3),q=questionPool('bridgeSub')[4],s=round({rows:[{q,correct:false}],seen:[q.key],retries:[{q,at:3}]});
@@ -101,6 +102,17 @@ test('the first Coach match can follow up a missed warm-up skill once',()=>{
  assert.equal(check.q.skillId,'division5');assert.equal(check.coachSource.key,q.key);
  recordLearning(p,check.q,true,false,1000,'coach',now+1,false,false,check.coachFor);
  assert.notEqual(nextAdaptive(p,s,now+1).reason,'support');
+});
+test('an untimed drill can lead back to its original skill after two distinct independent answers',()=>{
+ const p=newProfile('Test',3),[one,two,three]=questionPool('bridgeSub');
+ const drill={coachDrill:true,complete:true,manual:'bridgeSub',coachTarget:'colSub2',endedAt:now,
+  rows:[{q:one,correct:false},{q:two,correct:true},{q:three,correct:true}]};
+ assert.deepEqual(roundRecommendation(p,drill,now),{id:'colSub2',target:'colSub2',kind:'retry'});
+ assert.equal(roundRecommendation(p,drill,now+31*DAY),null);
+ drill.rows[2].assisted=true;
+ assert.notEqual(roundRecommendation(p,drill,now)?.id,'colSub2');
+ drill.rows[2]={q:two,correct:true};
+ assert.notEqual(roundRecommendation(p,drill,now)?.id,'colSub2');
 });
 test('a Year 5 warm-up starts at Year 5 and samples both written methods',()=>{
  const p=newProfile('Test',5);

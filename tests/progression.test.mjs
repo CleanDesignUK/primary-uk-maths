@@ -28,6 +28,7 @@ test('same-day success cannot unlock captain and the next stage stays explicit',
 test('the new clock counts answer time and gives feedback time without mixing legacy records',()=>{
  assert.equal(clockDelta({schema:'football-v3',phase:'question'},2),2);
  assert.equal(clockDelta({schema:'football-v4',phase:'feedback'},90),0);
+ assert.equal(clockDelta({schema:'football-v5',phase:'question',coachDrill:true},90),0);
  assert.equal(clockDelta({schema:'football-v3',phase:'question',paused:true},20),0);
  assert.equal(clockDelta({schema:'football-v2',phase:'feedback'},2),2);
  assert.equal(clockDelta({schema:'football-v3',phase:'question'},NaN),0);

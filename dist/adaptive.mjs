@@ -74,10 +74,11 @@ export function coachRecommendation(p,id,now=Date.now(),question=null){
 }
 
 export function resolvePrerequisite(p,id,now=Date.now()){
- initLearning(p);
- if(foundationStatus(p,id,now)!=='practice')return id;
  const step=coachRecommendation(p,id,now);
- return step.kind==='practice'?step.id:id;
+ if(step.kind!=='practice')return id;
+ const linkedCheck=recentEvidence(p,step.id,now).at(-1);
+ const missedLinkedCheck=linkedCheck?.coachFor===id&&!independent(linkedCheck);
+ return missedLinkedCheck||foundationStatus(p,id,now)==='practice'?step.id:id;
 }
 const PROBES3=['add10','sub10','table3','bonds10','table4','bridgeAdd','table8','bridgeSub','place3','colAdd0','colSub0','div348'];
 const PROBES5=['place6','mental5','table6','colAdd4','colSub4','mul5','division5','fracCalc5','decimalCalc5','percent5','area5','table5'];
@@ -155,8 +156,9 @@ export function matchRecommendation(p,rows,now=Date.now()) {
  const handled=new Set();
  let recommendation=null;
  for(const row of [...rows].reverse()){
-  const id=row.reason==='support'?row.coachFor:row.q?.skillId;
-  if(!id||handled.has(id))continue;
+  if(!skillById(row?.q?.skillId))continue;
+  const id=row.reason==='support'?row.coachFor:row.q.skillId;
+  if(!skillById(id)||handled.has(id))continue;
   handled.add(id);
   if(row.reason==='support'){
    if(!independent(row)&&foundationStatus(p,row.q.skillId,now)!=='known')return {id:row.q.skillId,target:id,kind:'practice'};
@@ -166,6 +168,17 @@ export function matchRecommendation(p,rows,now=Date.now()) {
   }
  }
  return recommendation;
+}
+
+export function roundRecommendation(p,round,now=Date.now()) {
+ if(!round||round.endedAt<now-30*DAY)return null;
+ const rows=round.rows||[];
+ const lastTwo=rows.slice(-2);
+ const finishedIndependently=lastTwo.length===2&&lastTwo.every(row=>row?.q&&independent(row))&&lastTwo[0].q.key!==lastTwo[1].q.key;
+ if(round.coachDrill&&round.complete&&finishedIndependently&&skillById(round.coachTarget)&&round.coachTarget!==round.manual){
+  return {id:round.coachTarget,target:round.coachTarget,kind:'retry'};
+ }
+ return matchRecommendation(p,rows,now);
 }
 
 function samplePool(id) {

@@ -48,7 +48,7 @@ export function tableChoices(profile){return focusTables(profile.year||1);}
 
 export function warmupProgress(profile){return Math.max(0,Math.min(probeIds(profile).length,Math.floor(profile.placementProgress||0)));}
 export function clockDelta(session,seconds){
- if(session.paused||session.progressCheck||!Number.isFinite(seconds)||seconds<=0)return 0;
+ if(session.paused||session.progressCheck||session.coachDrill||!Number.isFinite(seconds)||seconds<=0)return 0;
  // Old drafts retain their old timing. Current records have separate versioned comparison keys.
  return session.schema==='football-v2'||session.phase==='question'?seconds:0;
 }

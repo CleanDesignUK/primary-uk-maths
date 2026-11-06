@@ -251,6 +251,22 @@ body.arcade {
 .arcade .dont-know:hover,.arcade .dont-know:focus-visible {background:#d7effe;color:#153852}
 .arcade .feedback.coach-stop {background:#dceffb;color:#173e5a}
 .arcade .feedback.coach-stop p,.arcade .feedback.coach-stop>svg {color:#254d6a}
+.arcade .q-label.skill-check {background:#dfefb7;color:#234127}
+.coach-brief {
+ display:flex;align-items:center;gap:8px;margin:10px 0;padding:9px 12px;border-radius:10px;
+ background:#edf5d5;color:#25412a;font-weight:750;font-size:.9rem;
+}
+.coach-brief svg,.coach-next svg {flex:none}
+.coach-next {
+ display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;
+ padding:13px 15px;margin:12px 0;background:#edf5d5;color:#25412a;
+ border:1px solid #b8cd8f;border-left:5px solid #6d8a3b;border-radius:13px;text-align:left;
+}
+.coach-next>div {flex:1 1 160px}
+.coach-next span {display:flex;gap:6px;align-items:center;font-weight:800;font-size:.8rem}
+.arcade .coach-next h3 {margin:3px 0;color:#193e2b;font-size:1.05rem;line-height:1.2}
+.arcade .coach-next p {margin:0;color:#3d5436;font-size:.85rem}
+.coach-next .btn {min-height:44px;white-space:nowrap}
 .arcade .match-controls .desktop-record,.arcade .finish-practice {color:var(--bright)}
 .arcade .match-controls .numpad>button {border-color:#3c5270;background:#16283f;color:var(--bright)}
 .arcade .match-controls .symbol-keys>button {background:#24364e;color:var(--bright)}
