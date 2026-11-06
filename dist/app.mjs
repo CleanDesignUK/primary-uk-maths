@@ -1,12 +1,12 @@
 import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=6.5.0';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
-import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation} from './adaptive.mjs?v=6.7.1';
+import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=6.8.0';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
 import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.7.0';
 import {isWrittenSkill,writtenAllowance,writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.6.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=6.7.1';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=6.7.1';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=6.8.0';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.5.0';
 import {avatarSVG} from './avatar.mjs?v=6.5.0';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
@@ -187,7 +187,8 @@ function startMatch(manual=null,options={}) {
  const matchType=manual?`practice:${manual}:${options.tableMode||'auto'}`:options.tableChallenge?'table-challenge':options.promotion?'promotion':`coach:${league}`;
  session={
   schema:MATCH_SCHEMA, curriculumYear:p.year, promotion:!!options.promotion,
-  progressCheck, checkPlan, checkQuestions, coachDrill, coachTarget:coachDrill?options.coachTarget:null, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
+  progressCheck, checkPlan, checkQuestions, coachDrill, coachTarget:coachDrill?options.coachTarget:null,
+  coachPath:coachDrill?coachPathFor(manual,options.coachTarget,options.coachPath):null, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
   focusTable:laneFocus(p,'tables'), clockHour:12,clockMinute:0,id:uid(),profileId:p.id,
   skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement||progressCheck?'check':coachDrill?'practice':'timed',duration,target,
   recordKey:`v5:${matchType}:y${p.year}:${target}:${duration}`, startedAt:Date.now(),
@@ -653,7 +654,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'support-practice':{
   const p=data.profiles.find(profile=>profile.id===b.dataset.profile);
   if(!p)break;
-  data.activeId=p.id;closeDialog();startMatch(b.dataset.skill,{coachDrill:true,coachTarget:b.dataset.target});break;
+  data.activeId=p.id;closeDialog();startMatch(b.dataset.skill,{coachDrill:true,coachTarget:b.dataset.target,coachPath:b.dataset.path?.split(',')});break;
  }
  case 'table-challenge':startMatch(null,{tableChallenge:true});break;
  case 'progress-check':startMatch(null,{progressCheck:true});break;
@@ -724,7 +725,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'resume':resume();break;
  case 'finish':finishMatch(false);break;
  case 'result-home':result=null;navigate('home');break;
- case 'next-match':{const manual=result?.manual||null,options=manual?{tableMode:result.tableMode,length:result.target,coachDrill:result.coachDrill,coachTarget:result.coachTarget}:{tableChallenge:result?.tableChallenge};startMatch(manual,options);break;}
+ case 'next-match':{const manual=result?.manual||null,options=manual?{tableMode:result.tableMode,length:result.target,coachDrill:result.coachDrill,coachTarget:result.coachTarget,coachPath:result.coachPath}:{tableChallenge:result?.tableChallenge};startMatch(manual,options);break;}
  case 'review-example':{const q=result.rows.find(r=>r.q.key===b.dataset.key).q;modalRoot.dataset.question=(q.hint||explain(q).steps).join('. ');openDialog(`<h2 id="dialog-title">COACH’S REPLAY</h2><div class="q-prompt" style="margin-top:25px">${esc(questionPrompt(q))}</div><div class="q-equation compact">${mathText(equationLabel(q,true))}</div>${q.visual?diagram(q.visual):''}${helpMarkup(q)}<div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',15)}</button></div>`);break;}
  case 'how':showHow();break;
  case 'report':showReport(b.dataset.id);break;

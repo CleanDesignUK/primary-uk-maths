@@ -26,6 +26,21 @@ For example, after a mistake on **864 − 788**, Coach might check **14 − 8** 
 
 Coach looks at the last five answers to a foundation from the previous 30 days. Three distinct independent correct answers with at most one difficulty are enough to bypass a check. Two distinct difficulties making up at least half the sample, or a difficult recent Coach check, can trigger a practice recommendation. These thresholds are game design choices to test with pupils. The separate match-fit rules still require evidence across days.
 
+## Teaching order across Years 1 to 6
+
+The teaching map covers all 247 digital skill families. It connects concepts within and across the year groups. The first entry for a skill is the usual starting check. The other entries give Coach relevant alternatives when the pupil has already demonstrated that step or when another step has stronger evidence of difficulty. Starter skills such as counting objects or recognising shapes begin their own sequences. [Department for Education primary mathematics guidance](https://www.gov.uk/government/publications/teaching-mathematics-in-primary-schools) · [NCETM curriculum prioritisation](https://ncetm.org.uk/classroom-resources/cp-curriculum-prioritisation-in-primary-maths/)
+
+| Strand | Example route from earlier to later practice |
+|---|---|
+| Written subtraction | Count objects → subtract within 10 → subtract across 10 → two-digit exchange → larger column calculations |
+| Multiplication | Equal groups → 2 times table → 4 times table → 8 times table → mixed multiplication and inverse division |
+| Fractions | Equal parts → read fractions → same-denominator calculations → different denominators → mixed numbers |
+| Time | Read hours and half hours → five-minute intervals → durations → time conversions and timetable questions |
+| Position | Read positions → first-quadrant coordinates → four-quadrant coordinates → reflection and translation |
+| Data | Read simple charts → compare data → interpret line graphs or use fractions and angle facts to read pie charts |
+
+The pupil starts at their selected practice year. Repeated difficulty can trigger a check of an earlier step. Coach traces backwards through steps with recorded difficulty, stopping when it reaches a step that still needs checking. The untimed drills keep the route so a pupil can work forwards one skill at a time. The original year remains the focus of the practice plan. A check or a successful short drill provides evidence to guide the next question. Secure status still depends on independent performance across days.
+
 ## Prioritised improvements
 
 1. **Make checks more specific to the error.** Start with column exchange, division remainders and fraction denominators. Ask pupils to show the value being exchanged, the next division step or the equivalent fraction they need. Review the prompts and sample responses with primary teachers before using them to choose a route.

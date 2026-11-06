@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newProfile,questionPool,DAY} from '../dist/engine.mjs';
-import {initLearning,recordLearning,competency,nextAdaptive,resolvePrerequisite,probeIds,validateLearningGraph,laneFocus,coachRecommendation,nextFoundationCheck,matchRecommendation,roundRecommendation} from '../dist/adaptive.mjs';
+import {initLearning,recordLearning,competency,nextAdaptive,resolvePrerequisite,probeIds,validateLearningGraph,laneFocus,coachRecommendation,nextFoundationCheck,matchRecommendation,roundRecommendation,teachingRoute} from '../dist/adaptive.mjs';
 import {syllabusIds} from '../dist/curriculum.mjs';
 import {SKILLS} from '../dist/engine.mjs';
 
@@ -10,7 +10,7 @@ const now=Date.UTC(2026,10,6,12);
 function answer(p,id,correct=true,{count=3,assisted=false,at=now}={}){
  for(const q of questionPool(id).slice(0,count))recordLearning(p,q,correct,assisted,1000,'practice',at);
 }
-test('the prerequisite graph is complete and acyclic',()=>assert.ok(validateLearningGraph()));
+test('every curriculum family is mapped without cycles or later-year prerequisites',()=>assert.ok(validateLearningGraph()));
 test('a new player stays at the chosen level and crossing 10 has specific foundations to check',()=>{
  const p=newProfile('Test',3);
  assert.equal(resolvePrerequisite(p,'bridgeAdd',now),'bridgeAdd');
@@ -60,7 +60,7 @@ test('a difficult foundation check defers the target and recommends focused prac
  assert.equal(nextFoundationCheck(p,s,now),null);
  s.rows.push({q:questionPool('add10')[0],correct:true});
  assert.notEqual(nextAdaptive(p,s,now).q.skillId,q.skillId);
- assert.deepEqual(matchRecommendation(p,s.rows,now),{id:'bridgeSub',target:'colSub2',kind:'practice'});
+ assert.deepEqual(matchRecommendation(p,s.rows,now),{id:'bridgeSub',target:'colSub2',kind:'practice',path:['colSub2','bridgeSub']});
  assert.equal(resolvePrerequisite(p,'colSub2',now),'bridgeSub');
 });
 test('a passed check recommends a fresh original problem until it is solved independently',()=>{
@@ -68,7 +68,7 @@ test('a passed check recommends a fresh original problem until it is solved inde
  const check=nextAdaptive(p,s,now);
  assert.equal(check.q.skillId,'sub10');
  s.rows.push({q:check.q,reason:check.reason,coachFor:check.coachFor,correct:true});s.seen.push(check.q.key);
- assert.deepEqual(matchRecommendation(p,s.rows,now),{id:'bridgeSub',target:'bridgeSub',kind:'retry'});
+ assert.deepEqual(matchRecommendation(p,s.rows,now),{id:'bridgeSub',target:'bridgeSub',kind:'retry',path:['bridgeSub']});
  s.rows.push({q:questionPool('add10')[0],correct:true});
  const retry=nextAdaptive(p,s,now);
  assert.equal(retry.reason,'repair');assert.equal(retry.q.skillId,q.skillId);assert.notEqual(retry.q.key,q.key);
@@ -107,12 +107,31 @@ test('an untimed drill can lead back to its original skill after two distinct in
  const p=newProfile('Test',3),[one,two,three]=questionPool('bridgeSub');
  const drill={coachDrill:true,complete:true,manual:'bridgeSub',coachTarget:'colSub2',endedAt:now,
   rows:[{q:one,correct:false},{q:two,correct:true},{q:three,correct:true}]};
- assert.deepEqual(roundRecommendation(p,drill,now),{id:'colSub2',target:'colSub2',kind:'retry'});
+ assert.deepEqual(roundRecommendation(p,drill,now),{id:'colSub2',target:'colSub2',kind:'retry',path:['colSub2']});
  assert.equal(roundRecommendation(p,drill,now+31*DAY),null);
  drill.rows[2].assisted=true;
  assert.notEqual(roundRecommendation(p,drill,now)?.id,'colSub2');
  drill.rows[2]={q:two,correct:true};
  assert.notEqual(roundRecommendation(p,drill,now)?.id,'colSub2');
+});
+test('repeated difficulties trace a concept chain and stop at the first untested step',()=>{
+ const p=newProfile('Test',5);
+ for(const id of ['colSub4','colSub3','colSub2'])answer(p,id,false);
+ const path=['colSub4','colSub3','colSub2','bridgeSub'];
+ assert.deepEqual(teachingRoute(p,'colSub4',now),{id:'bridgeSub',target:'colSub4',kind:'check',path});
+ assert.equal(resolvePrerequisite(p,'colSub4',now),'bridgeSub');
+ const rows=questionPool('bridgeSub').slice(0,3).map(q=>({q,correct:true}));
+ const drill={coachDrill:true,complete:true,manual:'bridgeSub',coachTarget:'colSub4',coachPath:path,endedAt:now,rows};
+ assert.deepEqual(roundRecommendation(p,drill,now),{id:'colSub2',target:'colSub4',kind:'retry',path:path.slice(0,-1)});
+});
+test('Coach checks repeated weakness on a chosen-year target, with no automatic drop for a single slip',()=>{
+ const p=newProfile('Test',6),q=questionPool('decimalMul6')[0],s=round();
+ answer(p,q.skillId,false,{count:1});
+ assert.equal(nextFoundationCheck(p,s,now,q),null);
+ answer(p,q.skillId,false);
+ assert.equal(nextFoundationCheck(p,s,now,q).id,'mul4');
+ answer(p,'mul4');answer(p,'decimalPlace6');
+ assert.equal(nextFoundationCheck(p,s,now,q),null);
 });
 test('a Year 5 warm-up starts at Year 5 and samples both written methods',()=>{
  const p=newProfile('Test',5);
