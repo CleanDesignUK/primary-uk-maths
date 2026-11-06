@@ -2,11 +2,11 @@ import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validat
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
 import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=6.8.1';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
-import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.7.0';
+import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.8.3';
 import {isWrittenSkill,writtenAllowance,writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.6.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=6.7.1';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=6.8.1';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=6.8.3';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.5.0';
 import {avatarSVG} from './avatar.mjs?v=6.5.0';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
@@ -362,7 +362,7 @@ function renderQuestion(){
   session.fractionParts??=fractionParts(session.answer,{mixed,completed:done});
   input=fractionAnswerMarkup(session.fractionParts,{mixed,done,correct:session.rows.at(-1)?.correct});
  }else if(!['drawing','plot','clock'].includes(q.format)&&!column&&!written)input=`<div class="answer-line">${q.unit==='£'?'<span class="unit">£</span>':''}<input class="answer-input ${q.format==='pair'||Number(q.answer)>9999?'wide':''} ${done?(session.rows.at(-1).correct?'correct':'incorrect'):''}" id="answer" aria-label="Your answer" inputmode="${q.format==='pair'||Number(q.answer)<0||String(q.answer).includes(':')?'text':q.format==='decimal'?'decimal':'numeric'}" autocomplete="off" maxlength="24" value="${esc(session.answer)}" placeholder="?" ${done?'disabled':''}>${q.unit&&q.unit!=='£'?`<span class="unit">${esc(q.unit)}</span>`:''}</div>`;
- const coachButtons=`<button class="coach-assist" type="button" data-action="hint" aria-expanded="${!!session.assisted}" ${done?'disabled':''}>${icon('whistle',17)} Coach help</button><button class="dont-know" type="button" data-action="dont-know" ${done?'disabled':''}>I don’t know</button>`;
+ const coachButton=`<button class="coach-assist" type="button" data-action="ask-coach" aria-expanded="${done&&!last.correct}" ${done?'disabled':''}>${icon('whistle',17)} Ask Coach for help</button>`;
  const scratch=`<details class="scratch-paper" ${scratchOpen?'open':''}><summary>${icon('edit',16)} Working paper</summary><textarea id="scratch-work" maxlength="1000" aria-label="Working paper" placeholder="Write your working here…" ${done?'readonly':''}>${esc(session.scratch||'')}</textarea></details>`;
  let tail='',dockCaption='',dockResult='',dockNext='Next shot',dockAnnouncement='';
  if(done){
@@ -384,7 +384,7 @@ function renderQuestion(){
  const coachLabel=isCheck?'Skill check':reason==='review'?'Recall':reason==='repair'?'Second chance':session.selection.label;
  const checkTarget=skillById(session.selection.coachFor);
  const coachLine=checkTarget?`Helps with ${shortTitle(checkTarget).toLowerCase()}`:reason==='repair'?'New question, same skill':`Coach picked ${skill.title.toLowerCase()}`;
- host.innerHTML=`<div class="q-toolbar"><span class="q-label ${isCheck?'skill-check':reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${coachButtons}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}<div id="answer-error" class="field-error" role="alert"></div>${tail}</form>${!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} ${esc(coachLine)}</p>`:''}`;
+ host.innerHTML=`<div class="q-toolbar"><span class="q-label ${isCheck?'skill-check':reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${coachButton}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}<div id="answer-error" class="field-error" role="alert"></div>${tail}</form>${!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} ${esc(coachLine)}</p>`:''}`;
  const typed=!options&&!['drawing','angle','plot','clock'].includes(q.format);
  updateKeypad({typed,done,choices:!!options,symbols:questionPadSymbols(q),caption:dockCaption,resultLabel:dockResult,nextLabel:dockNext,working:done&&!last.correct,announce:touchMatch.matches?dockAnnouncement:''});
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}
@@ -394,8 +394,11 @@ function renderQuestion(){
   else if(!document.activeElement?.matches('[data-fraction-part]'))($('#fraction-whole')||$('#fraction-numerator')||$('#answer'))?.focus({preventScroll:true});
  });
 }
-function submit(value=null,unknown=false) {
+function submit(value=null,askedCoach=false) {
  if(!session||session.paused||session.phase!=='question')return;
+ // A revealed solution ends this attempt, including old drafts with a hint open.
+ if(askedCoach&&!session.assisted){session.assisted=true;session.hintsUsed++;}
+ const unknown=!!session.assisted;
  const q=session.q,written=writtenTask(q);
  const digits=$$('.column-digit');
  if(!unknown&&value===null){
@@ -452,9 +455,18 @@ function submit(value=null,unknown=false) {
   if(replayOf&&!session.retries.some(retry=>retry.q.key===replayOf.key))session.retries.push({q:{...replayOf},at:session.attempts+2});
  }
  session.phase='feedback';save();saveRound();renderQuestion();updateLive();paintPitch(!unknown);
- if(unknown){
-  $(touchMatch.matches?'.pad-shoot':'.feedback [data-action="next"]')?.focus({preventScroll:true});
- }else sound(correct);
+ if(unknown)showWorking();
+ else sound(correct);
+}
+
+function showWorking(){
+ const working=$('#question-host .clean-solution');
+ if(!working)return;
+ const camera=$('.match-pitch');
+ if(camera&&getComputedStyle(camera).position==='sticky')working.style.scrollMarginBlockStart=`${camera.offsetHeight+12}px`;
+ working.scrollIntoView({block:'start',behavior:'instant'});
+ const heading=$('h3',working);
+ if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
 }
 
 function answerError(message,input=$('#answer')){$('#answer-error').textContent=message;input?.focus();}
@@ -561,7 +573,7 @@ function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unav
 function openDialog(content,{wide=false,focus=null}={}){returnFocus=document.activeElement;modalRoot.innerHTML=`<div class="dialog-backdrop"><section class="dialog ${wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1"><button class="icon-btn close-dialog" data-action="close-dialog" aria-label="Close">${icon('close',17)}</button>${content}</section></div>`;app.inert=true;requestAnimationFrame(()=>$(focus||'.dialog button,.dialog input,.dialog select,.dialog',modalRoot)?.focus());}
 function closeDialog(){if(!modalRoot.firstChild)return;shownExample=null;modalRoot.innerHTML='';app.inert=false;if(returnFocus?.isConnected)returnFocus.focus();}
 function profileForm(id=null){const p=data.profiles.find(x=>x.id===id),y=p?.year||year||1;openDialog(`<span class="eyebrow">${p?'Your player':'Join the academy'}</span><h2 id="dialog-title">${p?'Edit player':'Build your player'}</h2><form id="profile-form" data-id="${p?.id||''}"><div class="profile-builder"><div id="profile-preview">${avatarSVG(p||{look:{}},{size:145})}</div><div><div class="field-row"><label for="player-name">Nickname</label><input class="field" id="player-name" maxlength="24" required autocomplete="off" value="${esc(p?.name||'')}" placeholder="Your nickname"></div><div class="field-row"><label for="player-year">Practice year</label><select class="field" id="player-year">${Array.from({length:6},(_,i)=>i+1).map(n=>`<option value="${n}" ${y===n?'selected':''}>Year ${n}</option>`).join('')}</select></div><details class="profile-options" ${p?'open':''}><summary>Kit and style</summary><div class="custom-fields"><label>Kit number<input class="field" id="player-number" inputmode="numeric" type="number" min="1" max="99" value="${p?.look?.number||9}" required></label><label>Position<select class="field" id="player-position">${POSITIONS.map(n=>`<option ${p?.look?.position===n?'selected':''}>${n}</option>`).join('')}</select></label></div><label class="voice-field" for="player-skin">Skin tone<select class="field" id="player-skin">${Object.keys(SKIN_TONES).map(n=>`<option value="${n}" ${(p?.look?.skin||'warm')===n?'selected':''}>${n}</option>`).join('')}</select></label><div class="field-row"><label for="training-clock">Match pace</label><select class="field" id="training-clock"><option value="120" ${!p||!p.trainingSeconds||p.trainingSeconds===120?'selected':''}>Match pace · 2 minutes</option><option value="180" ${p?.trainingSeconds===180?'selected':''}>Steady pace · 3 minutes</option><option value="60" ${p?.trainingSeconds===60?'selected':''}>Sprint pace · 1 minute</option></select></div></details></div></div><div class="field-error" id="profile-error" role="alert"></div><div class="dialog-actions">${p?`<button type="button" class="text-btn text-danger" data-action="delete-player" data-id="${p.id}" style="margin-right:auto">Delete player</button>`:''}<button class="btn lime" type="submit">${p?'Save':'Create & play'}${icon('arrow',17)}</button></div></form>`,{focus:'#player-name'});}
-function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Choose “I don’t know” to see the working. Coach may check a smaller skill or give you a fresh question to try. Facts you know return on later days.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
+function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Use “Ask Coach for help” to see the working. Coach records that question as unsure. Coach may check a smaller skill or give you a fresh question to try. Facts you know return on later days.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
 function showReport(id){
  const p=data.profiles.find(profile=>profile.id===id);
  if(p)openDialog(reportContent(p,q=>q.expression||[q.prompt,equationLabel(q,false)].filter(Boolean).join(' · ')),{wide:true});
@@ -728,13 +740,9 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'sound':data.settings.sound=!data.settings.sound;save();sound(true);if(!session&&!result)render();else toast(`Sound ${data.settings.sound?'on':'off'}`);break;
  case 'hear':if(session)speak(`${questionPrompt(session.q)}. ${session.q.expression!==undefined?session.q.expression:coreExpression(session.q)}`);break;
  case 'hear-help':{const q=session?.q||shownExample;if(q)speak(workingText(q)||(q.hint||explain(q).steps).join('. '));else if(modalRoot.dataset.question)speak(modalRoot.dataset.question);break;}
- case 'hint':if(session?.phase==='question'){
-  if(!session.assisted){session.assisted=true;session.hintsUsed++;revealFact(player(),session.q);save();saveRound();renderQuestion();}
-  requestAnimationFrame(()=>$('.help-box')?.scrollIntoView({block:'nearest'}));
- }break;
+ case 'ask-coach':submit(null,true);break;
  case 'answer-choice':submit(b.dataset.value);break;
- case 'dont-know':submit(null,true);break;
- case 'show-working':$('.clean-solution',$('#question-host'))?.scrollIntoView({block:'start',behavior:'instant'});break;
+ case 'show-working':showWorking();break;
  case 'next':if(session?.phase==='feedback'&&!session.paused)nextQuestion();break;
  case 'key':pressKeypad(b.dataset.key);break;
  case 'fraction-whole':if(session?.phase==='question'&&!session.paused&&session.fractionParts){

@@ -4,7 +4,7 @@ export const MATCH_SCHEMA = 'football-v5';
 
 // Match points are useful feedback in every exercise. Career XP has separate gates.
 export function earnedXP(correct, supported, streak) {
-  return correct ? (supported ? 2 : 10 + Math.min(5, Math.max(0, streak - 1)) * 2) : 0;
+  return correct && !supported ? 10 + Math.min(5, Math.max(0, streak - 1)) * 2 : 0;
 }
 
 export function initRewards(profile) {

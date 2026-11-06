@@ -2,10 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DAY,newProfile,questionPool} from '../dist/engine.mjs';
 import {recordLearning} from '../dist/adaptive.mjs';
+import {earnedXP,rewardCandidate,MATCH_SCHEMA} from '../dist/rewards.mjs';
 import {parentReport} from '../dist/parent-report.mjs';
 import {reportContent} from '../dist/academy-ui.mjs';
 
 const now=Date.UTC(2026,10,6,12);
+
+test('asking Coach records an unsure answer, with zero points and no independent fact credit',()=>{
+ const profile=newProfile('Test',3),q=questionPool('colSub2')[0];
+ const match={schema:MATCH_SCHEMA,mode:'timed',curriculumYear:3,streak:1};
+ assert.equal(rewardCandidate(profile,q,match,{correct:false,assisted:true,now}),0);
+ assert.equal(earnedXP(false,true,1),0);
+ const evidence=recordLearning(profile,q,false,true,1000,'first',now,false,true);
+ assert.equal(profile.facts[q.key],undefined);
+ assert.equal(evidence.recent.at(-1).unknown,true);
+ assert.equal(evidence.recent.at(-1).correct,false);
+ assert.equal(rewardCandidate(profile,q,match,{correct:true,assisted:false,now:now+1000}),0);
+ const skill=parentReport(profile,now).priorities.find(s=>s.id===q.skillId);
+ assert.equal(skill.level,'check');
+ assert.deepEqual([skill.askedCoach,skill.skipped,skill.wrong,skill.independent],[1,0,0,0]);
+ assert.match(reportContent(profile,undefined,now),/0\/1 independent · 1 asked Coach/);
+});
 
 test('the report separates missed, helped, skipped and independent answers for each pupil',()=>{
  const profile=newProfile('A <B>',4),other=newProfile('Other',4);

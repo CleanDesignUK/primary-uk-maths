@@ -15,9 +15,10 @@ export const KNOWLEDGE_LEVELS={
 function skillEvidence(profile,id,now){
  const skill=skillById(id),recent=recentEvidence(profile,id,now).slice(-8);
  const correct=recent.filter(independent);
- const skipped=recent.filter(answer=>answer.unknown).length;
+ const askedCoach=recent.filter(answer=>answer.unknown&&answer.help).length;
+ const skipped=recent.filter(answer=>answer.unknown&&!answer.help).length;
  const helped=recent.filter(answer=>answer.help&&!answer.unknown).length;
- const wrong=recent.length-correct.length-skipped-helped;
+ const wrong=recent.length-correct.length-skipped-helped-askedCoach;
  const stats=competency(profile,id,now);
  let level='unseen';
  if(stats.n&&!recent.length)level='review';
@@ -29,7 +30,7 @@ function skillEvidence(profile,id,now){
  }
  return {
   id,skill,domain:domainFor(skill),year:teachingYear(id),level,
-  attempts:recent.length,total:stats.n,independent:correct.length,wrong,helped,skipped,
+  attempts:recent.length,total:stats.n,independent:correct.length,wrong,helped,skipped,askedCoach,
   lastAt:stats.lastAt??profile.learning[id]?.recent.at(-1)?.at,previouslySecure:level==='review'&&stats.secure,
   sessions:new Set(recent.map(answer=>answer.sessionId).filter(Boolean)).size,
  };

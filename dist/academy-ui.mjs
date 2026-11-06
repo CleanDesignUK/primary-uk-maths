@@ -9,7 +9,7 @@ import {focusTables,tableEvidence} from './tables.mjs';
 import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {matchMission,missionProgress} from './shot.mjs?v=6.3.0';
 import {britishVoices} from './speech.mjs';
-import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=6.8.1';
+import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=6.8.3';
 
 const nav=(view,label,symbol='arrow',className='btn white')=>`<button class="${className}" data-action="nav" data-view="${view}">${icon(symbol,17)}${label}</button>`;
 const heading=(eyebrow,title,aside='')=>`<div class="heading academy-page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1></div>${aside}</div>`;
@@ -203,7 +203,7 @@ const reportTitle=skill=>`${drillTitle(skill.skill)} · Year ${skill.year}`;
 function answerEvidence(skill){
  if(!skill.total)return 'No recorded attempts yet';
  if(!skill.attempts)return Number.isFinite(skill.lastAt)?`Last checked ${reportDate.format(skill.lastAt)}${skill.previouslySecure?' · previously secure':''}`:'Older evidence recorded';
- const outcomes=[[skill.wrong,'incorrect'],[skill.helped,'with help'],[skill.skipped,'skipped']]
+ const outcomes=[[skill.wrong,'incorrect'],[skill.helped,'with help'],[skill.askedCoach,'asked Coach'],[skill.skipped,'skipped']]
   .filter(([count])=>count).map(([count,label])=>`${count} ${label}`);
  return [`${skill.independent}/${skill.attempts} independent`,...outcomes].join(' · ');
 }
@@ -212,7 +212,7 @@ function priorityCard(p,skill,formatQuestion){
  const {route,next,example}=skill;
  const label=route.kind==='retry'?`Revisit ${drillTitle(next.skill)}.`:`${route.kind==='practice'?'Practise':'Check'} ${drillTitle(next.skill)} first.`;
  const question=example&&(formatQuestion(example.q)||example.q.prompt);
- const outcome=example?.unknown?'Skipped':example?.assisted?'Used Coach help':'Incorrect';
+ const outcome=example?.unknown?(example.assisted?'Asked Coach':'Skipped'):example?.assisted?'Used Coach help':'Incorrect';
  const response=outcome==='Incorrect'&&['number','string'].includes(typeof example?.typed)&&['number','string'].includes(typeof example.q.answer)?
   `<small>Entered ${mathText(String(example.typed).slice(0,40))} · expected ${mathText(example.q.answer)}</small>`:'';
  return `<article class="parent-priority">

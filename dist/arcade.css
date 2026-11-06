@@ -244,11 +244,6 @@ body.arcade {
 .arcade .question-card .coach-assist[aria-expanded="true"] {background:#ffedb4;border-color:#ddc687}
 .arcade .question-card .shoot-button {background:#d3f66e;color:#122730;border:1px solid #9db94f;box-shadow:0 3px 0 #b2ca6c}
 .arcade .question-actions {display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
-.arcade .dont-know {
- min-height:44px;padding:7px 12px;border:1px solid #a9bece;border-radius:9px;
- background:#eef7fd;color:#264d69;font-size:14px;font-weight:750;
-}
-.arcade .dont-know:hover,.arcade .dont-know:focus-visible {background:#d7effe;color:#153852}
 .arcade .feedback.coach-stop {background:#dceffb;color:#173e5a}
 .arcade .feedback.coach-stop p,.arcade .feedback.coach-stop>svg {color:#254d6a}
 .arcade .q-label.skill-check {background:#dfefb7;color:#234127}
@@ -504,11 +499,9 @@ body.arcade {
  }
  .arcade .match-topbar>.brand {display:none}
 }
-@media(max-width:530px) {
- .q-toolbar:has(.dont-know) {gap:0}
- .q-toolbar:has(.dont-know)>.q-label {display:none}
- .q-toolbar:has(.dont-know)>.q-toolbar-actions {width:100%;justify-content:space-between;gap:4px}
- .q-toolbar .dont-know {padding-inline:7px;font-size:12px}
+@media(max-width:425px) {
+ .q-toolbar>.q-label {display:none}
+ .q-toolbar>.q-toolbar-actions {width:100%;justify-content:space-between;gap:4px}
 }
 
 .kickoff-screen {
@@ -596,7 +589,7 @@ body.arcade {
 .touch-keypad #question-host {overflow-anchor:none}
 .touch-keypad #question-host :is(.question-actions,.feedback>button),
 .touch-keypad #question-host[data-feedback="goal"] .feedback {display:none}
-.touch-keypad .q-toolbar :is(.coach-assist,.dont-know):disabled {opacity:.58}
+.touch-keypad .q-toolbar .coach-assist:disabled {opacity:.58}
 .arcade .touch-keypad .pitch-replay[hidden] {display:grid;visibility:hidden}
 .touch-keypad .sideline-note {
  position:absolute;inset:26px auto auto 9px;max-width:calc(100% - 18px);z-index:2;
