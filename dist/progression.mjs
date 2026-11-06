@@ -52,3 +52,18 @@ export function clockDelta(session,seconds){
  // Old drafts retain their old timing. Current records have separate versioned comparison keys.
  return session.schema==='football-v2'||session.phase==='question'?seconds:0;
 }
+
+export function matchTimeLeft(round) {
+ return Math.max(0,round.duration-(round.clockElapsed??round.elapsed));
+}
+
+export function tickMatchClock(round,seconds) {
+ const active=clockDelta(round,seconds);
+ const available=round.workTimeLeft??0;
+ const working=Math.min(active,available);
+ const timed=Math.min(active-working,matchTimeLeft(round));
+ round.clockElapsed=Math.min(round.duration,(round.clockElapsed??round.elapsed)+timed);
+ round.elapsed+=working+timed;
+ round.workTimeLeft=available-working;
+ return matchTimeLeft(round);
+}

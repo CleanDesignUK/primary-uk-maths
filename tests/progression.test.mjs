@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newProfile,questionPool,DAY,initialData,validateImport,selectQuestion} from '../dist/engine.mjs';
 import {initLearning,recordLearning} from '../dist/adaptive.mjs';
-import {dailyTargets,tableFacts,academyPath,clockDelta,warmupProgress} from '../dist/progression.mjs';
+import {dailyTargets,tableFacts,academyPath,clockDelta,matchTimeLeft,tickMatchClock,warmupProgress} from '../dist/progression.mjs';
 import {workedExample} from '../dist/coaching.mjs';
 
 test('daily targets exclude supported answers, earlier days and other players',()=>{
@@ -59,4 +59,37 @@ test('training samples every foundation fact while reducing easy identities, and
  const initial=sample();assert.equal(new Set(initial.map(q=>q.key)).size,all.length);assert.ok(initial.filter(q=>q.b===0).length<initial.length*.1);
  const missed=all.find(q=>q.a===8&&q.b===0);const before=initial.filter(q=>q.key===missed.key).length;
  recordLearning(p,missed,false,false,1000,'a',now);assert.ok(sample().filter(q=>q.key===missed.key).length>before*5);
+});
+
+
+test('written thinking time protects the match clock and survives a saved round',()=>{
+ const round={duration:30,elapsed:26,phase:'question',workTimeLeft:45};
+ assert.equal(tickMatchClock(round,10),4);
+ assert.equal(round.elapsed,36);
+ assert.equal(round.workTimeLeft,35);
+ const resumed=JSON.parse(JSON.stringify(round));
+ resumed.paused=true;
+ assert.equal(tickMatchClock(resumed,100),4);
+ assert.equal(resumed.workTimeLeft,35);
+ resumed.paused=false;
+ assert.equal(tickMatchClock(resumed,36),3);
+ assert.equal(resumed.elapsed,72);
+ resumed.phase='feedback';
+ assert.equal(tickMatchClock(resumed,10),3);
+ resumed.phase='question';
+ assert.equal(tickMatchClock(resumed,5),0);
+ assert.equal(resumed.elapsed,75);
+ assert.equal(matchTimeLeft({duration:60,elapsed:59}),1);
+});
+
+test('written questions get more working time as the method becomes longer',async()=>{
+ const {writtenAllowance,isWrittenSkill}=await import('../dist/written-work.mjs');
+ assert.equal(writtenAllowance({key:'mental',skillId:'add10'}),0);
+ assert.equal(writtenAllowance({key:'column3',a:123,b:89}),30);
+ assert.equal(writtenAllowance({key:'column4',a:1023,b:89}),45);
+ assert.equal(writtenAllowance({skillId:'divWritten3',expression:'72 ÷ 4',answer:18}),45);
+ assert.equal(writtenAllowance({skillId:'longDiv6',expression:'1152 ÷ 24',answer:48}),60);
+ assert.ok(isWrittenSkill('colAdd2'));
+ assert.ok(isWrittenSkill('longDiv6'));
+ assert.equal(isWrittenSkill('table3'),false);
 });

@@ -254,6 +254,8 @@ body.arcade {
 .arcade .match-controls .desktop-record,.arcade .finish-practice {color:var(--bright)}
 .arcade .match-controls .numpad>button {border-color:#3c5270;background:#16283f;color:var(--bright)}
 .arcade .match-controls .symbol-keys>button {background:#24364e;color:var(--bright)}
+.arcade .game-metric.work-clock {background:#1e4057;border-color:#558bb2}
+.arcade .game-metric.work-clock :is(strong,small) {color:#d3f1ff}
 .arcade .results {margin-top:18px;background:var(--deck);border:1px solid var(--deck-line);border-radius:19px;color:var(--bright)}
 .arcade .results :is(h1,h2,.eyebrow) {color:var(--bright)}
 .arcade .results>p {color:var(--quiet)}

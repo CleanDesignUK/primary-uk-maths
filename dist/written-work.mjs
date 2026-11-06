@@ -3,6 +3,18 @@ import {esc, mathText} from './visuals.mjs';
 const divisionSkills = new Set(['divWritten3', 'divide4', 'division5', 'longDiv6']);
 const placeNames = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands', 'hundred-thousands'];
 
+export const isWrittenSkill = id => /^col(?:Add|Sub)/.test(id) ||
+  ['mulWritten3', 'mul4', 'mul5', 'longMul6'].includes(id) || divisionSkills.has(id);
+
+export function writtenAllowance(question) {
+  if (question.key?.startsWith('column')) {
+    return Math.max(String(question.a).length, String(question.b).length) > 3 ? 45 : 30;
+  }
+  const task = writtenTask(question);
+  if (!task) return 0;
+  return task.type === 'long-division' || task.type === 'multiply' && task.b >= 10 ? 60 : 45;
+}
+
 export function writtenTask(question) {
   if (question.visual?.type === 'written' && question.visual.op === '×') {
     const {a, b} = question.visual;

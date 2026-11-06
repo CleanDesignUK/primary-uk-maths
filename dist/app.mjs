@@ -3,9 +3,9 @@ import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} fr
 import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions} from './adaptive.mjs?v=6.2.0';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
 import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.2.0';
-import {writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.3.0';
+import {isWrittenSkill,writtenAllowance,writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.6.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
-import {warmupProgress,clockDelta,academyPath} from './progression.mjs';
+import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=6.6.0';
 import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView} from './academy-ui.mjs?v=6.5.0';
 import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.5.0';
 import {avatarSVG} from './avatar.mjs?v=6.5.0';
@@ -31,6 +31,9 @@ for(const p of data.profiles){initCareer(p);if(p.year===0)p.year=1;initLearning(
 const routeMap={today:'home',skills:'syllabus',progress:'stats',grownups:'coach'};
 const GOAL_FEEDBACK_MS=1200;
 let goalTimer;
+function newWorkTime(round) {
+ return round.progressCheck||isWrittenSkill(round.manual)?0:writtenAllowance(round.q);
+}
 let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(initialRoute)?initialRoute:'home');
 try{
  const saved=JSON.parse(localStorage.getItem(DRAFT)||'null');
@@ -38,6 +41,7 @@ try{
  for(const round of rounds){
   if(!['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(round?.schema)||!data.profiles.some(p=>p.id===round.profileId)||!Number.isFinite(round.elapsed)||!round.q||!Array.isArray(round.skillIds)||!round.skillIds.every(skillById))continue;
   round.paused=true;round.pausedEver=true;
+  if(round.phase==='question'&&!Number.isFinite(round.workTimeLeft))round.workTimeLeft=newWorkTime(round);
   draftRounds.set(round.profileId,round);
  }
  session=draftRounds.get(saved?.schema==='rounds-v1'?saved.active:saved?.profileId)||null;
@@ -171,10 +175,10 @@ function startMatch(manual=null,options={}) {
  const placement=!manual&&!options.promotion&&!progressCheck&&!p.placementComplete;
  const probeStart=placement?warmupProgress(p):0;
  const league=Math.min(5,1+Math.floor(SKILLS.filter(s=>competency(p,s.id).ready).length/12));
- const written=skill&&(skill.category==='columns'||['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6'].includes(skill.id));
+ const written=isWrittenSkill(manual);
  const pace=[60,120,180].includes(p.trainingSeconds)?p.trainingSeconds:120;
  const duration=options.promotion||written?600:placement?300:options.length===25?180:manual?(skill.extra?180:60):p.year>=5&&!options.tableChallenge?420:pace;
- const target=options.promotion?12:progressCheck?Math.min(6,checkQuestions.length):placement?probeIds(p).length-probeStart:options.length||(written?6:10);
+ const target=options.promotion?12:progressCheck?Math.min(6,checkQuestions.length):placement?probeIds(p).length-probeStart:written?4:options.length||10;
  const matchType=manual?`practice:${manual}:${options.tableMode||'auto'}`:options.tableChallenge?'table-challenge':options.promotion?'promotion':`coach:${league}`;
  session={
   schema:MATCH_SCHEMA, curriculumYear:p.year, promotion:!!options.promotion,
@@ -184,7 +188,7 @@ function startMatch(manual=null,options={}) {
   recordKey:`v5:${matchType}:y${p.year}:${target}:${duration}`, startedAt:Date.now(),
   mission:progressCheck||options.promotion?null:matchMission(p.sessions.filter(match=>match.complete).length),
   aimSeed:p.sessions.length%3,aim:null,
-  elapsed:0,currentMs:0,attempts:0,correct:0,points:0,careerPending:0,streak:0,bestStreak:0,
+  elapsed:0,clockElapsed:0,currentMs:0,attempts:0,correct:0,points:0,careerPending:0,streak:0,bestStreak:0,
   rows:[],seen:[],retries:[],paused:false,pausedEver:false,hintsUsed:0,assisted:false,phase:'question',q:null,selection:null,
   answer:'',digits:[],notes:[],drawing:[],bars:[],angle:30,work:{},scratch:'',remainder:''
  };
@@ -201,6 +205,7 @@ function nextQuestion(renderHost=true){
  if(next.retryKey){const i=session.retries.findIndex(r=>r.q.key===next.retryKey);if(i>=0)session.retries.splice(i,1);}
  if(next.advanceProbe)session.probeIndex++;
  session.q=next.q;session.selection=next;session.assisted=false;session.phase='question';session.aim=null;session.answer='';session.fractionParts=null;session.digits=[];session.notes=[];session.noteHistory=[];session.drawing=[];session.bars=[];session.angle=30;session.clockHour=12;session.clockMinute=0;session.currentMs=0;session.lastDigit=null;session.work={};session.scratch='';session.remainder='';
+ session.workTimeLeft=newWorkTime(session);
  session.seen.push(session.q.key);if(!session.skillIds.includes(session.q.skillId))session.skillIds.push(session.q.skillId);saveRound();
  if(renderHost&&$('#question-host')){
   renderQuestion();paintPitch();updateLive();
@@ -208,6 +213,12 @@ function nextQuestion(renderHost=true){
  }
 }
 const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,Math.ceil(s))%60).padStart(2,'0')}`;
+function matchTimer() {
+ const working=session.phase==='question'&&session.workTimeLeft>0;
+ const remaining=working?session.workTimeLeft:matchTimeLeft(session);
+ const caption=session.progressCheck?'No timer':working?'Work time':session.phase==='feedback'?'Coach time':'Time';
+ return {working,remaining,caption,display:session.progressCheck?'∞':clock(remaining)};
+}
 function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].unknown?'played':session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
 function aimMarkup(){
  if(!session.mission)return '';
@@ -220,10 +231,11 @@ function renderGame() {
  const label=session.promotion?'Promotion match':session.progressCheck?'Progress check':session.placement?'Warm-up':session.manual?'Free practice':session.tableChallenge?'Tables challenge':'Coach match';
  const title=session.manual?shortTitle(skillById(session.manual)):session.progressCheck?'Check your progress':session.placement?`Year ${session.curriculumYear} warm-up`:`Year ${session.curriculumYear} ${session.promotion?'promotion':'match'}`;
  const numberKeys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="key" data-key="${n}" aria-label="${n}">${n}</button>`).join('');
+ const timer=matchTimer();
  app.innerHTML=`<div class="game-shell">
   <header class="game-header arcade-topbar match-topbar">${brand()}${gameNavigation('home')}<div class="header-tools"><span class="profile-mini">${profileDot(p)}<span>${esc(p.name)}</span></span><button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
   <main id="main" class="game-main">
-   <div class="game-title"><div><div class="eyebrow">${label}</div><h1>${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${session.progressCheck?'∞':clock(session.duration-session.elapsed)}</strong><small id="timer-caption">${session.progressCheck?'No timer':'Time'}</small></div></div></div>
+   <div class="game-title"><div><div class="eyebrow">${label}</div><h1>${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${timer.display}</strong><small id="timer-caption">${timer.caption}</small></div></div></div>
    <div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div>
    <div class="game-grid match-grid">
     <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span><i class="live-dot" aria-hidden="true"></i> <span id="match-stage">Kick-off</span></span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p,{aimGuide:!!session.mission})}${aimMarkup()}<div class="pitch-hud"><span id="move-caption" aria-live="polite">Ready to shoot</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div><div class="sideline-note" id="sideline-note" hidden></div></section>
@@ -240,8 +252,8 @@ function equationLabel(q,reveal=true){if(q.expression!==undefined)return q.expre
 function questionPrompt(q){if(q.prompt!==undefined)return q.prompt;return q.op==='place'?'Value of the green digit?':q.op==='bond'?`Make ${q.total}`:q.op?.startsWith('missing')?'Find the gap':q.key.startsWith('column')?'Start with the ones.':q.op==='double'||q.op==='half'?'':q.op==='×'?'Multiply':q.op==='÷'?'Divide':q.op==='+'?'Add':'Subtract';}
 function columnMarkup(q,done=false){return columnWorkspace(q,{digits:session.digits,notes:session.notes,history:session.noteHistory||[],done});}
 function writtenPage(){
- const p=player(),ids=syllabusIds(year).filter(id=>/^col(?:Add|Sub)/.test(id)||['mulWritten3','mul4','mul5','longMul6','divWritten3','divide4','division5','longDiv6'].includes(id));
- return `<div class="heading"><div><span class="eyebrow">Year ${year}</span><h1>Written maths</h1><p>Use the working boxes and start with an example.</p></div></div>${ids.length?syllabusCards(p,ids):`<div class="panel"><h2>Build your number methods</h2><p>Start with ${year===1?'numbers and equal groups':'adding and subtracting within 100'}.</p><button class="btn lime" data-action="skill" data-skill="${year===1?'add20':'mental2'}">Start practice</button></div>`}`;
+ const p=player(),ids=syllabusIds(year).filter(isWrittenSkill);
+ return `<div class="heading"><div><span class="eyebrow">Year ${year}</span><h1>Written maths</h1><p>Four shots per drill. Use the working boxes or start with an example.</p></div></div>${ids.length?syllabusCards(p,ids):`<div class="panel"><h2>Build your number methods</h2><p>Start with ${year===1?'numbers and equal groups':'adding and subtracting within 100'}.</p><button class="btn lime" data-action="skill" data-skill="${year===1?'add20':'mental2'}">Start practice</button></div>`}`;
 }
 let shownExample=null;
 function showSkillExample(id){
@@ -379,7 +391,7 @@ function submit(value=null,unknown=false) {
 }
 
 function answerError(message,input=$('#answer')){$('#answer-error').textContent=message;input?.focus();}
-function startTick(){clearInterval(tickId);lastTick=performance.now();tickId=setInterval(()=>{if(!session||session.paused)return;const now=performance.now(),delta=Math.max(0,(now-lastTick)/1000);lastTick=now;session.elapsed+=clockDelta(session,delta);if(session.phase==='question')session.currentMs+=delta*1000;if(session.elapsed>=session.duration){session.elapsed=session.duration;finishMatch(true);return;}updateLive();if(now-lastSave>1100){saveRound();lastSave=now;}},150);}
+function startTick(){clearInterval(tickId);lastTick=performance.now();tickId=setInterval(()=>{if(!session||session.paused)return;const now=performance.now(),delta=Math.max(0,(now-lastTick)/1000);lastTick=now;const remaining=tickMatchClock(session,delta);if(session.phase==='question')session.currentMs+=delta*1000;if(remaining===0){finishMatch(true);return;}updateLive();if(now-lastSave>1100){saveRound();lastSave=now;}},150);}
 // Keep the goal and celebration visible before clearing the question.
 function afterGoal(advance){
  clearTimeout(goalTimer);
@@ -422,13 +434,14 @@ function paintPitch(replay=false) {
 }
 function updateLive() {
  if(!session)return;
- const values={'live-goals':session.correct,'live-streak':session.streak,'live-time':session.progressCheck?'∞':clock(session.duration-session.elapsed)};
+ const timer=matchTimer();
+ const values={'live-goals':session.correct,'live-streak':session.streak,'live-time':timer.display,'timer-caption':timer.caption};
  for(const [id,value] of Object.entries(values)){const el=document.getElementById(id);if(el)el.textContent=value;}
  const earns=isCoachChallenge(player(),session);
  if($('#live-xp'))$('#live-xp').innerHTML=`${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small>`;
- $('#timer-box')?.classList.toggle('low',!session.progressCheck&&session.duration-session.elapsed<16&&session.phase==='question');
+ $('#timer-box')?.classList.toggle('low',!session.progressCheck&&!timer.working&&timer.remaining<16&&session.phase==='question');
+ $('#timer-box')?.classList.toggle('work-clock',timer.working);
  $('#timer-box')?.classList.toggle('clock-rest',session.phase==='feedback');
- if($('#timer-caption'))$('#timer-caption').textContent=session.progressCheck?'No timer':session.phase==='feedback'?'Coach time':'Time';
  if($('#shot-track'))$('#shot-track').innerHTML=shotTrack();
 }
 
@@ -447,7 +460,7 @@ function finishMatch(complete,showResult=true) {
  const p=player(),previousLevel=careerLevel(p),priorXP=careerXP(p),old=bestFor(session.recordKey);
  const before=new Set(medals(p).filter(x=>x[3]).map(x=>x[0]));
  const saved={...session,complete:complete&&session.attempts===session.target,endedAt:Date.now(),elapsed:Math.round(session.elapsed*10)/10};
- for(const key of ['q','selection','retries','seen','answer','digits','notes','drawing','bars','angle','currentMs','lastDigit','work','scratch','remainder','noteHistory','checkPlan','checkQuestions'])delete saved[key];
+ for(const key of ['q','selection','retries','seen','answer','digits','notes','drawing','bars','angle','currentMs','lastDigit','work','scratch','remainder','noteHistory','checkPlan','checkQuestions','clockElapsed','workTimeLeft'])delete saved[key];
  saved.previousBest=old?.points||0;saved.previousTime=old?.elapsed||0;
  saved.newRecord=newPersonalBest(saved,old);
  if(saved.attempts&&!p.sessions.some(match=>match.id===saved.id)){
