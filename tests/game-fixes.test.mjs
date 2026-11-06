@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DAY,newProfile,questionPool,skillById,initialData,validateImport} from '../dist/engine.mjs';
 import {syllabusIds,answerMatches} from '../dist/curriculum.mjs';
 import {initLearning,nextAdaptive,recordLearning,progressCheckPlan,learningNotes} from '../dist/adaptive.mjs';
-import {initCareer,buyItem,credits,validateCareer,ITEMS} from '../dist/career.mjs';
+import {initCareer,buyItem,credits,validateCareer,ITEMS,xpForLevel} from '../dist/career.mjs';
 import {bankCareerXP,rewardCandidate,revealFact,rewardFactKey,initRewards,MATCH_SCHEMA} from '../dist/rewards.mjs';
 import {writtenTask,divisionWorking,multiplicationWorking,divisionWorkspace,multiplicationWorkspace} from '../dist/written-work.mjs';
 import {leagueTable} from '../dist/promotion.mjs';
@@ -44,9 +44,9 @@ test('switching the profile to an easier year keeps practice and blocks a second
  const p=newProfile('Test',6);initRewards(p);p.year=1;initRewards(p);
  assert.equal(p.rewardYear,6);assert.equal(attempt(p,questionPool('add10')[5],challenge(p)),0);
 });
-test('starter discounts preserve both previous catalogues and charge the new price once',()=>{
+test('the new catalogue accepts receipts from all three earlier price lists and charges once',()=>{
  const backup=initialData();
- for(const [catalogue,cost] of [[undefined,25],[2,125]]){
+ for(const [catalogue,cost] of [[undefined,25],[2,125],[3,16]]){
   const player=newProfile(`Previous ${cost}`,3);initCareer(player);player.pointsTotal=1500;
   player.inventory=['kit-blue'];player.look.kit='kit-blue';player.creditsSpent=cost;
   player.purchases=[{id:'kit-blue',cost,at:now,catalogue}];
@@ -58,10 +58,39 @@ test('starter discounts preserve both previous catalogues and charge the new pri
  assert.equal(buyItem(starter,'boots-power-7').ok,true);
  assert.equal(buyItem(starter,'boots-power-7').alreadyOwned,true);
  assert.equal(credits(starter),1);
- assert.deepEqual(starter.purchases.map(({catalogue,cost})=>[catalogue,cost]),[[3,14]]);
+ assert.deepEqual(starter.purchases.map(({catalogue,cost})=>[catalogue,cost]),[[4,14]]);
  backup.profiles.push(starter);
- assert.deepEqual(validateImport(structuredClone(backup)).profiles.map(credits),[125,25,1]);
+ assert.deepEqual(validateImport(structuredClone(backup)).profiles.map(credits),[125,25,134,1]);
  assert.ok(ITEMS.length>=60);assert.ok(ITEMS.filter(item=>item.slot==='hair').length>=10);
+});
+test('a repriced move restores at its original cost and cannot be charged again',()=>{
+ const p=initCareer(newProfile('Existing player',3));p.pointsTotal=3500;
+ p.inventory=['celebrate-slide'];p.look.celebration='celebrate-slide';p.creditsSpent=320;
+ p.purchases=[{id:'celebrate-slide',cost:320,catalogue:3,at:now}];
+ assert.ok(validateCareer(p));
+ assert.ok(buyItem(p,'celebrate-slide').alreadyOwned);
+ assert.equal(credits(p),30);
+ assert.ok(buyItem(p,'celebrate-jump').ok);
+ assert.equal(credits(p),20);
+ assert.ok(validateCareer(p));
+ const altered=structuredClone(p);altered.purchases[0].cost=44;altered.creditsSpent=54;
+ assert.throws(()=>validateCareer(altered),/shop history/);
+});
+test('a completed match with five fresh goals can buy starter gear and later prices follow unlock levels',()=>{
+ const p=newProfile('Test',3);
+ const match=challenge(p),questions=questionPool('table3').slice(1,11);
+ match.rows=questions.map((q,index)=>{
+  const correct=index%2===0;
+  const careerCandidate=attempt(p,q,match,{correct});
+  return {correct,careerCandidate};
+ });
+ assert.equal(bankCareerXP(p,match),50);
+ assert.equal(credits(p),5);
+ assert.ok(buyItem(p,'hair-sweep').ok);
+ assert.equal(credits(p),0);
+ for(const item of ITEMS.filter(item=>item.level>1)){
+  assert.ok(item.price<=Math.floor(xpForLevel(item.level+1)/10),item.id);
+ }
 });
 test('the new league omits easy legacy scores and zero XP rounds',()=>{
  const p=newProfile('Test',3);p.sessions=[challenge(p,{schema:'football-v4',ranked:true,careerXP:170,endedAt:now}),challenge(p,{id:'zero',ranked:true,careerXP:0,endedAt:now}),challenge(p,{id:'manual',ranked:true,manual:'add10',careerXP:50,endedAt:now})];

@@ -1,4 +1,4 @@
-import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=6.5.0';
+import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=6.9.1';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
 import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=6.8.1';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
@@ -6,8 +6,8 @@ import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoach
 import {isWrittenSkill,writtenAllowance,writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.6.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=6.7.1';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=6.9.0';
-import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.5.0';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=6.9.1';
+import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=6.9.1';
 import {avatarSVG} from './avatar.mjs?v=6.5.0';
 import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=6.3.0';
 import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=6.8.2';
@@ -18,7 +18,7 @@ import {spokenMath,selectBritishVoice} from './speech.mjs';
 import {columnWorkspace} from './column-method.mjs?v=6.1.1';
 import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} from './fraction-answer.mjs';
 import {setMatchDock} from './match-dock.mjs?v=6.8.2';
-import {animatedItem,fullTimeShowcase,cosmeticPreview,playShowcase} from './celebrations.mjs?v=6.9.0';
+import {animatedItem,fullTimeShowcase,cosmeticPreview,playShowcase} from './celebrations.mjs?v=6.9.1';
 
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';

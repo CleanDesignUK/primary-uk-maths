@@ -84,7 +84,7 @@ const CATALOGUE_2 = [
  newItem('celebrate-spin','celebration','Champion turn',580,12,'#d1a8f0')
 ];
 const CATALOGUE_2_PRICE = Object.fromEntries(CATALOGUE_2.map(item => [item.id,item.price]));
-const SHOP_DISCOUNTS = {
+const CATALOGUE_3_DISCOUNTS = {
  'hair-sweep':{price:6,level:1},
  'shorts-white':{price:8,level:1},
  'accessory-headband':{price:9,level:1},
@@ -93,13 +93,42 @@ const SHOP_DISCOUNTS = {
  'hair-bun':{price:22,level:2},
  'celebrate-jump':{price:24,level:2}
 };
-export const ITEMS = [
- ...CATALOGUE_2.map(item => ({...item,...SHOP_DISCOUNTS[item.id]})),
+const CATALOGUE_3 = [
+ ...CATALOGUE_2.map(item => ({...item,...CATALOGUE_3_DISCOUNTS[item.id]})),
  newItem('kit-sky-10','kit','Sky Playmaker',18,1,'#8ccff3',{accent:'#f9fbff',pattern:'stripes',player:'Lionel Messi',number:10}),
  newItem('boots-power-7','boots','Power 7 Boots',14,1,'#e8c577',{player:'Cristiano Ronaldo',number:7}),
  newItem('kit-midfield-5','kit','Midfield Five',38,3,'#f1f3f8',{accent:'#6c55c8',pattern:'chevron',player:'Jude Bellingham',number:5}),
  newItem('celebrate-open-arms','celebration','Open Arms',34,3,'#a3cdf7',{player:'Jude Bellingham',number:5})
 ];
+const CATALOGUE_3_PRICE=Object.fromEntries(CATALOGUE_3.map(item=>[item.id,item.price]));
+const SHOP_CATALOGUE=4;
+
+// A short Coach match can bank single-digit credits even with several correct answers.
+// Keep a first purchase within reach and give later unlocks a useful saving target.
+const SHOP_PRICES={
+ 'kit-red':22, 'kit-purple':32, 'kit-gold':74, 'kit-cosmic':148,
+ 'kit-sash':34, 'kit-halves':44, 'kit-sunset':75, 'kit-aurora':110,
+ 'kit-obsidian':165, 'kit-glacier':205, 'kit-diamond':320, 'kit-midfield-5':30,
+ 'shorts-white':7, 'shorts-blue':12, 'shorts-lime':24, 'shorts-ice':42, 'shorts-gold':72,
+ 'boots-lime':9, 'boots-red':26, 'boots-ice':49, 'boots-blue':31,
+ 'boots-violet':52, 'boots-gold':115, 'boots-cosmic':180,
+ 'hair-sweep':5, 'hair-spikes':23, 'hair-fade':20, 'hair-fringe':25,
+ 'hair-locs':36, 'hair-bun':20, 'hair-mohawk':48, 'hair-long':65,
+ 'accessory-headband':8, 'accessory-band':24, 'accessory-gloves':16, 'accessory-cap':26,
+ 'accessory-band-gold':80, 'accessory-headphones':66, 'accessory-scarf':50,
+ 'ball-voltage':14, 'ball-gold':50, 'ball-ice':65, 'ball-ember':90, 'ball-nebula':155,
+ 'trail-mint':16, 'trail-blue':38, 'trail-purple':105, 'trail-ember':88, 'trail-solar':185,
+ 'pattern-sash':24, 'pattern-halves':39, 'pattern-chevron':62,
+ 'celebrate-jump':10, 'celebrate-open-arms':24, 'celebrate-slide':44, 'celebrate-spin':95
+};
+const SHOP_LEVELS={
+ 'ball-voltage':1, 'trail-mint':2, 'trail-solar':15, 'ball-nebula':13, 'ball-ember':10,
+ 'shorts-lime':4, 'hair-fade':3, 'hair-locs':5, 'hair-mohawk':7, 'hair-long':9,
+ 'accessory-cap':4, 'accessory-headphones':8, 'accessory-scarf':7,
+ 'pattern-sash':4, 'pattern-halves':5, 'pattern-chevron':7,
+ 'celebrate-jump':1, 'celebrate-slide':5, 'celebrate-spin':8
+};
+export const ITEMS=CATALOGUE_3.map(item=>({...item,price:SHOP_PRICES[item.id]??item.price,level:SHOP_LEVELS[item.id]??item.level}));
 export const CLUBS=[
  {id:'academy',name:'Academy XI',level:1,colour:'#2d704c',short:'AXI'},
  {id:'local',name:'Town Rovers',level:2,colour:'#53719a',short:'TR'},
@@ -132,7 +161,7 @@ export function buyItem(p,id){
  if(owns(p,item))return {ok:true,alreadyOwned:true,message:'Already in your locker.'};
  if(careerLevel(p)<item.level)return {ok:false,message:`Unlocks at level ${item.level}.`};
  if(credits(p)<item.price)return {ok:false,message:`Earn ${item.price-credits(p)} more credits.`};
- p.creditsSpent+=item.price;p.inventory.push(id);p.purchases.push({id,cost:item.price,catalogue:3,at:Date.now()});return {ok:true,message:`${item.name} is yours.`};
+ p.creditsSpent+=item.price;p.inventory.push(id);p.purchases.push({id,cost:item.price,catalogue:SHOP_CATALOGUE,at:Date.now()});return {ok:true,message:`${item.name} is yours.`};
 }
 export function equipItem(p,id){initCareer(p);const item=itemById(id);if(!item||!owns(p,item))return false;p.look[item.slot]=id;return true;}
 // Club offers require breadth and later-day recall as well as XP.
@@ -164,8 +193,10 @@ export function careerNews(p,previousLevel,now=Date.now()){
  return newClubs;
 }
 function validPurchase(t){
- if(!t||!itemById(t.id)||!Number.isFinite(t.at))return false;
- const price=t.catalogue===3?itemById(t.id).price:t.catalogue===2?CATALOGUE_2_PRICE[t.id]:LEGACY_PRICE[t.id]??CATALOGUE_2_PRICE[t.id];
+ const item=itemById(t?.id);
+ if(!item||!Number.isFinite(t.at))return false;
+ const price=t.catalogue===SHOP_CATALOGUE?item.price:t.catalogue===3?CATALOGUE_3_PRICE[t.id]:
+  t.catalogue===2?CATALOGUE_2_PRICE[t.id]:LEGACY_PRICE[t.id]??CATALOGUE_2_PRICE[t.id];
  return Number.isSafeInteger(t.cost)&&t.cost===price;
 }
 export function validateCareer(p){

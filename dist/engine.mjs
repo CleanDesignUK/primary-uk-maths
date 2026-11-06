@@ -1,5 +1,5 @@
 import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs';
-import {validateCareer} from './career.mjs?v=6.5.0';
+import {validateCareer} from './career.mjs?v=6.9.1';
 import {validateRewards} from './rewards.mjs';
 export const VERSION = 1;
 export const DAY = 86400000;

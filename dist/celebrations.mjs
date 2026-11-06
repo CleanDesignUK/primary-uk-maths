@@ -1,5 +1,5 @@
 import {avatarSVG} from './avatar.mjs?v=6.5.0';
-import {clubById,credits,itemById} from './career.mjs?v=6.5.0';
+import {clubById,credits,itemById,owns} from './career.mjs?v=6.9.1';
 import {penaltyArena} from './experience.mjs?v=6.5.0';
 import {paintShot} from './shot.mjs?v=6.3.0';
 import {esc,icon} from './visuals.mjs';
@@ -26,10 +26,12 @@ export function fullTimeShowcase(player,complete=true){
 export function cosmeticPreview(player,item,{justEquipped=false}={}){
  const preview={...player,look:{...player.look,[item.slot]:item.id}};
  const stage=item.slot==='celebration'?moveStage(preview,item):`<div class="match-pitch shop-shot-stage">${penaltyArena(preview)}</div>`;
+ const status=justEquipped?`${credits(player)} credits left in your locker.`:
+  owns(player,item)?'In your locker.':`${item.price} credits · Level ${item.level}`;
  return `<div class="shop-showcase" data-showcase>
   <span class="eyebrow">${justEquipped?'Equipped':item.slot==='celebration'?'Move preview':'Shot preview'}</span>
   <h2 id="dialog-title">${esc(item.name)}</h2>${stage}
-  ${justEquipped?`<p>${credits(player)} credits left in your locker.</p>`:''}
+  <p>${status}</p>
   <div class="dialog-actions">${replayButton('Replay preview')}<button class="btn lime" data-action="close-dialog">Back to shop</button></div>
  </div>`;
 }

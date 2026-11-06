@@ -180,6 +180,8 @@ body.arcade {
 .arcade .game-shop-tabs>button.active {background:#d9c8fc;color:#251c45;border-color:#ede1ff}
 .arcade .shop-title :is(h2,span) {color:var(--bright)}
 .arcade .shop-title h2 {font-family:Matchday,Impact,sans-serif;text-transform:uppercase}
+.shop-earn-note {margin:0 0 13px;color:var(--quiet);font-size:.86rem}
+.arcade.reading-mode .shop-earn-note {color:#344e43}
 .arcade .game-item {--rarity:#6386a3;background:var(--deck);border:1px solid #3d526f;color:var(--bright);border-radius:14px;box-shadow:0 4px 0 #050c16}
 .arcade .game-item.pro {--rarity:#5e84cc}
 .arcade .game-item.rare {--rarity:#9471d4}
