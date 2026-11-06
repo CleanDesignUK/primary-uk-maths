@@ -10,6 +10,7 @@ import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {matchMission,missionProgress} from './shot.mjs?v=6.3.0';
 import {britishVoices} from './speech.mjs';
 import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=6.8.3';
+import {animatedItem} from './celebrations.mjs?v=6.9.0';
 
 const nav=(view,label,symbol='arrow',className='btn white')=>`<button class="${className}" data-action="nav" data-view="${view}">${icon(symbol,17)}${label}</button>`;
 const heading=(eyebrow,title,aside='')=>`<div class="heading academy-page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1></div>${aside}</div>`;
@@ -133,7 +134,7 @@ export function lockerView(p,slot='starter') {
   const owned=owns(p,item),equipped=p.look[item.slot]===item.id,locked=level<item.level,short=Math.max(0,item.price-balance);
   const grade=item.level>=13?'elite':item.level>=7?'rare':item.level>1?'pro':'starter';
   const label=equipped?'Wearing':owned?'Equip':locked?`Level ${item.level}`:short?`Need ${short} more`:`Buy · ${item.price}`;
-  return `<article class="shop-item game-item ${grade} ${equipped?'equipped':''}"><div class="item-card-top"><span>${grade==='elite'?'Elite':grade==='rare'?'Rare':grade==='pro'?'Pro':'Starter'}</span><b>${owned?(equipped?'Equipped':'Owned'):`<span class="credit-chip" aria-hidden="true">C</span> ${item.price}`}</b></div><div class="item-preview">${itemArt(p,item)}</div><h3>${esc(item.name)}</h3>${item.player?`<p class="player-inspiration"><span>Inspired by</span> <b>${esc(item.player)}</b></p>`:''}<button class="btn ${owned?'white':'lime'}" data-action="${owned?'equip':'buy'}" data-item="${item.id}" ${equipped||!owned&&(locked||short)?'disabled':''}>${label}</button>${owned&&item.number&&p.look.number!==item.number?`<button class="text-btn wear-number" data-action="wear-number" data-item="${item.id}">Wear No. ${item.number}</button>`:''}</article>`;
+  return `<article class="shop-item game-item ${grade} ${equipped?'equipped':''}"><div class="item-card-top"><span>${grade==='elite'?'Elite':grade==='rare'?'Rare':grade==='pro'?'Pro':'Starter'}</span><b>${owned?(equipped?'Equipped':'Owned'):`<span class="credit-chip" aria-hidden="true">C</span> ${item.price}`}</b></div><div class="item-preview">${itemArt(p,item)}</div><h3>${esc(item.name)}</h3>${animatedItem(item)?`<button class="text-btn item-play-preview" type="button" data-action="preview-item" data-item="${item.id}" aria-label="Preview ${esc(item.name)}">${icon('play',15)} Preview</button>`:''}${item.player?`<p class="player-inspiration"><span>Inspired by</span> <b>${esc(item.player)}</b></p>`:''}<button class="btn ${owned?'white':'lime'}" data-action="${owned?'equip':'buy'}" data-item="${item.id}" ${equipped||!owned&&(locked||short)?'disabled':''}>${label}</button>${owned&&item.number&&p.look.number!==item.number?`<button class="text-btn wear-number" data-action="wear-number" data-item="${item.id}">Wear No. ${item.number}</button>`:''}</article>`;
  }).join('')}</div><div class="shop-foot">${scoutCard(p)}<button class="btn white" data-action="play">${icon('play',17)} Play Coach match</button></div>`;
 }
 
