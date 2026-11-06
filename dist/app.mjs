@@ -21,6 +21,10 @@ import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} fro
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
 const app=$('#app'),modalRoot=$('#modal-root');
+const touchMatch=matchMedia('(max-width: 680px), (pointer: coarse)');
+const padFields='#answer,.column-digit,.column-note,.work-note,[data-fraction-part],.bar-input,#world-answer-form input';
+const padSymbols=[['.','Decimal point'],['−','Minus'],[',','Comma'],['r','Remainder'],[':','Ratio separator']];
+let lastPadField;
 let data,storageWarning='',session=null,result=null,view='home',year=3,domain='all',search='',tableView=3,pendingSkill=null,shopSlot='starter',leaguePeriod='week',leagueYear=0,gym={table:null,mode:'auto',length:10},voices=[],lastSpokenKey='',tickId=null,lastTick=0,lastSave=0,returnFocus=null,pendingImport=null,pendingMatch=null,audio;
 const draftRounds=new Map();
 const firstShot={index:0,goal:false};
@@ -205,6 +209,7 @@ function nextQuestion(renderHost=true){
  if(next.retryKey){const i=session.retries.findIndex(r=>r.q.key===next.retryKey);if(i>=0)session.retries.splice(i,1);}
  if(next.advanceProbe)session.probeIndex++;
  session.q=next.q;session.selection=next;session.assisted=false;session.phase='question';session.aim=null;session.answer='';session.fractionParts=null;session.digits=[];session.notes=[];session.noteHistory=[];session.drawing=[];session.bars=[];session.angle=30;session.clockHour=12;session.clockMinute=0;session.currentMs=0;session.lastDigit=null;session.work={};session.scratch='';session.remainder='';
+ session.lastBar=null;
  session.workTimeLeft=newWorkTime(session);
  session.seen.push(session.q.key);if(!session.skillIds.includes(session.q.skillId))session.skillIds.push(session.q.skillId);saveRound();
  if(renderHost&&$('#question-host')){
@@ -224,13 +229,42 @@ function aimMarkup(){
  if(!session.mission)return '';
  return `<div class="aim-controls" role="group" aria-label="Aim your shot">${AIM_ZONES.map((zone,i)=>`<button type="button" data-action="aim" data-zone="${zone}" aria-pressed="false"><span aria-hidden="true">${['‹','·','›'][i]}</span><b>${zone}</b></button>`).join('')}</div><div class="match-mission" id="match-mission"></div>`;
 }
+function keypadMarkup() {
+ const numbers=[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-action="key" data-key="${n}">${n}</button>`).join('');
+ return `<div id="keypad" class="match-keypad" role="group" aria-label="Match keypad" hidden>
+  <div class="numpad" role="group" aria-label="Number keys">${numbers}<button type="button" class="key-muted" data-action="key" data-key="clear" aria-label="Clear answer">C</button><button type="button" data-action="key" data-key="0">0</button><button type="button" class="key-muted" data-action="key" data-key="back" aria-label="Delete last digit">${icon('erase',18)}</button></div>
+  <div class="pad-actions"><div class="symbol-keys">${padSymbols.map(([key,label])=>`<button type="button" data-action="key" data-key="${key}" aria-label="${label}">${key}</button>`).join('')}</div><span class="pad-clock" hidden><strong id="pad-time"></strong><small id="pad-time-caption"></small></span><button class="btn lime pad-shoot" type="button" data-action="key" data-key="shoot">Shoot ${icon('arrow',15)}</button></div>
+ </div>`;
+}
+function questionPadSymbols(q) {
+ if(q.format==='bars'||q.key.startsWith('column')||writtenTask(q))return [];
+ if(q.format==='pair')return ['−',','];
+ if(q.format==='remainder')return ['r'];
+ if(String(q.answer).includes(':'))return [':'];
+ if(q.format==='decimal'||typeof q.answer==='number'&&!Number.isInteger(q.answer))return ['−','.'];
+ return ['−'];
+}
+function updateKeypad(visible,enabled,symbols) {
+ const pad=$('#keypad'),touch=touchMatch.matches;
+ pad.hidden=!visible;
+ pad.inert=!enabled;
+ pad.classList.toggle('touch-pad',touch);
+ pad.closest('.game-main').classList.toggle('touch-keypad',touch&&visible);
+ $$('.symbol-keys button',pad).forEach(button=>{button.hidden=!symbols.includes(button.dataset.key);});
+ $('.symbol-keys',pad).hidden=!symbols.length;
+ $('.pad-clock',pad).hidden=!touch||symbols.length>0;
+ if(touch)for(const field of $$(padFields,$('#question-host'))){
+  field.inputMode='none';
+  field.readOnly=true;
+  field.dataset.touchAnswer='';
+ }
+}
 function renderGame() {
  const p=player();
  const best=bestFor(session.recordKey);
  const earns=isCoachChallenge(p,session);
  const label=session.promotion?'Promotion match':session.progressCheck?'Progress check':session.placement?'Warm-up':session.manual?'Free practice':session.tableChallenge?'Tables challenge':'Coach match';
  const title=session.manual?shortTitle(skillById(session.manual)):session.progressCheck?'Check your progress':session.placement?`Year ${session.curriculumYear} warm-up`:`Year ${session.curriculumYear} ${session.promotion?'promotion':'match'}`;
- const numberKeys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="key" data-key="${n}" aria-label="${n}">${n}</button>`).join('');
  const timer=matchTimer();
  app.innerHTML=`<div class="game-shell">
   <header class="game-header arcade-topbar match-topbar">${brand()}${gameNavigation('home')}<div class="header-tools"><span class="profile-mini">${profileDot(p)}<span>${esc(p.name)}</span></span><button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
@@ -240,7 +274,7 @@ function renderGame() {
    <div class="game-grid match-grid">
     <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span><i class="live-dot" aria-hidden="true"></i> <span id="match-stage">Kick-off</span></span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p,{aimGuide:!!session.mission})}${aimMarkup()}<div class="pitch-hud"><span id="move-caption" aria-live="polite">Ready to shoot</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div><div class="sideline-note" id="sideline-note" hidden></div></section>
     <section id="question-host" class="question-card" aria-label="Maths question"></section>
-    <aside class="match-controls"><div class="desktop-record">${best?`Personal best · ${best.points} pts`:earns?'Finish the match to bank XP':'Practice goals'}</div><div id="keypad"><div class="numpad" role="group" aria-label="Number keypad">${numberKeys}<button class="key-muted" data-action="key" data-key="clear" aria-label="Clear answer">C</button><button data-action="key" data-key="0">0</button><button class="key-muted" data-action="key" data-key="back" aria-label="Delete last digit">${icon('erase',18)}</button></div><div class="symbol-keys" id="symbol-keys">${['.','/','−',',',' '].map(k=>`<button data-action="key" data-key="${k}" aria-label="${k===' '?'Space':k==='/'?'Fraction bar':k===','?'Comma':k==='−'?'Minus':'Decimal point'}">${k===' '?'␣':k}</button>`).join('')}</div></div><button class="text-btn finish-practice" data-action="finish">Save & finish ${icon('arrow',12)}</button></aside>
+    <aside class="match-controls"><div class="desktop-record">${best?`Personal best · ${best.points} pts`:earns?'Finish the match to bank XP':'Practice goals'}</div>${keypadMarkup()}<button class="text-btn finish-practice" data-action="finish">Save & finish ${icon('arrow',12)}</button></aside>
    </div>
   </main></div>`;
  renderQuestion();paintPitch();updateLive();
@@ -320,10 +354,10 @@ function renderQuestion(){
  const reason=session.selection.reason;
  const coachLabel=reason==='support'?'Build up':reason==='review'?'Recall':reason==='repair'?'Try again':session.selection.label;
  $('#question-host').innerHTML=`<div class="q-toolbar"><span class="q-label ${reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${done?'':coachButton+'<button class="dont-know" type="button" data-action="dont-know">I don’t know</button>'}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}${tail}</form>${!done&&!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} Coach picked ${esc(skill.title.toLowerCase())}</p>`:''}`;
- $('#keypad').classList.toggle('hidden',done||!!options||['drawing','angle','plot','clock'].includes(q.format));
- $('#symbol-keys').classList.toggle('hidden',!q.format||q.format==='number'||q.format==='bars'||column||!!written||takesFraction(q));
+ const typed=!options&&!['drawing','angle','plot','clock'].includes(q.format);
+ updateKeypad(typed&&(!done||touchMatch.matches&&session.rows.at(-1).correct),typed&&!done,questionPadSymbols(q));
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}
- if(!done&&!window.matchMedia('(max-width: 620px)').matches)requestAnimationFrame(()=>{
+ if(!done&&!touchMatch.matches)requestAnimationFrame(()=>{
   const first=$('[data-start-digit]')||$$('.column-digit').at(-1);
   if(first)first.focus({preventScroll:true});
   else if(!document.activeElement?.matches('[data-fraction-part]'))($('#fraction-whole')||$('#fraction-numerator')||$('#answer'))?.focus({preventScroll:true});
@@ -435,7 +469,7 @@ function paintPitch(replay=false) {
 function updateLive() {
  if(!session)return;
  const timer=matchTimer();
- const values={'live-goals':session.correct,'live-streak':session.streak,'live-time':timer.display,'timer-caption':timer.caption};
+ const values={'live-goals':session.correct,'live-streak':session.streak,'live-time':timer.display,'timer-caption':timer.caption,'pad-time':timer.display,'pad-time-caption':timer.caption};
  for(const [id,value] of Object.entries(values)){const el=document.getElementById(id);if(el)el.textContent=value;}
  const earns=isCoachChallenge(player(),session);
  if($('#live-xp'))$('#live-xp').innerHTML=`${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small>`;
@@ -497,26 +531,32 @@ function showReport(id){const p=data.profiles.find(x=>x.id===id);if(p)openDialog
 function download(text,name,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200);}
 function csv(p){const rows=[['Player','Date','Match','Goals','Shots','XP','Seconds','Complete','Hints','Paused'],...p.sessions.map(s=>[p.name,new Date(s.endedAt).toISOString(),s.mode==='check'?'Warm-up':recordLabel(s),s.correct,s.attempts,s.careerXP??s.points,s.elapsed,s.complete,s.hintsUsed,s.pausedEver])];return rows.map(row=>row.map(v=>{let s=String(v);if(/^[=+@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');}
 function restoreFile(file){if(file.size>20*1024*1024){toast('Choose a backup under 20 MB.');return;}file.text().then(text=>{pendingImport=validateImport(JSON.parse(text));for(const p of pendingImport.profiles){initLearning(p);initCareer(p);initRewards(p);initLeague(p);}openDialog(`<h2 id="dialog-title">Restore ${pendingImport.profiles.length} players?</h2><p>This replaces the squad and results currently saved in this browser. Download a backup first if you want to keep them.</p><div class="dialog-actions"><button class="btn white" data-action="close-dialog">Cancel</button><button class="btn" data-action="confirm-import">Restore squad</button></div>`);}).catch(err=>toast(err.message||'Could not read that backup.'));}
+function editPadField(field,key,roll=false){
+ const max=field.maxLength>0?field.maxLength:24;
+ if(key==='clear')field.value='';
+ else if(key==='back')field.value=field.value.slice(0,-1);
+ else field.value=roll?(field.value+key).slice(-max):(field.value+key).slice(0,max);
+ field.focus({preventScroll:true});
+ field.dispatchEvent(new Event('input',{bubbles:true}));
+}
 function pressKeypad(key){
- if(!session||session.paused||session.phase!=='question')return;
+ if(key==='shoot'){($('#answer-form')||$('#world-answer-form'))?.requestSubmit();return;}
+ if(!session){
+  const field=$('#world-answer-form input');
+  if(field&&!world.busy)editPadField(field,key);
+  return;
+ }
+ if(session.paused||session.phase!=='question')return;
+ const selected=lastPadField?.isConnected&&!lastPadField.disabled?lastPadField:null;
  if(session.fractionParts){
-  const active=document.activeElement;
-  const input=active?.matches('[data-fraction-part]')?active:$('#fraction-whole')||$('#fraction-numerator');
-  if(!input)return;
-  if(key==='clear')input.value='';
-  else if(key==='back')input.value=input.value.slice(0,-1);
-  else if(/^\d$/.test(key))input.value=(input.value+key).slice(0,input.maxLength);
-  input.focus();
-  input.dispatchEvent(new Event('input',{bubbles:true}));
+  const field=selected?.matches('[data-fraction-part]')?selected:$('#fraction-whole')||$('#fraction-numerator');
+  if(field)editPadField(field,key);
   return;
  }
  if(session.q.key.startsWith('column')||writtenTask(session.q)){
-  const note=document.activeElement?.matches('.column-note,.work-note')?document.activeElement:null;
+  const note=selected?.matches('.column-note,.work-note')?selected:null;
   if(note){
-   if(key==='clear')note.value='';
-   else if(key==='back')note.value=note.value.slice(0,-1);
-   else if(/^\d$/.test(key))note.value=(note.value+key).slice(-note.maxLength);
-   note.dispatchEvent(new Event('input',{bubbles:true}));
+   editPadField(note,key,true);
    return;
   }
   const digits=$$('.column-digit');
@@ -532,20 +572,21 @@ function pressKeypad(key){
    if(digits[i+direction])i+=direction;
   }
   session.digits=digits.map(input=>input.value);
-  digits[i].focus();
+  digits[i].focus({preventScroll:true});
+  saveRound();
  }else{
-  const el=$('#answer')||$$('.bar-input')[session.lastBar??0];
-  if(!el)return;
-  el.value=key==='clear'?'':key==='back'?el.value.slice(0,-1):(el.value+key).slice(0,24);
-  if(el.id==='answer')session.answer=el.value;
-  else{
-   session.bars[Number(el.dataset.bar)]=el.value;
-   const bar=$(`#bar-view-${el.dataset.bar}`);
-   if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;
-  }
-  el.focus();
+  const field=$('#answer')||$$('.bar-input')[session.lastBar??0];
+  if(field)editPadField(field,key);
  }
- saveRound();
+}
+function handleTouchAnswerKey(event) {
+ if(!event.target.hasAttribute?.('data-touch-answer')||event.ctrlKey||event.metaKey||event.altKey)return false;
+ const key={Enter:'shoot',Backspace:'back',Delete:'clear','-':'−'}[event.key]??event.key;
+ const buttons=$$('#keypad button');
+ if(!buttons.some(button=>button.dataset.key===key&&!button.hidden))return false;
+ event.preventDefault();
+ pressKeypad(key);
+ return true;
 }
 function handleClick(event){const b=event.target.closest('[data-action]');if(!b||b.disabled)return;event.preventDefault();switch(b.dataset.action){
  case 'home':navigate('home');break;
@@ -679,16 +720,16 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  document.addEventListener('click',handleClick);
  document.addEventListener('submit',event=>{if(event.target.id==='world-answer-form'){event.preventDefault();submitWorld(new FormData(event.target).get('answer'));return;}if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){const saved=draftRounds.get(p.id);if(saved){session=saved;finishMatch(false,false);}initRewards(p);p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;initRewards(p);p.trainingSeconds=trainingSeconds;initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);initRewards(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=trainingSeconds;data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
  document.addEventListener('input',event=>{const el=event.target;
+  if(el.matches('#world-answer-form input')){world.answer=el.value;return;}
   if(session?.phase==='question'&&el.dataset.fractionPart){
    session.fractionParts[el.dataset.fractionPart]=el.value;
    $('#answer-error').textContent='';
    saveRound();return;
   }
   if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)+($('.division-board')?1:-1)}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus();next.select();}}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank(data.activeId?player():null,year,domain,search);}});
- document.addEventListener('pointerdown',event=>{if(event.target.closest('[data-action="key"]')&&document.activeElement?.matches('.column-note,.work-note,[data-fraction-part]'))event.preventDefault();});
- document.addEventListener('focusin',event=>{if(event.target.classList?.contains('bar-input')&&session)session.lastBar=Number(event.target.dataset.bar);if(event.target.classList?.contains('column-digit')&&session){session.lastDigit=Number(event.target.dataset.digit);event.target.select();}});
+ document.addEventListener('focusin',event=>{if(event.target.matches?.(padFields))lastPadField=event.target;if(event.target.classList?.contains('bar-input')&&session)session.lastBar=Number(event.target.dataset.bar);if(event.target.classList?.contains('column-digit')&&session){session.lastDigit=Number(event.target.dataset.digit);event.target.select();}});
  document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value;if(el.id==='kit-hair'||el.id==='kit-pattern')equipItem(p,value);else{const [slot,choices]=({'kit-hair-colour':['hairColour',HAIR_COLOURS],'kit-skin':['skin',SKIN_TONES],'kit-trim':['trim',KIT_TRIMS],'kit-theme':['theme',PLAYER_THEMES]})[el.id];if(Object.hasOwn(choices,value))p.look[slot]=value;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='unit-year'){year=Number(el.value);domain='all';search='';render();$('#unit-year')?.focus({preventScroll:true});return;}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
- document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
+ document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(handleTouchAnswerKey(event))return;if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&session&&!session.paused)pause();});
  window.addEventListener('pagehide',()=>{clearTimeout(goalTimer);if(session){session.paused=true;session.pausedEver=true;saveRound();}save();});
 
@@ -791,6 +832,10 @@ function renderWorldMatch(){
  if(!p){world.match=null;render();return;}
  app.innerHTML=worldMatchView(p,world);
  const state=world,feedback=state.feedback;
+ if(touchMatch.matches){
+  $('#question-host').insertAdjacentHTML('beforeend',keypadMarkup());
+  updateKeypad(!feedback||feedback.goal,!feedback&&!state.busy,['−','.']);
+ }
  paintShot($('.penalty-view'),{question:feedback?state.lastQuestion:state.match.question,correct:feedback?.goal,attempt:state.match.index,streak:state.streak,celebration:p.look.celebration});
  if(feedback?.goal)afterGoal(()=>{
   if(view==='world'&&world===state&&state.feedback===feedback&&state.match)nextWorld();

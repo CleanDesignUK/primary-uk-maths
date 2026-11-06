@@ -381,7 +381,7 @@ body.arcade {
  .arcade .match-card-top {min-height:20px}
  .arcade .match-pitch .penalty-view {height:116px}
  .arcade .match-grid>.question-card {min-height:0}
- .arcade .match-controls>#keypad,.arcade .match-controls>.desktop-record {display:none}
+ .arcade .match-controls>.desktop-record {display:none}
  .arcade .results {padding:16px 11px 21px;margin-top:9px}
 }
 @media(max-width:355px) {
@@ -574,3 +574,36 @@ body.arcade {
 .arcade.reading-mode .game-item :is(.player-inspiration,.player-inspiration>span,.wear-number) {color:#314b44}
 .celebration-preview.celebrate-open-arms .arm-left {transform:rotate(77deg)}
 .celebration-preview.celebrate-open-arms .arm-right {transform:rotate(-77deg)}
+
+.match-keypad[hidden], .match-keypad [hidden], .match-keypad .pad-shoot {display:none}
+.arcade .game-main.touch-keypad {padding-bottom:calc(169px + env(safe-area-inset-bottom))}
+.touch-keypad #question-host .question-actions {display:none}
+.arcade .match-keypad.touch-pad:not([hidden]) {
+ position:fixed;z-index:40;inset:auto 0 0;box-sizing:border-box;
+ width:min(100%,540px);margin-inline:auto;
+ padding:6px max(7px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));
+ background:#102139;border:1px solid #526d90;border-radius:12px 12px 0 0;box-shadow:0 -4px 18px #0006;
+}
+.arcade .match-keypad.touch-pad .numpad {
+ grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin:0;
+}
+.arcade .match-keypad.touch-pad .numpad button {
+ min-height:44px;margin:0;padding:4px;border-radius:7px;
+ color:#f1f7ff;background:#243d5b;border:1px solid #4b668b;
+}
+.touch-pad .numpad [data-key="clear"] {grid-row:1;grid-column:6}
+.touch-pad .pad-actions {display:grid;grid-template-columns:minmax(0,1fr) minmax(92px,.6fr);gap:6px;margin-top:5px}
+.touch-pad .pad-clock:not([hidden]) {display:flex;align-items:center;gap:7px;color:#d7edff;padding-inline:8px}
+.pad-clock strong {font-variant-numeric:tabular-nums;font-size:20px}
+.pad-clock small {font-size:11px;text-transform:uppercase}
+.touch-pad .symbol-keys {margin:0;justify-content:flex-start}
+.touch-pad .symbol-keys button {
+ flex:0 1 56px;min-width:44px;min-height:44px;margin:0;padding:0;
+ color:#f1f7ff;background:#243d5b;border-color:#4b668b;
+}
+.touch-pad .pad-shoot {
+ grid-column:2;display:flex;justify-content:center;align-items:center;min-height:44px;
+ margin:0;padding:5px 9px;background:var(--game-accent);color:#122535;
+}
+.arcade .game-main:has(#scratch-work:focus) .touch-pad {display:none}
+input[data-touch-answer] {cursor:pointer}
