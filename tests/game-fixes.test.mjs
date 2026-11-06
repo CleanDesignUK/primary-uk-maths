@@ -83,12 +83,12 @@ test('progress checks select practised skills and learning notes require difficu
  recordLearning(p,questionPool('place7')[0],true,false,2000,'warmup',now);
  assert.equal(progressCheckPlan(p).length,0);
  for(let i=0;i<6;i++)recordLearning(p,pool[i],false,false,2000,'one',now);
- assert.equal(learningNotes(p).length,0);assert.equal(progressCheckPlan(p).length,0);
+ assert.equal(learningNotes(p,now).length,0);assert.equal(progressCheckPlan(p).length,0);
  recordLearning(p,pool[6],false,false,2000,'two',now+1000);
- const note=learningNotes(p).find(n=>n.id==='longMul6');assert.equal(note.next,'mul5');
+ const note=learningNotes(p,now+1000).find(n=>n.id==='longMul6');assert.equal(note.next,'mul5');
  for(let i=0;i<6;i++)recordLearning(p,pool[i],true,false,2000,'three',now+2000);
  assert.deepEqual(progressCheckPlan(p),['longMul6']);
- assert.equal(learningNotes(p).length,0);
+ assert.equal(learningNotes(p,now+2000).length,0);
  const next=nextAdaptive(p,{progressCheck:true,checkPlan:progressCheckPlan(p),rows:[]},now+3000,()=>.1);
  assert.equal(next.q.skillId,'longMul6');assert.ok(p.facts[next.q.key].history.some(row=>row.correct));
 });
@@ -161,6 +161,7 @@ test('a progress check only uses independently answered questions once',()=>{
 test('skips and easy build-up questions cannot award career XP',()=>{
  const p=newProfile('Test',6),q=questionPool('division5')[0];
  assert.equal(attempt(p,q,challenge(p,{selection:{reason:'support'}})),0);
+ assert.equal(attempt(p,q,challenge(p,{selection:{reason:'repair'}})),0);
  assert.equal(attempt(p,q,challenge(p),{correct:false}),0);
 });
 

@@ -1,8 +1,8 @@
 import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=6.5.0';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs';
-import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions} from './adaptive.mjs?v=6.2.0';
+import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions} from './adaptive.mjs?v=6.7.0';
 import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=6';
-import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.2.0';
+import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,rewardCandidate,revealFact,bankCareerXP} from './rewards.mjs?v=6.7.0';
 import {isWrittenSkill,writtenAllowance,writtenTask,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=6.6.0';
 import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=6.6.0';
@@ -405,18 +405,21 @@ function submit(value=null,unknown=false) {
  session.points+=earned;session.careerPending=(session.careerPending||0)+candidate;
  const aim=session.aim;
  const targetHit=!!session.mission&&correct&&!assisted&&aim===spotlightZone(session.mission,session.attempts-1,session.aimSeed);
- const row={q:{...q},typed:value,correct,assisted,unknown,aim,targetHit,ms:Math.round(session.currentMs),earned,careerCandidate:candidate,reason:session.selection.reason,detail:session.selection.detail,newFact:!!session.selection.newFact};
+ const row={q:{...q},typed:value,correct,assisted,unknown,aim,targetHit,ms:Math.round(session.currentMs),earned,careerCandidate:candidate,reason:session.selection.reason,coachFor:session.selection.coachFor,detail:session.selection.detail,newFact:!!session.selection.newFact};
  if(correct&&!assisted){
   const after=missionProgress(session.mission,[...session.rows,row],session.bestStreak);
   row.celebration=after?.complete&&!missionBefore?.complete?'MISSION WON!':session.streak===8?'METEOR!':session.streak===5?'FIREBALL!':session.streak===3?'HAT-TRICK!':targetHit?'TOP BINS!':session.rows.at(-1)?.correct===false?'COMEBACK!':'';
  }
  session.rows.push(row);
- recordLearning(p,q,correct,assisted,row.ms,session.id,now,session.selection.reason==='probe',unknown);
+ recordLearning(p,q,correct,assisted,row.ms,session.id,now,row.reason==='probe',unknown,row.coachFor);
  if(session.selection.reason==='probe'){
   p.placementProgress=session.probeIndex;
   if(session.probeIndex>=probeIds(p).length)p.placementComplete=true;
  }
- if(!unknown&&!session.progressCheck&&!session.promotion&&(!correct||assisted))session.retries.push({q:{...q},at:session.attempts+2});
+ if(!session.placement&&!session.progressCheck&&!session.promotion){
+  const replayOf=row.reason==='support'?(correct&&!assisted?session.selection.coachSource:null):row.reason!=='repair'&&(!correct||assisted)?q:null;
+  if(replayOf&&!session.retries.some(retry=>retry.q.key===replayOf.key))session.retries.push({q:{...replayOf},at:session.attempts+2});
+ }
  session.phase='feedback';save();saveRound();renderQuestion();updateLive();paintPitch(!unknown);
  if(unknown){
   $('.feedback')?.scrollIntoView({block:'nearest'});

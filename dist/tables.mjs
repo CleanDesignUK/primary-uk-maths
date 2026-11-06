@@ -19,11 +19,13 @@ function canonical(q){
  const table=q.tableFocus||q.table||(q.op==='÷'?q.b:q.a),other=q.op==='÷'?q.answer:q.b;
  return {...q,a:table,b:other,answer:table*other,op:'×',tableFocus:table,otherFactor:other,key:`×:${Math.min(table,other)}:${Math.max(table,other)}`};
 }
-export function tableQuestion(profile,ids,seen=[],now=Date.now(),rng=Math.random,mode='auto',round=null){
+export function tableQuestion(profile,ids,seen=[],now=Date.now(),rng=Math.random,mode='auto',round=null,allow=null){
  let pool=[...new Map(ids.flatMap(questionPool).map(canonical).map(q=>[q.key+'|'+q.tableFocus,q])).values()];
  if(!pool.length)return null;
  const introduced=new Set((round?.rows||[]).filter(r=>r.newFact&&r.q.factFamily).map(r=>r.q.key));
  if(introduced.size>=3){const known=pool.filter(q=>profile.facts[q.key]);if(known.length)pool=known;}
+ if(allow)pool=pool.filter(allow);
+ if(!pool.length)return null;
  const base=selectQuestion(profile,ids,seen,now,rng,pool),f=profile.facts[base.key];
  if(mode==='auto'&&ids.every(id=>skillById(id)?.kind==='div'))mode='divide';
  let format=mode==='mixed'?['multiply','divide','missing'][Math.floor(rng()*3)]:mode;
