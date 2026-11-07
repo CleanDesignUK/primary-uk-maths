@@ -10,7 +10,7 @@ import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
 import {matchMission,missionProgress} from './shot.mjs?v=6.3.0';
 import {britishVoices} from './speech.mjs';
 import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=6.8.3';
-import {animatedItem} from './celebrations.mjs?v=6.9.1';
+import {animatedItem,careerCard} from './celebrations.mjs?v=6.9.1';
 
 const nav=(view,label,symbol='arrow',className='btn white')=>`<button class="${className}" data-action="nav" data-view="${view}">${icon(symbol,17)}${label}</button>`;
 const heading=(eyebrow,title,aside='')=>`<div class="heading academy-page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1></div>${aside}</div>`;
@@ -98,7 +98,7 @@ export function homeView(p){
     <div class="lobby-kicker">${clubBadge(p)}<span>${esc(club.name)} · Year ${p.year}</span></div>
     <button class="btn lime lobby-play arcade-kickoff" data-action="${progress.eligible?'promotion':'play'}">${icon('play',24)} ${play}</button>
     <small class="kickoff-round-details">${shots} shots${objective?`<span>${icon('star',13)} ${objective.name}</span>`:''}</small>
-   </div><div class="lobby-player"><span class="lobby-jersey" aria-hidden="true">${p.look.number}</span>${avatarSVG(p,{size:267})}<button class="lobby-kit-btn" data-action="appearance" aria-label="Edit my player">${icon('shirt',17)} <span>${esc(p.look.position)} · No. ${p.look.number}</span></button></div></div>
+   </div><div class="lobby-player"><span class="lobby-jersey" aria-hidden="true">${p.look.number}</span>${careerCard(p)}<button class="lobby-kit-btn" data-action="appearance" aria-label="Edit my player">${icon('shirt',17)} <span>${esc(p.look.position)} · No. ${p.look.number}</span></button></div></div>
    <div class="lobby-stage-footer">${progressStrip(p)}<button class="wallet-shop" data-action="open-shop" aria-label="Shop, ${credits(p)} credits"><span class="credit-chip" aria-hidden="true">C</span><span><b>${credits(p)} credits</b></span>${icon('arrow',16)}</button></div>
   </section>${coachNextCard(p,next)}${modeCards()}
  </div><aside class="lobby-rail">
@@ -132,7 +132,7 @@ export function lockerView(p,slot='starter') {
  return `<section class="shop-banner"><div class="shop-headline"><span class="field-label">${icon('shirt',17)} Kit locker</span><h1>Shop</h1><div class="shop-balance"><span class="credit-chip" aria-hidden="true">C</span> ${balance} credits</div><div class="shop-banner-actions"><button class="btn lime" data-action="appearance">${icon('edit',16)} Edit my player</button><button class="btn translucent" data-action="club-path">${icon('shield',16)} Club offers</button></div></div><div class="shop-player">${avatarSVG(p,{size:204})}<span>${esc(club.name)}</span></div></section>
  <div class="shop-tabs game-shop-tabs" role="group" aria-label="Shop category">${shopCategories.map(([id,label,symbol])=>`<button class="${id===slot?'active':''}" data-action="shop-tab" data-slot="${id}" aria-pressed="${id===slot}">${icon(symbol,18)}<span>${label}</span></button>`).join('')}</div>
  <div class="shop-title"><h2>${title}</h2><span>${icon('ball',16)} ${subtitle}</span></div>
- <p class="shop-earn-note">Earn 1 credit per 10 career XP. Finish a Coach match to bank it.</p>
+ <p class="shop-earn-note">First completed game: 10 starter credits. Then earn 1 credit per 10 career XP in Coach matches.</p>
  <div class="shop-grid game-shop-grid">${items.map(item=>{
   const owned=owns(p,item),equipped=p.look[item.slot]===item.id,locked=level<item.level,short=Math.max(0,item.price-balance);
   const grade=item.level>=13?'elite':item.level>=7?'rare':item.level>1?'pro':'starter';

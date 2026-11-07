@@ -100,3 +100,12 @@ export function validateRewards(profile) {
     throw Error('Invalid paid matches.');
   }
 }
+
+export const STARTER_CREDITS=10;
+// A participation gift is separate from XP and mastery. It pays once, including
+// the warm-up, so a child's first completed game can buy starter gear.
+export function grantStarterCredits(profile,match,now=Date.now()){
+ if(profile.starterReward||!match.complete||match.attempts!==match.target||match.target<3||match.rows?.length!==match.target)return 0;
+ profile.starterReward={roundId:match.id,at:now,credits:STARTER_CREDITS};
+ return STARTER_CREDITS;
+}
