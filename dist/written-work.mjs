@@ -1,6 +1,7 @@
-import {esc, mathText} from './visuals.mjs';
+import {esc, mathText} from './visuals.mjs?v=7.0.0';
 
 const divisionSkills = new Set(['divWritten3', 'divide4', 'division5', 'longDiv6', 'decimalDiv6']);
+const placeName = power => power < 0 ? ['tenths','hundredths','thousandths'][-power-1] : placeNames[power] || `digit ${power+1}`;
 const placeNames = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands', 'hundred-thousands'];
 
 export const isWrittenSkill = id => /^col(?:Add|Sub)/.test(id) ||
@@ -103,7 +104,7 @@ function answerDigits(width, entered, done, label, expected, start = 0, dp = 0) 
   const correct = String(expected).padStart(width,'0');
   return Array.from({length:width}, (_, i) => {
     const power = width-i-1-dp;
-    const place = power < 0 ? ['tenths','hundredths','thousandths'][-power-1] : placeNames[power] || `digit ${i+1}`;
+    const place = placeName(power);
     const status = done ? (Number(entered[i] || 0) === Number(correct[i]) ? 'correct' : 'incorrect') : '';
     return `<input class="column-digit ${status}" id="digit-${i}" data-digit="${i}" aria-label="${label} ${place} column" inputmode="numeric" maxlength="1" value="${esc(entered[i] || '')}" autocomplete="off" ${i === start ? 'data-start-digit' : ''} ${done ? 'disabled' : ''}>`;
   });
@@ -113,7 +114,7 @@ function multiplicationCarries(task, width, shift, key, label, notes, done) {
   const start = width - String(Math.round(task.a * 10 ** (task.decimalPlaces || 0))).length - shift;
   const end = width - 1 - shift;
   return row(width, Array.from({length:width}, (_, i) => i >= start && i < end
-    ? noteField(`${key}-${i}`, `${label}, ${placeNames[width-i-1]} column`, notes[`${key}-${i}`], done)
+    ? noteField(`${key}-${i}`, `${label}, ${placeName(width-i-1-(task.decimalPlaces||0))} column`, notes[`${key}-${i}`], done)
     : '<span></span>'), 'method-carries', '', task.decimalPlaces || 0);
 }
 
@@ -209,5 +210,5 @@ export function divisionSolution(model) {
 export function writtenSubmission(task, entered, remainder = '') {
   const dp = task.type === 'multiply' ? decimalPlaces(task.a) : task.decimalPlaces || 0;
   const value = Number(entered.map(digit => digit || '0').join('')) / 10 ** dp;
-  return task.needsRemainder ? `${value} r ${Number(remainder || 0)}` : value;
+  return task.needsRemainder || task.type!=='multiply'&&!dp&&Number(remainder)>0 ? `${value} r ${Number(remainder || 0)}` : value;
 }

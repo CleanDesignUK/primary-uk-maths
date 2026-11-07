@@ -91,3 +91,21 @@ test('waiting without a later recall cannot turn checked work into secure eviden
  assert.notEqual(skill.level,'secure');
  const check=skill.checks.find(c=>/Days between/.test(c.label));assert.equal(check.value,2);assert.equal(check.met,false);
 });
+
+test('near-secure and fully secure years give parents concrete remaining steps',async()=>{
+ const {syllabusIds}=await import('../dist/curriculum.mjs');
+ const profile=newProfile('Test',1),ids=syllabusIds(1);
+ for(const id of ids){
+  const pool=questionPool(id);
+  for(const [i,offset] of [4,3,0].entries())for(const q of pool)recordLearning(profile,q,true,false,1000,`s${i}`,now-offset*DAY);
+  const variants=[...new Map(pool.map(q=>[q.variant??q.op,q])).values()];
+  for(let i=0;i<12;i++)recordLearning(profile,variants[i%variants.length],true,false,1000,`mixed-${i%3}`,now);
+ }
+ assert.equal(parentReport(profile,now).stage,'secure');
+ assert.match(reportContent(profile,undefined,now),/All digital skills secure/);
+ assert.match(reportContent(profile,undefined,now),/remaining practical checks/);
+ profile.learning[ids[0]].days=[new Date(now).toISOString().slice(0,10)];
+ assert.equal(parentReport(profile,now).stage,'nearly');
+ assert.match(reportContent(profile,undefined,now),/Close to securing the year/);
+ assert.match(reportContent(profile,undefined,now),/1 skill still needs secure recall/);
+});

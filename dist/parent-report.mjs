@@ -1,7 +1,7 @@
-import {skillById,questionPool} from './engine.mjs';
-import {DOMAINS,domainFor,syllabusIds} from './curriculum.mjs';
-import {competency,initLearning,independent,LEARNING_WINDOW,recentDifficulty,recentEvidence,teachingRoute} from './adaptive.mjs?v=6.8.1';
-import {teachingYear} from './teaching-order.mjs?v=6.8.0';
+import {skillById,questionPool} from './engine.mjs?v=7.0.0';
+import {DOMAINS,domainFor,syllabusIds} from './curriculum.mjs?v=7.0.0';
+import {competency,initLearning,independent,LEARNING_WINDOW,recentDifficulty,recentEvidence,teachingRoute} from './adaptive.mjs?v=7.0.0';
+import {teachingYear} from './teaching-order.mjs?v=7.0.0';
 
 export const KNOWLEDGE_LEVELS={
  secure:'Secure',

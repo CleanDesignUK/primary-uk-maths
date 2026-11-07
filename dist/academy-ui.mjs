@@ -1,17 +1,17 @@
-import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs';
-import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs';
-import {competency,planSummary,probeIds,progressCheckPlan,roundRecommendation} from './adaptive.mjs?v=6.8.1';
-import {esc,icon,mathText,diagram} from './visuals.mjs?v=6';
-import {avatarSVG,clubBadge} from './avatar.mjs?v=6.5.0';
-import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,PLAYER_THEMES,KIT_TRIMS} from './career.mjs?v=6.9.1';
-import {yearProgress,leagueTable} from './promotion.mjs';
-import {focusTables,tableEvidence} from './tables.mjs';
-import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=6.5.0';
-import {matchMission,missionProgress} from './shot.mjs?v=6.3.0';
-import {britishVoices} from './speech.mjs';
-import {yearProfileMarkup} from './report-visuals.mjs';
-import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=6.8.3';
-import {animatedItem,careerCard} from './celebrations.mjs?v=6.9.1';
+import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs?v=7.0.0';
+import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs?v=7.0.0';
+import {competency,planSummary,probeIds,progressCheckPlan,roundRecommendation} from './adaptive.mjs?v=7.0.0';
+import {esc,icon,mathText,diagram} from './visuals.mjs?v=7.0.0';
+import {avatarSVG,clubBadge} from './avatar.mjs?v=7.0.0';
+import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,PLAYER_THEMES,KIT_TRIMS} from './career.mjs?v=7.0.0';
+import {yearProgress,leagueTable} from './promotion.mjs?v=7.0.0';
+import {focusTables,tableEvidence} from './tables.mjs?v=7.0.0';
+import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=7.0.0';
+import {matchMission,missionProgress} from './shot.mjs?v=7.0.0';
+import {britishVoices} from './speech.mjs?v=7.0.0';
+import {yearProfileMarkup} from './report-visuals.mjs?v=7.0.0';
+import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=7.0.0';
+import {animatedItem,careerCard} from './celebrations.mjs?v=7.0.0';
 
 const nav=(view,label,symbol='arrow',className='btn white')=>`<button class="${className}" data-action="nav" data-view="${view}">${icon(symbol,17)}${label}</button>`;
 const heading=(eyebrow,title,aside='')=>`<div class="heading academy-page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1></div>${aside}</div>`;
@@ -241,7 +241,7 @@ function skillExample(skill,formatQuestion){
  return `<details class="parent-question-example"><summary>Example question</summary><p>${example.recorded?'Recorded question':'Illustrative question, not a result'}: <b>${mathText(text)}</b></p>${q.visual&&q.visual.type!=='written'?diagram(q.visual):''}<small>Expected answer: ${mathText(expected)}${example.recorded?` · ${example.correct?'Answered independently':'Still practising'}`:''}</small></details>`;
 }
 function securityChecklist(skill){
- return `<details class="security-checklist"><summary>What makes this skill secure?</summary><p>${skill.ready?'Independent starting evidence is in place.':'First build independent success on varied questions: six recent attempts with at least 83% independent accuracy and five different questions (or three successful warm-up checks). Small question banks use the available questions.'}</p><ul>${skill.checks.map(c=>`<li class="${c.met?'met':''}"><span aria-hidden="true">${c.met?'✓':'○'}</span><span>${esc(c.label)}</span><b>${c.value}/${c.target}</b></li>`).join('')}</ul><small>Coach help and unsure answers do not count as independent success.</small></details>`;
+ return `<details class="security-checklist"><summary>What makes this skill secure?</summary><p>${skill.ready?'Independent starting evidence is in place.':'First build independent success on varied questions: six recent attempts with at least 83% independent accuracy and five different questions (or three successful warm-up checks). Small question banks use the available questions.'}</p><ul>${skill.checks.map(c=>`<li class="${c.met?'met':''}"><span aria-hidden="true">${c.met?'✓':'○'}</span><span>${esc(c.label)}</span><b>${c.value}${c.label.includes('(%)')?'%':''}<small>target ${c.target}${c.label.includes('(%)')?'%':''}</small></b></li>`).join('')}</ul><small>Coach help and unsure answers do not count as independent success.</small></details>`;
 }
 function domainEvidence(domain,year,formatQuestion){
  const summary=Object.entries(domain.counts).filter(([,count])=>count)
@@ -271,7 +271,7 @@ export function reportContent(p,formatQuestion=q=>q.expression||q.prompt,now=Dat
   <p class="parent-report-intro">Each skill shows up to eight recent answers from the last 30 days. A year label shows where the skill first appears in the game’s curriculum. Use the topic evidence to see what ${esc(p.name)} can do independently.</p>
   ${yearProfileMarkup(report)}
   <section class="security-explainer"><h3>When does checked become secure?</h3><p><b>Checked</b> means a question has been attempted. <b>Developing</b> means different questions have been answered independently. <b>Secure</b> needs the evidence rules for that skill, including recall on later days. Open “What makes this skill secure?” below to see the exact targets and current evidence.</p></section>
-  ${report.stage!=='building'?`<section class="year-next-step"><h3>${report.stage==='secure'?'All digital skills secure':'Close to securing the year'}</h3><p>${report.stage==='secure'?progress.eligible?'The year promotion match is ready.':`Complete the ${progress.practical.length-progress.checked} remaining practical checks to unlock the promotion match.`:`${report.current.length-report.counts.secure} skills still need secure recall. Continue varied practice on later days and complete the practical checks.`}</p>${progress.eligible?'<button class="btn lime" data-action="promotion">Play promotion match</button>':''}</section>`:''}
+  ${report.stage!=='building'?`<section class="year-next-step"><h3>${report.stage==='secure'?'All digital skills secure':'Close to securing the year'}</h3><p>${report.stage==='secure'?progress.eligible?'The year promotion match is ready.':`Complete the ${progress.practical.length-progress.checked} remaining practical checks to unlock the promotion match.`:`${report.current.length-report.counts.secure} ${report.current.length-report.counts.secure===1?'skill still needs':'skills still need'} secure recall. Continue varied practice on later days and complete the practical checks.`}</p>${progress.eligible?'<button class="btn lime" data-action="promotion">Play promotion match</button>':''}</section>`:''}
   <section><h3>Skills to support</h3>
    ${report.priorities.length?`<div class="parent-priorities">${report.priorities.map(skill=>priorityCard(p,skill,formatQuestion)).join('')}</div>`:'<p>No current priorities from the recorded answers. Warm-up and practice will build the picture.</p>'}
   </section>

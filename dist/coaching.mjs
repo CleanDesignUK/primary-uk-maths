@@ -1,6 +1,6 @@
-import {columnSteps} from './engine.mjs';
-import {writtenTask,multiplicationWorking,divisionWorking} from './written-work.mjs?v=6.3.0';
-export {divisionWorking} from './written-work.mjs?v=6.3.0';
+import {columnSteps} from './engine.mjs?v=7.0.0';
+import {writtenTask,multiplicationWorking,divisionWorking} from './written-work.mjs?v=7.0.0';
+export {divisionWorking} from './written-work.mjs?v=7.0.0';
 
 // Numeric models keep every displayed jump and written step tied to the actual question.
 export function workedExample(q){
@@ -23,4 +23,4 @@ export function workedExample(q){
  return null;
 }
 
-export function workingText(q){const m=workedExample(q);if(m?.type==='division')return `${q.prompt}. ${m.dividend} divided by ${m.divisor}. `+m.steps.map(s=>`${s.current} divided by ${m.divisor} gives ${s.digit}. ${m.divisor} times ${s.digit} equals ${s.product}. ${s.current} minus ${s.product} equals ${s.remainder}. ${s.bring!==null?'Bring down '+s.bring+'.':''}`).join(' ')+` Quotient ${m.quotient}, remainder ${m.remainder}.`;if(m?.type==='longMultiply')return m.partials.map(p=>`${m.a} times ${p.factor} equals ${p.value}.`).join(' ')+` Total ${m.total}.`;return (q.hint||[]).join('. ');}
+export function workingText(q){const m=workedExample(q);if(m?.type==='division')return `${q.prompt}. ${m.originalDividend} divided by ${m.divisor}. ${m.decimalPlaces?'Keep the decimal point in the quotient directly above the decimal point in the dividend.':''} `+m.steps.map(s=>`${s.current} divided by ${m.divisor} gives ${s.digit}. ${m.divisor} times ${s.digit} equals ${s.product}. ${s.current} minus ${s.product} equals ${s.remainder}. ${s.bring!==null?'Bring down '+s.bring+'.':''}`).join(' ')+` Quotient ${m.quotient}, remainder ${m.remainder}.`;if(m?.type==='longMultiply')return (m.decimalPlaces?`First multiply the digits without the decimal point. `:'')+m.partials.map(p=>`${m.a} times ${p.factor} equals ${p.value}.`).join(' ')+` ${m.decimalPlaces?`Place the decimal point ${m.decimalPlaces} places from the right. `:''}Total ${m.total}.`;return (q.hint||[]).join('. ');}

@@ -1,8 +1,8 @@
-import {avatarSVG} from './avatar.mjs?v=6.5.0';
-import {clubById,credits,itemById,owns,ITEMS,careerLevel,levelProgress} from './career.mjs?v=6.9.1';
-import {penaltyArena} from './experience.mjs?v=6.5.0';
-import {paintShot} from './shot.mjs?v=6.3.0';
-import {esc,icon} from './visuals.mjs';
+import {avatarSVG} from './avatar.mjs?v=7.0.0';
+import {clubById,credits,itemById,owns,ITEMS,careerLevel,levelProgress} from './career.mjs?v=7.0.0';
+import {penaltyArena} from './experience.mjs?v=7.0.0';
+import {paintShot} from './shot.mjs?v=7.0.0';
+import {esc,icon} from './visuals.mjs?v=7.0.0';
 
 export const animatedItem=item=>['celebration','ball','trail'].includes(item?.slot);
 

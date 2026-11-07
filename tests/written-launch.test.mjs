@@ -42,3 +42,8 @@ test('integer division always exposes remainder space, including exact divisions
   if(model.remainder)assert.equal(task.needsRemainder,true,q.expression);
  }
 });
+
+ test('an incorrect leftover is rejected even when the quotient of an exact division is correct',()=>{
+ const q=questionPool('divWritten3')[0],task=writtenTask(q);
+ assert.equal(answerMatches(q,writtenSubmission(task,String(q.answer).split(''),'1')),false);
+ });

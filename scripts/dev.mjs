@@ -1,4 +1,6 @@
 import {createServer} from 'node:http';
+import {readFile,stat} from 'node:fs/promises';
+import {resolve,extname,sep} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {previewDatabase} from './preview-db.mjs';
 
@@ -18,6 +20,20 @@ createServer(async (incoming,outgoing)=>{
       outgoing.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
       outgoing.end(`<!doctype html><html lang="en"><title>Phone preview</title><body style="margin:0;background:#dce6d5"><iframe title="Phone preview" src="${entry}" style="display:block;width:${width}px;height:844px;border:0"></iframe></body></html>`);
       return;
+    }
+    // Read current source assets for browser QA; the Worker still owns API behaviour.
+    if(['GET','HEAD'].includes(incoming.method)&&!previewUrl.pathname.startsWith('/api/')){
+      const root=resolve('dist');
+      let file=resolve(root,'.'+decodeURIComponent(previewUrl.pathname));
+      if(file===root||file.startsWith(root+sep)){
+        try{
+          if((await stat(file)).isDirectory())file=resolve(file,'index.html');
+          const body=await readFile(file);
+          const types={'.html':'text/html','.css':'text/css','.mjs':'text/javascript','.js':'text/javascript','.svg':'image/svg+xml','.json':'application/json','.jpg':'image/jpeg','.png':'image/png','.woff2':'font/woff2'};
+          outgoing.writeHead(200,{'Content-Type':types[extname(file)]||'application/octet-stream','Cache-Control':'no-store'});
+          outgoing.end(incoming.method==='HEAD'?undefined:body);return;
+        }catch{ /* The Worker provides redirects and 404s for missing static routes. */ }
+      }
     }
     const parts=[];
     for await(const chunk of incoming)parts.push(chunk);
