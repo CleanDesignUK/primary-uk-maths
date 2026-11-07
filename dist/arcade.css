@@ -270,11 +270,23 @@ body.arcade {
 .arcade .game-metric.work-clock {background:#1e4057;border-color:#558bb2}
 .arcade .game-metric.work-clock :is(strong,small) {color:#d3f1ff}
 .arcade .results {margin-top:18px;background:var(--deck);border:1px solid var(--deck-line);border-radius:19px;color:var(--bright)}
-.arcade .results :is(h1,h2,.eyebrow) {color:var(--bright)}
+.arcade .results>:is(h1,h2,.eyebrow) {color:var(--bright)}
 .arcade .results>p {color:var(--quiet)}
-.arcade .results .daily-goals {color:var(--ink)}
+/* Light reward cards must not inherit the dark report's pale foreground. */
+.arcade .results>:is(.panel,.daily-goals) {
+ --ink:#19364d;
+ --muted:#455f6e;
+ color:var(--ink);
+}
+.arcade .results>.panel :is(h2,h3,h4,.eyebrow,.text-btn,.badge b),
+.arcade .results>.daily-goals .eyebrow {color:var(--ink)}
+.arcade .results>.panel .text-btn {text-decoration:underline;text-underline-offset:3px}
+.arcade .results>.panel .badge-icon {background:#f6ebc9;color:#735611}
+.arcade .results .compact-goals .quest b {font-size:12px}
 .arcade .results .result-symbol {background:#d6ed99;color:#23432c}
 .arcade .results .result-metrics>div {background:#e5eef8;color:#19364d}
+.arcade .results .result-metrics small {color:#455f6e}
+.arcade .results .credits-earned {color:#6a4e12}
 .arcade .results .level-line :is(strong,span),.arcade .results>.muted {color:var(--quiet)}
 .profile-options {margin-top:10px;padding:8px 10px;border:1px solid #c7d4e3;border-radius:10px}
 .profile-options>summary {cursor:pointer;min-height:32px;font-weight:800;color:#234967;font-size:13px}
