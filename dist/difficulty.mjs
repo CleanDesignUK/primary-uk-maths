@@ -22,8 +22,8 @@ export function methodEntry(p,target,now){
 }
 export function methodVariant(q){
  const task=writtenTask(q);
- if(task?.type==='multiply')return `multiply:${task.decimalPlaces?'decimal':task.b>=10?'long':'short'}`;
- if(task)return `${task.type}:${task.decimalPlaces?'decimal':task.needsRemainder?'remainder':'exact'}`;
+ if(task?.type==='multiply')return `multiply:${q.skillId==='decimalMul6'||task.decimalPlaces?'decimal':task.b>=10?'long':'short'}`;
+ if(task)return `${task.type}:${q.skillId==='decimalDiv6'||task.decimalPlaces?'decimal':task.needsRemainder?'remainder':'exact'}`;
  return String(q.factFormat??q.variant??q.op??q.format);
 }
 export function questionDemand(q){

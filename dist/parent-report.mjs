@@ -1,4 +1,4 @@
-import {skillById} from './engine.mjs';
+import {skillById,questionPool} from './engine.mjs';
 import {DOMAINS,domainFor,syllabusIds} from './curriculum.mjs';
 import {competency,initLearning,independent,LEARNING_WINDOW,recentDifficulty,recentEvidence,teachingRoute} from './adaptive.mjs?v=6.8.1';
 import {teachingYear} from './teaching-order.mjs?v=6.8.0';
@@ -31,9 +31,21 @@ function skillEvidence(profile,id,now){
  return {
   id,skill,domain:domainFor(skill),year:teachingYear(id),level,
   attempts:recent.length,total:stats.n,independent:correct.length,wrong,helped,skipped,askedCoach,
-  lastAt:stats.lastAt??profile.learning[id]?.recent.at(-1)?.at,previouslySecure:level==='review'&&stats.secure,
+  ready:stats.ready,checks:stats.checks,example:skillQuestion(profile,id,now),
+  lastAt:stats.lastAt??profile.learning[id]?.recent.at(-1)?.at,previouslySecure:level==='review'&&competency(profile,id,stats.lastAt||now).secure,
   sessions:new Set(recent.map(answer=>answer.sessionId).filter(Boolean)).size,
  };
+}
+
+function skillQuestion(profile,id,now){
+ for(const match of [...profile.sessions].reverse()){
+  if(match.endedAt>now)continue;
+  const row=match.rows?.findLast(row=>row.q?.skillId===id);
+  if(row)return {q:row.q,recorded:true,correct:independent(row),typed:row.typed,at:match.endedAt};
+ }
+ const latest=recentEvidence(profile,id,now).at(-1);
+ const pool=questionPool(id),q=pool.find(q=>q.key===latest?.key)||pool[0];
+ return q?{q,recorded:!!latest,correct:latest?independent(latest):null}:null;
 }
 
 function lastDifficulty(profile,id,now){
@@ -72,7 +84,11 @@ export function parentReport(profile,now=Date.now()){
   const shown=[...skills,...earlier].filter(skill=>skill.level==='secure'||skill.level==='developing')
    .sort((a,b)=>Number(b.level==='secure')-Number(a.level==='secure')||
     b.year-a.year||b.independent-a.independent||b.lastAt-a.lastAt)[0];
-  return {...domain,skills,earlier,shown,counts:counts(skills)};
+  const secure=skills.filter(s=>s.level==='secure').length,ready=skills.filter(s=>s.ready&&s.level!=='review').length;
+  const status=secure===skills.length&&skills.length?'Meeting year practice expectations':ready===skills.length&&secure>=skills.length*.8?'Nearly secure':skills.some(s=>s.total)?'Building towards year expectations':'Not checked';
+  return {...domain,skills,earlier,shown,counts:counts(skills),securePercent:skills.length?Math.round(100*secure/skills.length):0,readyPercent:skills.length?Math.round(100*ready/skills.length):0,status};
  }).filter(domain=>domain.skills.length||domain.earlier.length);
- return {year,now,current,counts:counts(current),priorities,domains};
+ const secure=current.filter(s=>s.level==='secure').length,ready=current.filter(s=>s.ready&&s.level!=='review').length;
+ const stage=secure===current.length?'secure':ready===current.length&&secure>=current.length*.8?'nearly':'building';
+ return {year,now,current,counts:counts(current),priorities,domains,stage};
 }

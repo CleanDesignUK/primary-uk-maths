@@ -2,6 +2,7 @@ import {skillById,questionPool,selectQuestion,recordFact,localDay,DAY,skillStats
 import {syllabusIds,domainFor} from './curriculum.mjs';
 import {focusTables,tableEvidence,tableQuestion} from './tables.mjs?v=6.7.0';
 
+import {writtenTask} from './written-work.mjs';
 import {methodEntry,practicePool,practiceQuestion,recoveryStep,methodVariant} from './difficulty.mjs';
 
 import {requirements,validateTeachingOrder} from './teaching-order.mjs?v=6.8.0';
@@ -33,15 +34,32 @@ export function recordLearning(p,q,correct,help,ms,sessionId,now=Date.now(),prob
  return result;
 }
 export function competency(p,id,now=Date.now()){
- initLearning(p);const st=p.learning[id];if(!st)return {ready:false,secure:false,accuracy:null,n:0,coverage:0,level:'New'};
- const last=st.recent.slice(-10),good=last.filter(r=>r.correct).length,accuracy=last.length?good/last.length:0,coverage=st.keys.length/questionPool(id).length;
- const ready=(last.length>=6&&accuracy>=.83&&st.keys.length>=Math.min(5,questionPool(id).length))||(st.probes.length>=3&&accuracy>=.9);
- const days=st.days.length,span=now-st.firstAt,independentSessions=new Set(last.filter(r=>r.correct).map(r=>r.sessionId)).size;
+ initLearning(p);
+ const st=p.learning[id]||{n:0,recent:[],keys:[],days:[],probes:[]};
+ const pool=questionPool(id),last=st.recent.slice(-10),correct=last.filter(r=>r.correct&&!r.help&&!r.unknown);
+ const accuracy=last.length?correct.length/last.length:0;
+ const learned=st.keys.filter(key=>p.facts[key]?.history?.some(row=>row.correct));
+ const ready=(last.length>=6&&accuracy>=.83&&learned.length>=Math.min(5,pool.length))||(st.probes.length>=3&&accuracy>=.9);
+ const days=[...st.days].sort(),span=days.length?Date.parse(days.at(-1))-Date.parse(days[0]):0;
+ const sessions=new Set(correct.map(r=>r.sessionId)).size;
  const exact=skillById(id)?.category==='tables'||['add10','sub10','bonds10','bonds20','bridgeAdd','bridgeSub'].includes(id);
- let secure=ready&&days>=3&&span>=4*DAY&&independentSessions>=3&&accuracy>=.9&&(exact?skillStats(p,id,now).status==='Secure':st.keys.length>=Math.min(8,questionPool(id).length)&&new Set(last.map(r=>r.variant)).size>=Math.min(2,new Set(questionPool(id).map(q=>q.variant??q.op)).size));
- if(/^table\d+$/.test(id))secure=ready&&tableEvidence(p,Number(id.slice(5)),now).matchFit;
- if(skillById(id)?.kind==='div')secure=ready&&days>=3&&span>=4*DAY&&independentSessions>=3&&focusTables(p.year||1).every(t=>tableEvidence(p,t,now).matchFit);
- return {ready,secure,accuracy:Math.round(accuracy*100),n:st.n,coverage:Math.round(coverage*100),level:secure?'Match fit':ready?'Improving':'Training',lastAt:st.lastAt};
+ const forms=new Set(correct.map(r=>r.variant));
+ const requiredForms=Math.min(2,new Set(pool.map(q=>q.variant??q.op)).size);
+ const methods=[...new Set(pool.filter(q=>writtenTask(q)).map(methodVariant))];
+ const lookup=new Map(pool.map(q=>[q.key,q]));
+ const shownMethods=new Set(st.recent.filter(r=>r.correct&&!r.help&&!r.unknown&&lookup.has(r.key)).map(r=>methodVariant(lookup.get(r.key))));
+ const check=(label,value,target,met=value>=target)=>({label,value,target,met});
+ const common=[check('Recent independent accuracy (%)',Math.round(accuracy*100),90),check('Different successful practice days',days.length,3),check('Days between first and latest successful recall',Math.floor(span/DAY),4),check('Independent sessions in the last ten answers',sessions,3)];
+ let checks=[...common,
+  exact?check('Facts secure through spaced recall (%)',skillStats(p,id,now).percent,90):check('Different independently answered questions',learned.length,Math.min(8,pool.length)),
+  check('Different successful question forms',forms.size,requiredForms),
+  ...methods.length>1?[check('Written method types checked',methods.filter(v=>shownMethods.has(v)).length,methods.length)]:[]];
+ if(/^table\d+$/.test(id)){
+  const table=tableEvidence(p,Number(id.slice(5)),now);
+  checks=[check('Multiplication facts checked',table.direct,table.total),check('Related division facts checked',table.inverse,table.total),check('Facts secure on later days',table.secure,table.total)];
+ }else if(skillById(id)?.kind==='div')checks=[...common,check('Focus tables secure with inverse facts',focusTables(p.year||1).filter(t=>tableEvidence(p,t,now).matchFit).length,focusTables(p.year||1).length)];
+ const secure=ready&&checks.every(rule=>rule.met);
+ return {ready,secure,checks,accuracy:st.n?Math.round(accuracy*100):null,n:st.n,coverage:Math.round(st.keys.length/pool.length*100),level:secure?'Match fit':ready?'Improving':st.n?'Training':'New',lastAt:st.lastAt};
 }
 export const LEARNING_WINDOW=30*DAY;
 export const independent=row=>row.correct&&!row.assisted&&!row.help&&!row.unknown;

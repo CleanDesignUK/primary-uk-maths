@@ -72,3 +72,22 @@ test('one miss is a check, spaced success is secure and older evidence is due fo
  assert.equal(older.level,'review');
  assert.equal(older.previouslySecure,true);
 });
+
+test('every skill has an example and a visible checklist, with no invented scores on a new year radar',()=>{
+ const profile=newProfile('Test',6),report=parentReport(profile,now),html=reportContent(profile,undefined,now);
+ assert.ok(report.current.every(s=>s.example?.q&&Array.isArray(s.checks)));
+ assert.ok(report.domains.every(d=>d.securePercent===0&&d.readyPercent===0));
+ assert.equal((html.match(/<summary>Example question<\/summary>/g)||[]).length,report.current.length);
+ assert.equal((html.match(/<summary>What makes this skill secure\?<\/summary>/g)||[]).length,report.current.length);
+ assert.match(html,/Year 6 learning profile/);assert.match(html,/Illustrative question, not a result/);
+ assert.match(html,/Checked<\/b> means a question has been attempted/);
+ assert.match(html,/Not checked/);assert.match(html,/game’s Year 6 practice expectations/);
+});
+
+test('waiting without a later recall cannot turn checked work into secure evidence',()=>{
+ const profile=newProfile('Test',4),pool=questionPool('place4');
+ for(let day=0;day<3;day++)for(const q of pool.slice(day*3,day*3+3))recordLearning(profile,q,true,false,1000,`day-${day}`,now+day*DAY);
+ const skill=parentReport(profile,now+7*DAY).current.find(s=>s.id==='place4');
+ assert.notEqual(skill.level,'secure');
+ const check=skill.checks.find(c=>/Days between/.test(c.label));assert.equal(check.value,2);assert.equal(check.met,false);
+});
