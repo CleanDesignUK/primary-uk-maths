@@ -33,3 +33,18 @@ success. No real pupil names or results were used for QA.
 
 Physical iOS/Android devices and public ranked World League hosting were not tested
 or provisioned here. The static release continues to provide the local squad league.
+
+## 7.0.1 post-match contrast fix
+
+The light medal and daily-goal cards now use explicit dark foreground colours.
+Dark report headings are scoped to the report itself, so they cannot override
+headings inside light cards. The credit reward, metric captions and coaching
+links also have readable foreground colours; coaching links are underlined.
+
+A completed four-shot desktop match displayed First kick, Hat-trick and Record
+breaker medals. The How Coach picks link opened its training-plan dialog. A
+second four-shot match at 320 px displayed the same result cards. The targeted
+solid-background scan checked 38 text elements on that phone report with no
+contrast below 4.5:1. All 123 automated tests and both builds passed.
+
+[Corrected post-match medal cards](post-match-fixed.png)
