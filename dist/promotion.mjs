@@ -1,10 +1,10 @@
-import {MATCH_SCHEMA} from './rewards.mjs';
-import {skillById,DAY} from './engine.mjs';
-import {syllabusIds,domainFor,DOMAINS} from './curriculum.mjs';
-import {competency} from './adaptive.mjs';
-import {PRACTICAL} from './primary.mjs';
-import {initCareer} from './career.mjs';
-import {tableEvidence,focusTables} from './tables.mjs';
+import {MATCH_SCHEMA} from './rewards.mjs?v=7.0.0';
+import {skillById,DAY} from './engine.mjs?v=7.0.0';
+import {syllabusIds,domainFor,DOMAINS} from './curriculum.mjs?v=7.0.0';
+import {competency} from './adaptive.mjs?v=7.0.0';
+import {PRACTICAL} from './primary.mjs?v=7.0.0';
+import {initCareer} from './career.mjs?v=7.0.0';
+import {tableEvidence,focusTables} from './tables.mjs?v=7.0.0';
 
 export function yearProgress(profile,year=profile.year,now=Date.now()){
  initCareer(profile);const ids=syllabusIds(year);

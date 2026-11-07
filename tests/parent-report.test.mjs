@@ -72,3 +72,40 @@ test('one miss is a check, spaced success is secure and older evidence is due fo
  assert.equal(older.level,'review');
  assert.equal(older.previouslySecure,true);
 });
+
+test('every skill has an example and a visible checklist, with no invented scores on a new year radar',()=>{
+ const profile=newProfile('Test',6),report=parentReport(profile,now),html=reportContent(profile,undefined,now);
+ assert.ok(report.current.every(s=>s.example?.q&&Array.isArray(s.checks)));
+ assert.ok(report.domains.every(d=>d.securePercent===0&&d.readyPercent===0));
+ assert.equal((html.match(/<summary>Example question<\/summary>/g)||[]).length,report.current.length);
+ assert.equal((html.match(/<summary>What makes this skill secure\?<\/summary>/g)||[]).length,report.current.length);
+ assert.match(html,/Year 6 learning profile/);assert.match(html,/Illustrative question, not a result/);
+ assert.match(html,/Checked<\/b> means a question has been attempted/);
+ assert.match(html,/Not checked/);assert.match(html,/game’s Year 6 practice expectations/);
+});
+
+test('waiting without a later recall cannot turn checked work into secure evidence',()=>{
+ const profile=newProfile('Test',4),pool=questionPool('place4');
+ for(let day=0;day<3;day++)for(const q of pool.slice(day*3,day*3+3))recordLearning(profile,q,true,false,1000,`day-${day}`,now+day*DAY);
+ const skill=parentReport(profile,now+7*DAY).current.find(s=>s.id==='place4');
+ assert.notEqual(skill.level,'secure');
+ const check=skill.checks.find(c=>/Days between/.test(c.label));assert.equal(check.value,2);assert.equal(check.met,false);
+});
+
+test('near-secure and fully secure years give parents concrete remaining steps',async()=>{
+ const {syllabusIds}=await import('../dist/curriculum.mjs');
+ const profile=newProfile('Test',1),ids=syllabusIds(1);
+ for(const id of ids){
+  const pool=questionPool(id);
+  for(const [i,offset] of [4,3,0].entries())for(const q of pool)recordLearning(profile,q,true,false,1000,`s${i}`,now-offset*DAY);
+  const variants=[...new Map(pool.map(q=>[q.variant??q.op,q])).values()];
+  for(let i=0;i<12;i++)recordLearning(profile,variants[i%variants.length],true,false,1000,`mixed-${i%3}`,now);
+ }
+ assert.equal(parentReport(profile,now).stage,'secure');
+ assert.match(reportContent(profile,undefined,now),/All digital skills secure/);
+ assert.match(reportContent(profile,undefined,now),/remaining practical checks/);
+ profile.learning[ids[0]].days=[new Date(now).toISOString().slice(0,10)];
+ assert.equal(parentReport(profile,now).stage,'nearly');
+ assert.match(reportContent(profile,undefined,now),/Close to securing the year/);
+ assert.match(reportContent(profile,undefined,now),/1 skill still needs secure recall/);
+});

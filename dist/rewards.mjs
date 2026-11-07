@@ -44,7 +44,7 @@ export function rewardCandidate(profile, question, match, { correct, assisted, n
     return 0;
   }
   initRewards(profile);
-  if (!isCoachChallenge(profile, match) || ['support', 'repair'].includes(match.selection?.reason)) return 0;
+  if (!isCoachChallenge(profile, match) || ['support', 'repair', 'ease'].includes(match.selection?.reason)) return 0;
   const key = rewardFactKey(question);
   const previous = profile.rewardClaims[key];
   const revealedAt = profile.revealedFacts[key];
@@ -99,4 +99,13 @@ export function validateRewards(profile) {
   if (profile.paidRounds !== undefined && (!Array.isArray(profile.paidRounds) || profile.paidRounds.length > 500 || profile.paidRounds.some(id => typeof id !== 'string' || id.length > 100))) {
     throw Error('Invalid paid matches.');
   }
+}
+
+export const STARTER_CREDITS=10;
+// A participation gift is separate from XP and mastery. It pays once, including
+// the warm-up, so a child's first completed game can buy starter gear.
+export function grantStarterCredits(profile,match,now=Date.now()){
+ if(profile.starterReward||!match.complete||match.attempts!==match.target||match.target<3||match.rows?.length!==match.target)return 0;
+ profile.starterReward={roundId:match.id,at:now,credits:STARTER_CREDITS};
+ return STARTER_CREDITS;
 }

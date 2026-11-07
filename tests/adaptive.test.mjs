@@ -133,11 +133,11 @@ test('Coach checks repeated weakness on a chosen-year target, with no automatic 
  answer(p,'mul4');answer(p,'decimalPlace6');
  assert.equal(nextFoundationCheck(p,s,now,q),null);
 });
-test('a Year 5 warm-up starts at Year 5 and samples both written methods',()=>{
+test('a Year 5 warm-up checks smaller written methods before larger year targets',()=>{
  const p=newProfile('Test',5);
- assert.equal(nextAdaptive(p,round({placement:true})).q.skillId,'place6');
- assert.ok(probeIds(p).includes('mul5'));
- assert.ok(probeIds(p).includes('division5'));
+ assert.equal(nextAdaptive(p,round({placement:true})).q.skillId,'place3');
+ assert.ok(probeIds(p).includes('mulWritten3'));
+ assert.ok(probeIds(p).includes('divWritten3'));
 });
 test('an unsure answer saves a gap without an invented fact attempt or an identical replay',()=>{
  const p=newProfile('Test',6), q=questionPool('longDiv6')[0], now=Date.now();

@@ -1,19 +1,35 @@
-# Matchday Maths 5 verification
+# Matchday Maths 7.0.0 verification
 
 ## Automated checks
 
-`npm run check`, `npm test`, `npm run build` and `npm run build:worker` passed. [Test output](test-results.txt)
+`npm run check`, `npm run build`, `npm run build:worker` and `npm test` pass.
+The suite contains 123 tests. [Test output](test-results.txt)
 
-The 77 tests cover generated answers, curriculum routing, table evidence, later-day recall, six-year promotion, exact exchanges, long multiplication and division, reward gates, kit migration, accessibility helpers, marketing links and the ranked API with its SQL schema. League tests use two generated aliases and verify ordering, year and division boundaries, expiry, repeat submissions, promotion and removal of an alias.
+Coverage includes all generated question answers, written integer and decimal
+workspaces, exact and remainder division, content-version migration, independent
+learning evidence, ease-after-error rules, method variants, six-year promotion,
+starter rewards and purchases, report examples and secure criteria, mobile dock
+markup, accessibility helpers, public resource links and the ranked API.
 
-## Browser checks
+Near-secure and fully secure years are exercised with generated independent evidence.
+The tests also reject mastery gained merely by waiting without later recall.
 
-- All five navigation tabs fit in 320 px and 390 px phone previews. The pitch sits above the question and the desktop number pad is hidden.
-- A new Year 6 profile entered a Year 6 warm-up. A correct answer played a goal and an incorrect answer played a miss.
-- The Shop opened from the match report. Hair, shirt pattern, trim and clubhouse colour changes applied. The starting paid away kit displayed 125 credits.
-- A six-digit long multiplication answer and a long division answer with a remainder scored goals. The written boards displayed aligned working fields. Saving a free-practice round showed zero career XP. Coach help opened the worked board from beside read-aloud.
-- A complete ranked Year 6 match recorded nine goals, appeared in the standings and unlocked County. This used the browser preview’s test database.
+## Browser verification
 
-[Phone goal and shot camera](matchday-phone-goal-v5.jpg)
+Phone-sized views at 320 and 390 px and the desktop view were inspected. The decimal
+multiplication round scored four independent goals, granted its first-game bonus,
+and purchased a move that played immediately. Long division scored four goals with
+both exact quotients and a remainder. The bonus did not repeat. The equipped move
+was used in the full-time result.
 
-The image shows a fictional test player. The browser runs used a phone-sized viewport. The earlier version’s screenshots remain in this directory for history.
+Decimal division and Coach working were checked on a 320 px view. The parent report
+shows topic standards, the year radar, actual example questions and expandable
+per-skill criteria. A targeted solid-background contrast scan found no visible
+report text below 3:1. This does not replace a complete accessibility audit.
+
+The untimed Year 6 warm-up begins with a three-digit place-value check. A 320 px manual subtraction test stepped from five digits to four and then three after errors; the match heading follows the current method size. The automated error sequences
+confirm that written difficulty descends on mistakes and rebuilds after independent
+success. No real pupil names or results were used for QA.
+
+Physical iOS/Android devices and public ranked World League hosting were not tested
+or provisioned here. The static release continues to provide the local squad league.

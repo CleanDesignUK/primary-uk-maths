@@ -155,7 +155,7 @@ export function initCareer(p){
  return p;
 }
 export const owns=(p,item)=>item.price===0||(p.inventory||[]).includes(item.id);
-export const credits=p=>Math.max(0,Math.floor(careerXP(p)/10)-(p.creditsSpent||0));
+export const credits=p=>Math.max(0,Math.floor(careerXP(p)/10)+(p.starterReward?.credits||0)-(p.creditsSpent||0));
 export function buyItem(p,id){
  initCareer(p);const item=itemById(id);if(!item)return {ok:false,message:'Choose an item from the shop.'};
  if(owns(p,item))return {ok:true,alreadyOwned:true,message:'Already in your locker.'};
@@ -200,12 +200,13 @@ function validPurchase(t){
  return Number.isSafeInteger(t.cost)&&t.cost===price;
 }
 export function validateCareer(p){
+ if(p.starterReward!==undefined&&(!p.starterReward||p.starterReward.credits!==10||typeof p.starterReward.roundId!=='string'||p.starterReward.roundId.length>100||!Number.isFinite(p.starterReward.at)))throw Error('Invalid starter reward.');
  if(p.look){const l=p.look;if(!SKIN_TONES[l.skin]||!HAIR_COLOURS[l.hairColour]||!Number.isInteger(l.number)||l.number<1||l.number>99||!POSITIONS.includes(l.position)||!CLUBS.some(c=>c.id===l.club))throw Error('Invalid player customisation.');for(const slot of ['kit','shorts','boots','hair','accessory','ball','trail'])if(!ITEMS.some(i=>i.id===l[slot]&&i.slot===slot))throw Error('Invalid equipped item.');}
  if(p.offeredClubs!==undefined&&(!Array.isArray(p.offeredClubs)||p.offeredClubs.some(id=>!CLUBS.some(c=>c.id===id))||new Set(p.offeredClubs).size!==p.offeredClubs.length))throw Error('Invalid club offers.');
  if(p.look&&((p.look.theme!==undefined&&!Object.hasOwn(PLAYER_THEMES,p.look.theme))||(p.look.trim!==undefined&&!Object.hasOwn(KIT_TRIMS,p.look.trim))))throw Error('Invalid player colours.');
  for(const slot of ['pattern','celebration'])if(p.look?.[slot]!==undefined&&(!ITEMS.some(item=>item.id===p.look[slot]&&item.slot===slot)||!owns(p,itemById(p.look[slot]))))throw Error('Invalid player equipment.');
  if(p.inventory!==undefined&&(!Array.isArray(p.inventory)||new Set(p.inventory).size!==p.inventory.length||p.inventory.some(id=>!itemById(id))))throw Error('Invalid player inventory.');
- if(p.creditsSpent!==undefined&&(!Number.isSafeInteger(p.creditsSpent)||p.creditsSpent<0||p.creditsSpent>Math.floor(careerXP(p)/10)))throw Error('Invalid credit balance.');
+ if(p.creditsSpent!==undefined&&(!Number.isSafeInteger(p.creditsSpent)||p.creditsSpent<0||p.creditsSpent>Math.floor(careerXP(p)/10)+(p.starterReward?.credits||0)))throw Error('Invalid credit balance.');
  if(p.purchases!==undefined&&(!Array.isArray(p.purchases)||p.purchases.length>ITEMS.length||p.purchases.some(t=>!validPurchase(t))))throw Error('Invalid shop history.');
  if(p.purchases&&new Set(p.purchases.map(t=>t.id)).size!==p.purchases.length)throw Error('Duplicate shop purchases.');
  if(p.purchases&&p.purchases.reduce((n,t)=>n+t.cost,0)!==(p.creditsSpent||0))throw Error('Shop balance does not match purchases.');

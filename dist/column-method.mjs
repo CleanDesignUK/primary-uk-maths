@@ -1,5 +1,5 @@
-import {esc} from './visuals.mjs';
-import {columnSteps} from './engine.mjs';
+import {esc} from './visuals.mjs?v=7.0.0';
+import {columnSteps} from './engine.mjs?v=7.0.0';
 
 const places=['ones','tens','hundreds','thousands','ten-thousands','hundred-thousands'];
 const labels=['O','T','H','Th','TTh','HTh'];
@@ -33,7 +33,7 @@ export function columnWorkspace(q,{digits=[],notes=[],history=[],done=false}={})
  const top=row(['<span></span>',...m.columns.map((c,i)=>cell(`<span class="operand-original ${sub&&notes[i]!==undefined&&notes[i]!==''?'crossed':''}" data-original="${i}">${c.top===' '?'&nbsp;':c.top}</span>`,i))]);
  const bottom=row([`<span class="written-operator">${q.op}</span>`,...m.columns.map((c,i)=>cell(c.bottom===' '?'&nbsp;':c.bottom,i))]);
  const answers=row(['<span></span>',...m.columns.map((c,i)=>cell(`<input class="column-digit ${done?(Number(digits[i]||0)===Number(correct[i])?'correct':'incorrect'):''}" id="digit-${i}" data-digit="${i}" aria-label="Answer ${c.place} column" inputmode="numeric" maxlength="1" autocomplete="off" value="${esc(digits[i]??'')}" ${done?'disabled':''}>`,i,'answer-cell'))],'written-answer-row');
- return `<div class="written-method arithmetic-paper workspace ${sub?'subtraction':'addition'}" style="--digits:${m.n}" aria-label="${q.op==='+'?'Column addition':'Column subtraction'} workspace">${heads}${sub?noteRow:''}${top}${bottom}${answers}${sub?'':noteRow}</div><p class="written-caption">${sub?'Exchange above the digit.':'Carry below the next column.'}</p>`;
+ return `<div class="written-method arithmetic-paper workspace ${sub?'subtraction':'addition'}" style="--digits:${m.n};--board-places:${m.n}" aria-label="${q.op==='+'?'Column addition':'Column subtraction'} workspace">${heads}${sub?noteRow:''}${top}${bottom}${answers}${sub?'':noteRow}</div><p class="written-caption">${sub?'Exchange above the digit.':'Carry below the next column.'}</p>`;
 }
 export function columnWorked(q){
  const m=columnMethod(q),sub=q.op==='−';
@@ -44,5 +44,5 @@ export function columnWorked(q){
  const answer=row(['<span></span>',...m.columns.map((c,i)=>cell(c.answer===' '?'&nbsp;':c.answer,i))],'written-answer-row');
  const carries=!sub&&m.columns.some(c=>c.carry)?row(['<span></span>',...m.columns.map((c,i)=>cell(c.carry?`<b class="worked-carry">${c.carry}</b>`:'',i))],'carry-row'):'';
  const steps=m.steps.map((s,i)=>{const exchange=m.exchanges.find(e=>e.at===i),calculation=s.a===undefined?`Write the final ${s.result}.`:`${s.a} ${q.op} ${s.b}${s.incoming?' + '+s.incoming:''} = ${q.op==='+'?s.result+(s.carry||0)*10:s.result}`;return `<li><span class="method-step-number">${i+1}</span><div><b>${places[i][0].toUpperCase()+places[i].slice(1)}: ${calculation}</b>${exchange?`<p>${esc(exchange.text)}</p>`:s.carry?`<p>Write ${s.result}. Carry 1 ${singular(places[i+1])} into the next column.</p>`:''}</div></li>`;}).join('');
- return `<div class="written-method arithmetic-paper worked ${sub?'subtraction':'addition'}" style="--digits:${m.n}" aria-label="Worked ${q.a} ${q.op} ${q.b} equals ${q.answer}">${heads}${regroup}${top}${bottom}${answer}${carries}</div><ol class="written-steps">${steps}</ol><p class="written-check">${sub?`Check: ${q.answer} + ${q.b} = ${q.a}`:`Check: ${q.answer} − ${q.b} = ${q.a}`}</p>`;
+ return `<div class="written-method arithmetic-paper worked ${sub?'subtraction':'addition'}" style="--digits:${m.n};--board-places:${m.n}" aria-label="Worked ${q.a} ${q.op} ${q.b} equals ${q.answer}">${heads}${regroup}${top}${bottom}${answer}${carries}</div><ol class="written-steps">${steps}</ol><p class="written-check">${sub?`Check: ${q.answer} + ${q.b} = ${q.a}`:`Check: ${q.answer} − ${q.b} = ${q.a}`}</p>`;
 }
