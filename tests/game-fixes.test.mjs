@@ -96,16 +96,16 @@ test('the new league omits easy legacy scores and zero XP rounds',()=>{
  const p=newProfile('Test',3);p.sessions=[challenge(p,{schema:'football-v4',ranked:true,careerXP:170,endedAt:now}),challenge(p,{id:'zero',ranked:true,careerXP:0,endedAt:now}),challenge(p,{id:'manual',ranked:true,manual:'add10',careerXP:50,endedAt:now})];
  assert.equal(leagueTable([p],{now}).length,0);
 });
-test('Year 6 Coach questions start in the selected year instead of assuming earlier gaps',()=>{
+test('Year 6 Coach keeps its destination while checking smaller written methods first',()=>{
  const p=newProfile('Test',6);initLearning(p);p.placementComplete=true;
  const round={rows:[],seen:[],retries:[]};const ids=syllabusIds(6);let written=0;
  for(let i=0;i<10;i++){
-  const next=nextAdaptive(p,round,now,()=>.47);assert.ok(ids.includes(next.q.skillId),next.q.skillId);
-  written+=Number(['longMul6','longDiv6'].includes(next.q.skillId));
+  const next=nextAdaptive(p,round,now,()=>.47);assert.ok(ids.includes(next.q.skillId)||['colAdd0','colSub0','mulWritten3','divWritten3','mul4','divide4'].includes(next.q.skillId),next.q.skillId);
+  written+=Number(['mulWritten3','divWritten3','mul4','divide4'].includes(next.q.skillId));
   round.rows.push({q:next.q,correct:true,reason:next.reason,newFact:next.newFact});round.seen.push(next.q.key);
   recordLearning(p,next.q,true,false,1400,'coach',now);
  }
- assert.ok(written>=2);
+ assert.ok(written>=2);assert.equal(p.year,6);
 });
 test('progress checks select practised skills and learning notes require difficulty across matches',()=>{
  const p=newProfile('Test',6),pool=questionPool('longMul6');initLearning(p);

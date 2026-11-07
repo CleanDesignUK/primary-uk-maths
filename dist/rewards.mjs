@@ -44,7 +44,7 @@ export function rewardCandidate(profile, question, match, { correct, assisted, n
     return 0;
   }
   initRewards(profile);
-  if (!isCoachChallenge(profile, match) || ['support', 'repair'].includes(match.selection?.reason)) return 0;
+  if (!isCoachChallenge(profile, match) || ['support', 'repair', 'ease'].includes(match.selection?.reason)) return 0;
   const key = rewardFactKey(question);
   const previous = profile.rewardClaims[key];
   const revealedAt = profile.revealedFacts[key];

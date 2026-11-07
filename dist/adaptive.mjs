@@ -2,6 +2,8 @@ import {skillById,questionPool,selectQuestion,recordFact,localDay,DAY,skillStats
 import {syllabusIds,domainFor} from './curriculum.mjs';
 import {focusTables,tableEvidence,tableQuestion} from './tables.mjs?v=6.7.0';
 
+import {methodEntry,practicePool,practiceQuestion,recoveryStep,methodVariant} from './difficulty.mjs';
+
 import {requirements,validateTeachingOrder} from './teaching-order.mjs?v=6.8.0';
 export {requirements,REQUIREMENTS} from './teaching-order.mjs?v=6.8.0';
 export const validateLearningGraph=validateTeachingOrder;
@@ -17,7 +19,7 @@ export function initLearning(p){
 function updateLearning(p,q,correct,help,ms,sessionId,now,probe,unknown,coachFor){
  const st=p.learning[q.skillId]||{n:0,correct:0,recent:[],keys:[],days:[],probes:[],firstAt:now};
  st.n++;st.correct+=correct&&!help?1:0;st.lastAt=now;
- st.recent=[...st.recent.slice(-19),{key:q.key,correct:correct&&!help,help,ms,at:now,variant:q.factFormat??q.variant??q.op,sessionId,probe,unknown,coachFor}];
+ st.recent=[...st.recent.slice(-19),{key:q.key,correct:correct&&!help,help,ms,at:now,variant:q.factFormat??q.variant??q.op,methodVariant:methodVariant(q),sessionId,probe,unknown,coachFor}];
  if(!unknown&&!st.keys.includes(q.key))st.keys.push(q.key);
  if(correct&&!help&&!st.days.includes(localDay(now)))st.days.push(localDay(now));
  if(probe&&correct&&!help&&!st.probes.includes(q.key))st.probes.push(q.key);
@@ -98,8 +100,10 @@ export function resolvePrerequisite(p,id,now=Date.now()){
  return foundationNeeded(p,id,now)?teachingRoute(p,id,now).id:id;
 }
 const PROBES3=['add10','sub10','table3','bonds10','table4','bridgeAdd','table8','bridgeSub','place3','colAdd0','colSub0','div348'];
-const PROBES5=['place6','mental5','table6','colAdd4','colSub4','mul5','division5','fracCalc5','decimalCalc5','percent5','area5','table5'];
-const PROBE_YEARS={1:['objects1','more1','add10','sub10','bonds10','add20','sub20','groups1','fraction1','clock1','shape1','position1'],2:['place2','add20','sub20','mental2','table2','table5','table10','frac2','money2','clock2','shape2','data2'],3:PROBES3,4:['place4','round4','table6','table7','table9','table12','colAdd3','colSub3','decimal4','coordinate4','chart4','mul4'],5:PROBES5,6:['place7','negative6','table7','longMul6','longDiv6','fracCalc6','decimalMul6','ratio6','equation6','area6','coordinate6','mean6']};
+const PROBES5=['place3','colAdd0','colSub0','table6','mulWritten3','divWritten3','place6','fracEq3','decimal4','clock3','solids3','chart3'];
+// The chosen year sets the destination. Warm-up checks foundations before it
+// assumes fluency with four-digit written methods or unlike fractions.
+const PROBE_YEARS={1:['objects1','more1','add10','sub10','bonds10','add20','sub20','groups1','fraction1','clock1','shape1','position1'],2:['place2','add20','sub20','mental2','table2','table5','table10','frac2','money2','clock2','shape2','data2'],3:PROBES3,4:['place3','add20','sub20','table4','colAdd0','colSub0','mulWritten3','divWritten3','fracRead3','decimal4','clock3','chart3'],5:PROBES5,6:['place3','colAdd0','colSub0','table7','mulWritten3','divWritten3','place6','fracEq4','decimal4','clock3','solids3','chart4']};
 export const probeIds=p=>PROBE_YEARS[p.year]||PROBES3;
 function weakest(p,ids){
  return [...new Set(ids)].sort((a,b)=>{
@@ -243,7 +247,7 @@ export function nextFoundationCheck(p,s,now=Date.now(),planned=null) {
  if(planned)return foundationNeeded(p,planned.skillId,now,planned)?build(planned):null;
  if(last?.q&&!last.correct&&!['support','repair'].includes(last.reason))return build(last.q);
  if(!rows.length&&p.placementComplete){
-  for(const id of probeIds(p)){
+  for(const id of new Set([...probeIds(p),...Object.keys(p.learning)])){
    const gap=recentEvidence(p,id,now).at(-1);
    if(!gap?.probe||independent(gap))continue;
    const source=questionPool(id).find(q=>q.key===gap.key);
@@ -273,7 +277,7 @@ function replayQuestion(p,s,retry,seen,now,rng){
  const pool=questionPool(id).filter(q=>!excluded.has(q.key));
  const similar=pool.filter(q=>q.format===original.format&&q.op===original.op&&q.variant===original.variant);
  if(!pool.length)return null;
- return selectQuestion(p,[id],seen,now,rng,similar.length?similar:pool);
+ return practiceQuestion(p,id,seen,now,rng);
 }
 
 export function nextAdaptive(p,s,now=Date.now(),rng=Math.random){
@@ -291,6 +295,8 @@ export function nextAdaptive(p,s,now=Date.now(),rng=Math.random){
  if(s.promotion){const ids=syllabusIds(s.curriculumYear||p.year),domains=[...new Set(ids.map(id=>domainFor(skillById(id))))],domain=domains[rows.length%domains.length],candidates=ids.filter(id=>domainFor(skillById(id))===domain),id=candidates[Math.floor(rows.length/domains.length)%candidates.length],sk=skillById(id),q=sk.category==='tables'?tableQuestion(p,[id],seen,now,rng,'mixed',s):selectQuestion(p,[id],seen,now,rng);return {q,reason:'promotion',label:'Promotion match',detail:'Independent mixed retrieval after practice and practical checks.'};}
  const check=nextFoundationCheck(p,s,now);
  if(check)return supportSelection(p,check,seen,now,rng);
+ const recovery=recoveryStep(p,s,now,rng);
+ if(recovery)return recovery;
  const deferred=new Set(rows.filter(row=>row.reason==='support'&&row.coachFor&&!independent(row)).map(row=>row.coachFor));
  if(!s.placement&&rows.filter(row=>row.reason==='repair').length<2){
   for(const retry of s.retries||[]){
@@ -299,14 +305,16 @@ export function nextAdaptive(p,s,now=Date.now(),rng=Math.random){
    if(q)return {q,reason:'repair',label:'Second chance',detail:'A fresh question on the same skill, after a few other shots.',retryKey:retry.q.key};
   }
  }
- if(s.manual){const q=skillById(s.manual).category==='tables'?tableQuestion(p,[s.manual],seen,now,rng,s.tableMode||'auto',s):selectQuestion(p,[s.manual],seen,now,rng);return {q,newFact:!p.facts[q.key],reason:'chosen',label:'Training',detail:'The exercise selected on the syllabus page.'};}
+ if(s.manual){const q=skillById(s.manual).category==='tables'?tableQuestion(p,[s.manual],seen,now,rng,s.tableMode||'auto',s):practiceQuestion(p,s.manual,seen,now,rng);return {q,newFact:!p.facts[q.key],reason:'chosen',label:'Training',detail:'The exercise selected on the syllabus page.'};}
  if(s.placement){
   const ids=probeIds(p),index=s.probeIndex||0;
   if(index<ids.length){
    const id=ids[index];let pool=samplePool(id);
    const unseen=pool.filter(q=>!seen.includes(q.key));if(unseen.length)pool=unseen;
-   const q={...pool[Math.min(pool.length-1,Math.floor(rng()*pool.length))]};
-   return {q,reason:'probe',label:'Warm-up',detail:'A nontrivial sample checks number facts, tables and written methods; no identity-only probe is used.',advanceProbe:true};
+   const samples=new Set(pool.map(q=>q.key));
+   const band=practicePool(p,id,now,seen).filter(q=>samples.has(q.key));
+   const q=selectQuestion(p,[id],seen,now,rng,band.length?band:pool);
+   return {q,reason:'probe',label:'Warm-up',detail:'Start with number facts and smaller methods. The chosen year sets the learning destination.',advanceProbe:true};
   }
  }
  const reviewCount=rows.filter(r=>r.reason==='review').length;
@@ -329,9 +337,10 @@ export function nextAdaptive(p,s,now=Date.now(),rng=Math.random){
   id=laneFocus(p,fallback,now,deferred);
   lane=fallback;
  }
+ const requested=id;id=methodEntry(p,id,now);
  const targeted=skillById(id),reason=competency(p,id).n?'weakness':'new';
- const q=targeted.category==='tables'?tableQuestion(p,[id],seen,now,rng,s.tableMode||'auto',s):selectQuestion(p,[id],seen,now,rng);
+ const q=targeted.category==='tables'?tableQuestion(p,[id],seen,now,rng,s.tableMode||'auto',s):practiceQuestion(p,id,seen,now,rng);
  const plannedCheck=nextFoundationCheck(p,s,now,q);
  if(plannedCheck)return supportSelection(p,plannedCheck,seen,now,rng);
- return {q,newFact:!p.facts[q.key],reason,label:lane==='tables'?'Ball control':lane==='written'?'Set piece':reason==='new'?'New move':'Training',detail:`${lane}: ${targeted.title}. ${reason==='new'?'Not yet sampled.':'Selected from recent accuracy and prerequisite evidence.'}`};
+ return {q,newFact:!p.facts[q.key],reason,coachFor:id!==requested?requested:undefined,label:lane==='tables'?'Ball control':lane==='written'?'Set piece':reason==='new'?'New move':'Training',detail:`${lane}: ${targeted.title}. ${reason==='new'?'Not yet sampled.':'Selected from recent accuracy and prerequisite evidence.'}`};
 }
