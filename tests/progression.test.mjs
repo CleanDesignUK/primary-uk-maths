@@ -94,3 +94,9 @@ test('written questions get more working time as the method becomes longer',asyn
  assert.ok(isWrittenSkill('longDiv6'));
  assert.equal(isWrittenSkill('table3'),false);
 });
+
+test('the first warm-up checks understanding without a countdown',()=>{
+ const warmup={placement:true,phase:'question',duration:300,elapsed:0,clockElapsed:0};
+ assert.equal(clockDelta(warmup,600),0);assert.equal(tickMatchClock(warmup,600),300);
+ assert.equal(warmup.clockElapsed,0);
+});

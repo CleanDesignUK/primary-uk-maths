@@ -1,0 +1,30 @@
+name: Verify Matchday
+
+on:
+  push:
+    branches: [main, launch/november-readiness]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check module syntax
+        run: npm run check
+      - name: Build public pages
+        run: npm run build
+      - name: Build Worker
+        run: npm run build:worker
+      - name: Verify learning, scoring, reports and league API
+        run: npm test
+      - name: Check generated pages match committed source
+        run: git diff --exit-code -- dist

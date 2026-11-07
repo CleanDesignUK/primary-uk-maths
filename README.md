@@ -16,8 +16,8 @@ Use Node 22.13 or later for the local preview and league tests, which use built-
 
 ## The learning route
 
-- Coach starts with the selected year and mixes current-year work, table facts and due reviews. “I don’t know” shows Coach’s working and can route the pupil to a supporting skill. Wrong answers can return after intervening practice.
-- The six [curriculum maps](docs/CURRICULUM_MAP.md) contain 247 named exercise families with worked examples. Physical measuring, construction and explanation have separate grown-up checklists.
+- The selected year sets the learning destination. The untimed warm-up checks number basics and smaller written methods first. Coach mixes year work, table facts and due reviews. “Ask Coach for help” records an unsure answer with zero question XP and can route the pupil to a supporting skill. Written mistakes lead to smaller versions of the same method. Two distinct independent successes build back up. Short and long multiplication are checked separately; later-day recall is still needed for secure status.
+- The six [curriculum maps](docs/CURRICULUM_MAP.md) contain 247 named exercise families with worked examples. Parent reports include an example and the exact secure-evidence targets for every skill, a year-specific radar, and remaining steps towards year completion. Physical measuring, construction and explanation have separate grown-up checklists.
 - Individual and mixed table practice covers facts through ×12, related division and missing factors. Year 2 emphasises 2, 5 and 10. Year 3 emphasises 3, 4 and 8. Later years consolidate all tables. Coach revisits facts over gaps of up to 60 days.
 - A short untimed progress check uses three to six distinct questions the pupil has answered independently. Grown-up reports flag persistent difficulty and suggest an exercise. Promotion requires the year’s practice evidence, practical checks and a mixed promotion match. These are game milestones.
 - Column addition and subtraction show carries and exchanges. Written multiplication has aligned carry and partial-product rows. Division has bus-stop or long-division working, including remainders where appropriate. Fraction answers use stacked numerator and denominator fields, with a whole-number box for mixed answers. Working paper provides extra space.
@@ -27,9 +27,9 @@ Use Node 22.13 or later for the local preview and league tests, which use built-
 
 Play, Units, Shop, Tables and League are available during matches. Visiting a tab saves the current round for that player. The shot camera stays above the question on phones. Players can aim left, centre or right and complete rotating match objectives with independent answers. Accurate streaks unlock power shots, fireballs and meteor strikes.
 
-Players bank career XP after completing an eligible Coach match. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. Previous XP and owned kit are preserved.
+Players bank career XP after completing an eligible Coach match. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. The first completed game, including warm-up or a written drill, also grants a one-time 10-credit participation bonus. The bonus does not award XP or mastery. Previous XP and owned kit are preserved.
 
-Starter gear costs 6 to 18 credits. Footballer Picks includes original shirts, boots, hairstyles and celebrations inspired by favourite players. Players can change shirt number, position, trim, skin tone and clubhouse colour. Levels start at 85 XP and the gaps grow. Club offers require a combination of levels, varied facts, practice days and secure recall. Club offers are fictional game rewards.
+Starter gear starts at 5 credits. A 10-credit celebration is available at level 1. Footballer Picks includes original shirts, boots, hairstyles and celebrations inspired by favourite players. Players can change shirt number, position, trim, skin tone and clubhouse colour. Levels start at 85 XP and the gaps grow. Club offers require a combination of levels, varied facts, practice days and secure recall. Club offers are fictional game rewards.
 
 ## Profiles and leagues
 
@@ -41,4 +41,17 @@ Ranked shots send answers for scoring. The database retains the generated alias,
 
 ## Verification
 
-[Browser checks and screenshots](docs/VERIFICATION.md) · [77 automated tests](docs/test-results.txt)
+[Browser checks and screenshots](docs/VERIFICATION.md) · [123 automated tests](docs/test-results.txt)
+
+## Release discipline
+
+Development is committed in small groups on `launch/november-readiness`, reviewed
+through a pull request and merged with its commit history intact. GitHub verification
+runs syntax checks, both builds, the automated suite and a generated-page consistency
+check. See [the launch checklist](docs/LAUNCH_READINESS.md) and
+[the current checkpoint](docs/NEXT_SESSION.md).
+
+Division questions that now require a remainder have new content-derived identities.
+Earlier quotient-only attempts remain in match history, while the updated remainder
+skill gathers fresh evidence. A saved unfinished calculation retains its working and
+adopts the new full answer requirement.

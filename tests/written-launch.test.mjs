@@ -5,6 +5,14 @@ import {answerMatches} from '../dist/curriculum.mjs';
 import {writtenTask,writtenSubmission,multiplicationWorking,divisionWorking,multiplicationWorkspace,divisionWorkspace,multiplicationSolution,divisionSolution} from '../dist/written-work.mjs';
 import {workedExample} from '../dist/coaching.mjs';
 
+function legacyQuestion(q){
+ const {a,b}=writtenTask(q);
+ const old={...q,prompt:'Divide',expression:`${a} ÷ ${b} (whole-number quotient)`,answer:Math.floor(a/b),format:'number'};
+ const signature=JSON.stringify([old.prompt,old.expression,old.answer,old.visual,old.format]);let hash=2166136261;
+ for(const char of signature)hash=Math.imul(hash^char.charCodeAt(0),16777619)>>>0;
+ old.key=`primary:divide4:${hash.toString(36)}`;return old;
+}
+
 test('every decimal multiplication and division can be answered through its written digit fields',()=>{
  for(const id of ['decimalMul6','decimalDiv6'])for(const q of questionPool(id)){
   const task=writtenTask(q);assert.ok(task,q.expression);
@@ -47,3 +55,30 @@ test('integer division always exposes remainder space, including exact divisions
  const q=questionPool('divWritten3')[0],task=writtenTask(q);
  assert.equal(answerMatches(q,writtenSubmission(task,String(q.answer).split(''),'1')),false);
  });
+
+test('earlier quotient-only checks cannot certify the new full remainder questions',async()=>{
+ const {newProfile}=await import('../dist/engine.mjs');
+ const {initLearning,recordLearning}=await import('../dist/adaptive.mjs');
+ const p=newProfile('Test',4),newQuestion=questionPool('divide4')[0];
+ const old=legacyQuestion(newQuestion);
+ p.learning={};recordLearning(p,old,true,false,1000,'legacy');
+ delete p.remainderEvidenceVersion;
+ p.sessions.push({id:'legacy',endedAt:Date.now(),rows:[{q:old,correct:true}]});
+ recordLearning(p,questionPool('place4')[0],true,false,1000,'unchanged');
+ initLearning(p);
+ assert.equal(p.learning.divide4,undefined);assert.equal(p.learning.place4.n,1);
+ assert.ok(p.facts[old.key]);assert.equal(p.sessions[0].rows[0].q.key,old.key);
+ recordLearning(p,newQuestion,true,false,1000,'updated');
+ assert.equal(p.learning.divide4.n,1);assert.ok(p.remainderEvidenceUpdated);
+});
+
+test('legacy saved written rounds keep their working while adopting the full remainder question',async()=>{
+ const {migrateWrittenDraft}=await import('../dist/question-compat.mjs');
+ const q=questionPool('divide4')[0],old=legacyQuestion(q);
+ const round={q:old,phase:'question',seen:[old.key],elapsed:25,digits:['2','3'],notes:{carry:1}};
+ migrateWrittenDraft(round);
+ assert.equal(round.q.key,q.key);assert.equal(round.q.format,'remainder');
+ assert.deepEqual(round.digits,['2','3']);assert.equal(round.elapsed,25);assert.equal(round.notes.carry,1);
+ assert.equal(migrateWrittenDraft(round).q.key,q.key);
+ const feedback={q:old,phase:'feedback'};assert.equal(migrateWrittenDraft(feedback).q.answer,old.answer);
+});

@@ -11,9 +11,23 @@ export const validateLearningGraph=validateTeachingOrder;
 
 export function initLearning(p){
  if(!p.familyVersion){for(const [key,f] of Object.entries(p.facts||{})){f.forms||={};if(key.startsWith('×:')&&f.history?.some(h=>h.correct))f.forms.multiply=true;const m=key.match(/^÷:(\d+):(\d+)/);if(m&&f.lastCorrect){const a=Number(m[1]),b=Number(m[2]),other=a/b,k=`×:${Math.min(b,other)}:${Math.max(b,other)}`;if(p.facts[k]){p.facts[k].forms||={};p.facts[k].forms[`divide:${b}`]=true;}}}p.familyVersion=4;}
- if(p.learning)return p;
- p.learning={};
- for(const s of p.sessions||[])for(const r of s.rows||[])if(r.q?.skillId&&skillById(r.q.skillId))updateLearning(p,r.q,r.correct,!!r.assisted,r.ms||0,s.id,s.endedAt||Date.now(),r.reason==='probe',!!r.unknown,r.coachFor);
+ if(p.learning){
+  if(p.remainderEvidenceVersion!==2){
+   const current=new Set(questionPool('divide4').map(q=>q.key));
+   const old=p.learning.divide4;
+   if(old?.keys.some(key=>!current.has(key))){
+    delete p.learning.divide4;p.remainderEvidenceUpdated=true;
+    for(const match of p.sessions||[])for(const row of match.rows||[])if(row.q?.skillId==='divide4'&&current.has(row.q.key))updateLearning(p,row.q,row.correct,!!row.assisted,row.ms||0,match.id,match.endedAt||Date.now(),row.reason==='probe',!!row.unknown,row.coachFor);
+   }
+   p.remainderEvidenceVersion=2;
+  }
+  return p;
+ }
+ p.learning={};p.remainderEvidenceVersion=2;
+ for(const s of p.sessions||[])for(const r of s.rows||[])if(r.q?.skillId&&skillById(r.q.skillId)){
+  if(r.q.skillId==='divide4'&&!questionPool('divide4').some(q=>q.key===r.q.key)){p.remainderEvidenceUpdated=true;continue;}
+  updateLearning(p,r.q,r.correct,!!r.assisted,r.ms||0,s.id,s.endedAt||Date.now(),r.reason==='probe',!!r.unknown,r.coachFor);
+ }
  p.placementComplete=!!p.placementComplete||(p.sessions||[]).some(s=>s.mode==='check'&&s.complete);
  return p;
 }

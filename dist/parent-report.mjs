@@ -38,9 +38,10 @@ function skillEvidence(profile,id,now){
 }
 
 function skillQuestion(profile,id,now){
+ const currentKeys=new Set(questionPool(id).map(q=>q.key));
  for(const match of [...profile.sessions].reverse()){
   if(match.endedAt>now)continue;
-  const row=match.rows?.findLast(row=>row.q?.skillId===id);
+  const row=match.rows?.findLast(row=>row.q?.skillId===id&&currentKeys.has(row.q.key));
   if(row)return {q:row.q,recorded:true,correct:independent(row),typed:row.typed,at:match.endedAt};
  }
  const latest=recentEvidence(profile,id,now).at(-1);

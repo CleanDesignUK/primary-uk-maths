@@ -1,3 +1,4 @@
+import {migrateWrittenDraft} from './question-compat.mjs?v=7.0.0';
 import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=7.0.0';
 import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs?v=7.0.0';
 import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=7.0.0';
@@ -38,7 +39,7 @@ const routeMap={today:'home',skills:'syllabus',progress:'stats',grownups:'coach'
 const GOAL_FEEDBACK_MS=1200;
 let goalTimer;
 function newWorkTime(round) {
- return round.progressCheck||round.coachDrill||isWrittenSkill(round.manual)?0:writtenAllowance(round.q);
+ return round.placement||round.progressCheck||round.coachDrill||isWrittenSkill(round.manual)?0:writtenAllowance(round.q);
 }
 let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(initialRoute)?initialRoute:'home');
 try{
@@ -46,6 +47,7 @@ try{
  const rounds=saved?.schema==='rounds-v1'?saved.rounds:[saved];
  for(const round of rounds){
   if(!['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(round?.schema)||!data.profiles.some(p=>p.id===round.profileId)||!Number.isFinite(round.elapsed)||!round.q||!Array.isArray(round.skillIds)||!round.skillIds.every(skillById))continue;
+  migrateWrittenDraft(round);
   round.paused=true;round.pausedEver=true;
   if(round.phase==='question'&&!Number.isFinite(round.workTimeLeft))round.workTimeLeft=newWorkTime(round);
   draftRounds.set(round.profileId,round);
@@ -235,7 +237,7 @@ const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,M
 function matchTimer() {
  const working=session.phase==='question'&&session.workTimeLeft>0;
  const remaining=working?session.workTimeLeft:matchTimeLeft(session);
- const untimed=session.progressCheck||session.coachDrill;
+ const untimed=session.placement||session.progressCheck||session.coachDrill;
  const caption=untimed?'No timer':working?'Work time':session.phase==='feedback'?'Coach time':'Time';
  return {working,remaining,caption,display:untimed?'∞':clock(remaining)};
 }
