@@ -296,7 +296,7 @@ function renderGame() {
  app.innerHTML=`<div class="game-shell">
   <header class="game-header arcade-topbar match-topbar">${brand()}${gameNavigation('home')}<div class="header-tools"><span class="profile-mini">${profileDot(p)}<span>${esc(p.name)}</span></span><button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
   <main id="main" class="game-main">
-   <div class="game-title"><div><div class="eyebrow">${label}</div><h1>${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${timer.display}</strong><small id="timer-caption">${timer.caption}</small></div></div></div>
+   <div class="game-title"><div><div class="eyebrow">${label}</div><h1 id="match-skill-title">${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${timer.display}</strong><small id="timer-caption">${timer.caption}</small></div></div></div>
    <div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div>
    <div class="game-grid match-grid">
     <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span><i class="live-dot" aria-hidden="true"></i> <span id="match-stage">Kick-off</span></span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p,{aimGuide:!!session.mission})}${aimMarkup()}<div class="pitch-hud"><span id="move-caption" aria-live="polite">Ready to shoot</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div><div class="sideline-note" id="sideline-note" hidden></div></section>
@@ -345,6 +345,7 @@ function helpMarkup(q,small=false){const hints=q.hint||explain(q).steps,model=wo
 function renderQuestion(){
  if(!session)return;const q=session.q,done=session.phase==='feedback',extra=skillById(q.skillId).extra,column=q.key.startsWith('column'),written=writtenTask(q),options=written?null:q.options;
  const skill=skillById(q.skillId),reason=session.selection.reason,isCheck=reason==='support';
+ if(session.manual&&$('#match-skill-title'))$('#match-skill-title').textContent=shortTitle(skill);
  const host=$('#question-host'),last=done?session.rows.at(-1):null;
  const scratchOpen=host.dataset.questionKey===q.key?$('.scratch-paper',host)?.open:!!session.scratch;
  host.dataset.questionKey=q.key;
@@ -387,7 +388,7 @@ function renderQuestion(){
  const coachLabel=isCheck?'Skill check':reason==='review'?'Recall':reason==='repair'?'Second chance':session.selection.label;
  const checkTarget=skillById(session.selection.coachFor);
  const coachLine=checkTarget?`Helps with ${shortTitle(checkTarget).toLowerCase()}`:reason==='repair'?'New question, same skill':`Coach picked ${skill.title.toLowerCase()}`;
- host.innerHTML=`<div class="q-toolbar"><span class="q-label ${isCheck?'skill-check':reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${coachButton}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${content}${input}<div id="answer-error" class="field-error" role="alert"></div>${tail}</form>${!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} ${esc(coachLine)}</p>`:''}`;
+ host.innerHTML=`<div class="q-toolbar"><span class="q-label ${isCheck?'skill-check':reason==='repair'?'replay':''}">${icon('whistle',13)}${esc(coachLabel)}</span><div class="q-toolbar-actions">${coachButton}<button class="voice-button" data-action="hear" aria-label="Read the question aloud">${icon('sound',17)}</button></div></div><form id="answer-form" novalidate>${reason==='ease'?'<p class="adapt-note">A smaller step first. Build confidence, then try the original skill again.</p>':''}${content}${input}<div id="answer-error" class="field-error" role="alert"></div>${tail}</form>${!session.manual?`<p class="coach-selection" title="${esc(session.selection.detail||'')}">${icon('whistle',14)} ${esc(coachLine)}</p>`:''}`;
  const typed=!options&&!['drawing','angle','plot','clock'].includes(q.format);
  updateKeypad({typed,done,choices:!!options,symbols:questionPadSymbols(q),caption:dockCaption,resultLabel:dockResult,nextLabel:dockNext,working:done&&!last.correct,announce:touchMatch.matches?dockAnnouncement:''});
  applyAccessPreferences();if(!done&&data.settings.autoRead&&lastSpokenKey!==q.key){lastSpokenKey=q.key;speak(`${questionPrompt(q)}. ${q.expression!==undefined?q.expression:coreExpression(q)}`);}

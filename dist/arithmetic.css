@@ -239,3 +239,5 @@
   .arithmetic-paper { font-size: clamp(20px, 7vw, 27px); padding: 7px 6px 9px; }
   .arithmetic-paper :is(.division-product,.division-difference) { font-size: 20px; }
 }
+
+.adapt-note {margin:6px 0 12px;padding:10px 12px;border-left:3px solid #2b7c66;border-radius:6px;background:#eaf6f1;color:#225343;font:600 12px/1.6 system-ui,sans-serif;text-align:left}

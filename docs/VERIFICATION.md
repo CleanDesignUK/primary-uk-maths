@@ -27,7 +27,7 @@ shows topic standards, the year radar, actual example questions and expandable
 per-skill criteria. A targeted solid-background contrast scan found no visible
 report text below 3:1. This does not replace a complete accessibility audit.
 
-Year 6 begins with a three-digit place-value check. The automated error sequences
+The untimed Year 6 warm-up begins with a three-digit place-value check. A 320 px manual subtraction test stepped from five digits to four and then three after errors; the match heading follows the current method size. The automated error sequences
 confirm that written difficulty descends on mistakes and rebuilds after independent
 success. No real pupil names or results were used for QA.
 
