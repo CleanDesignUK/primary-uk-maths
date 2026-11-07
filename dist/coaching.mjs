@@ -7,7 +7,7 @@ export function workedExample(q){
  const {a,b,answer,op}=q;
  if(q.key.startsWith('column'))return {type:'columns',title:'Start on the right',steps:columnSteps(q)};
  const task=writtenTask(q);
- if(task) return task.type==='multiply'?multiplicationWorking(task.a,task.b):divisionWorking(task.a,task.b);
+ if(task) return task.type==='multiply'?multiplicationWorking(task.a,task.b):divisionWorking(task.a,task.b,task.decimalPlaces||0);
  if(op==='+'&&a<10&&b<10&&answer>10){
   const first=10-a,rest=b-first;
   return {type:'bridge',title:'Make 10 first',points:[a,10,answer],jumps:[first,rest],steps:[`${a} + ${first} = 10`,`10 + ${rest} = ${answer}`],parts:[first,rest],whole:b};
