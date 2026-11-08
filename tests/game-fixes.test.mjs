@@ -11,9 +11,9 @@ const now=Date.UTC(2026,10,5,12);
 const challenge=(profile,extra={})=>({id:'coach-1',schema:MATCH_SCHEMA,mode:'timed',curriculumYear:profile.year,target:10,attempts:10,complete:true,streak:1,rows:[],...extra});
 const attempt=(profile,question,match,extra={})=>rewardCandidate(profile,question,match,{correct:true,assisted:false,now,...extra});
 
-test('free choice, previews, warm-up and progress checks cannot mint career XP',()=>{
+test('free choice, previews and progress checks cannot mint career XP',()=>{
  const p=newProfile('Test',6),q=questionPool('add10')[4];
- for(const extra of [{manual:'add10'},{mode:'check',placement:true},{progressCheck:true},{promotion:true},{schema:'football-v4'}]){
+ for(const extra of [{manual:'add10'},{progressCheck:true},{promotion:true},{schema:'football-v4'}]){
   assert.equal(attempt(p,q,challenge(p,extra)),0);
   assert.equal(bankCareerXP(p,challenge(p,{...extra,rows:Array(10).fill({correct:true,careerCandidate:20})})),0);
  }

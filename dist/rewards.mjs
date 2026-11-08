@@ -34,8 +34,62 @@ export function isCoachChallenge(profile, match) {
 }
 
 export function isRewardRound(profile,match){
- return isCoachChallenge(profile,match)||match.schema===MATCH_SCHEMA&&match.mode==='practice'&&!!match.coachDrill&&!!match.manual&&
+ return isFirstWarmup(profile,match)||isCoachChallenge(profile,match)||match.schema===MATCH_SCHEMA&&match.mode==='practice'&&!!match.coachDrill&&!!match.manual&&
   !match.placement&&!match.progressCheck&&!match.promotion&&match.curriculumYear===profile.year&&profile.year>=(profile.rewardYear||profile.year);
+}
+
+const warmupRound=match=>match?.schema===MATCH_SCHEMA&&match.placement&&match.mode==='check'&&!match.manual&&!match.progressCheck&&!match.promotion;
+export function isFirstWarmup(profile,match){
+ return warmupRound(match)&&!profile.warmupXP?.complete&&match.curriculumYear===profile.year&&
+  profile.year>=(profile.rewardYear||profile.year)&&(!profile.warmupXP||profile.warmupXP.year===match.curriculumYear)&&
+  !(profile.sessions||[]).some(saved=>warmupRound(saved)&&saved.complete);
+}
+
+function warmupXPFromRows(rows){
+ let streak=0;const seen=new Set();
+ return rows.reduce((total,row)=>{
+  const independent=row.correct&&!row.assisted&&!row.help&&!row.unknown;
+  streak=independent?streak+1:0;
+  if(!independent||!row.q?.key)return total;
+  const key=rewardFactKey(row.q);
+  if(seen.has(key))return total;
+  seen.add(key);return total+earnedXP(true,false,streak);
+ },0);
+}
+
+function settleWarmup(profile,match,award){
+ const priorXP=profile.pointsTotal??(profile.sessions||[]).reduce((sum,saved)=>sum+(saved.careerXP??saved.points??0),0);
+ profile.pointsTotal=priorXP+award;
+ profile.paidRounds=[...profile.paidRounds.slice(-499),match.id];
+ profile.warmupXP={year:match.curriculumYear,roundId:match.id,xp:(profile.warmupXP?.xp||0)+award,complete:!!match.complete,at:match.endedAt||Date.now()};
+ return award;
+}
+
+// Existing first warm-ups used to earn no career XP. Correct those saved answers
+// once, including saved portions, without changing learning or League evidence.
+export function migrateFirstWarmupXP(profile){
+ initRewards(profile);
+ if(profile.warmupXP)return 0;
+ const first=(profile.sessions||[]).find(warmupRound);
+ if(!first)return 0;
+ let added=0;
+ for(const match of profile.sessions){
+  if(!warmupRound(match)||match.curriculumYear!==first.curriculumYear)continue;
+  if(!Number.isInteger(match.attempts)||match.attempts<1||match.rows?.length!==match.attempts)continue;
+  if(profile.paidRounds.includes(match.id)||match.careerXP>0){
+   profile.warmupXP={year:first.curriculumYear,roundId:match.id,xp:(profile.warmupXP?.xp||0)+(match.careerXP||0),complete:!!match.complete,at:match.endedAt};
+  }else{
+   const award=warmupXPFromRows(match.rows);
+   added+=settleWarmup(profile,match,award);match.careerXP=award;
+   for(const row of match.rows){
+    if(!row.correct||row.assisted||row.help||row.unknown||!row.q?.key)continue;
+    const key=rewardFactKey(row.q),nextAt=match.endedAt+DAY_MS;
+    if(!profile.rewardClaims[key]||profile.rewardClaims[key].nextAt<nextAt)profile.rewardClaims[key]={interval:0,nextAt};
+   }
+  }
+  if(match.complete)break;
+ }
+ return added;
 }
 
 export function revealFact(profile, question, now = Date.now()) {
@@ -49,7 +103,7 @@ export function rewardCandidate(profile, question, match, { correct, assisted, n
     return 0;
   }
   initRewards(profile);
-  if (!isRewardRound(profile, match) || !match.coachDrill&&['support', 'repair', 'ease'].includes(match.selection?.reason)) return 0;
+  if (!isRewardRound(profile, match) || !match.coachDrill&&!match.placement&&['support', 'repair', 'ease'].includes(match.selection?.reason)) return 0;
   const key = rewardFactKey(question);
   const previous = profile.rewardClaims[key];
   const revealedAt = profile.revealedFacts[key];
@@ -65,6 +119,11 @@ export function rewardCandidate(profile, question, match, { correct, assisted, n
 
 export function bankCareerXP(profile, match) {
   initRewards(profile);
+  if(isFirstWarmup(profile,match)){
+   if(!Number.isInteger(match.target)||match.target<1||!Number.isInteger(match.attempts)||match.attempts<1||match.attempts>match.target||match.complete&&match.attempts!==match.target||match.rows?.length!==match.attempts||profile.paidRounds.includes(match.id))return 0;
+   const award=match.rows.reduce((sum,row)=>sum+(row.correct&&!row.assisted&&!row.unknown?row.careerCandidate||0:0),0);
+   return settleWarmup(profile,match,award);
+  }
   if (!isRewardRound(profile, match) || !match.complete || match.attempts !== match.target ||
       match.target < (match.coachDrill?3:6) || match.rows.length !== match.target || profile.paidRounds.includes(match.id)) return 0;
   const award = match.rows.reduce((sum, row) => sum + (row.correct && !row.assisted ? row.careerCandidate || 0 : 0), 0);
@@ -87,6 +146,10 @@ export function newPersonalBest(match, previous) {
 }
 
 export function validateRewards(profile) {
+  if(profile.warmupXP!==undefined){
+   const receipt=profile.warmupXP;
+   if(!receipt||!Number.isInteger(receipt.year)||receipt.year<1||receipt.year>6||typeof receipt.roundId!=='string'||receipt.roundId.length>100||!Number.isSafeInteger(receipt.xp)||receipt.xp<0||receipt.xp>5000||typeof receipt.complete!=='boolean'||!Number.isFinite(receipt.at))throw Error('Invalid first warm-up XP.');
+  }
   if (profile.rewardYear !== undefined && (!Number.isInteger(profile.rewardYear) || profile.rewardYear < 1 || profile.rewardYear > 6)) {
     throw Error('Invalid reward year.');
   }
@@ -110,7 +173,7 @@ export const STARTER_CREDITS=10;
 // A participation gift is separate from XP and mastery. It pays once, including
 // the warm-up, so a child's first completed game can buy starter gear.
 export function grantStarterCredits(profile,match,now=Date.now()){
- if(profile.starterReward||!match.complete||match.attempts!==match.target||match.target<3||match.rows?.length!==match.target)return 0;
+ if(profile.starterReward||!match.complete||match.attempts!==match.target||match.target<(match.placement?1:3)||match.rows?.length!==match.target)return 0;
  profile.starterReward={roundId:match.id,at:now,credits:STARTER_CREDITS};
  return STARTER_CREDITS;
 }
