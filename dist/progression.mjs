@@ -1,6 +1,6 @@
-import {focusTables} from './tables.mjs?v=7.1.0';
-import {localDay,questionPool,factSecure} from './engine.mjs?v=7.1.0';
-import {competency,probeIds} from './adaptive.mjs?v=7.1.0';
+import {focusTables} from './tables.mjs?v=7.1.1';
+import {localDay,questionPool,factSecure} from './engine.mjs?v=7.1.1';
+import {competency,probeIds} from './adaptive.mjs?v=7.1.1';
 
 // Goals use recorded answers. Supported answers cannot fill an independent-goal target.
 export function dailyTargets(profile,now=Date.now()){

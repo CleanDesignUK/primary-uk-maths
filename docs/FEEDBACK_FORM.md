@@ -1,6 +1,6 @@
 # Matchday Maths feedback
 
-Owner: the connected Clean Design UK Google account. Form creation requires Google Forms sign-in in the browser. No respondent link is configured until the published form is verified.
+Owner: the connected Clean Design UK Google account. Google Forms sign-in was not completed. Creating and publishing this form remains pending. No respondent link is configured until the published form is verified.
 
 Title: **Matchday Maths feedback**
 

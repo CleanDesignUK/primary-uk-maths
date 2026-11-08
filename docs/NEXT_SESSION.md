@@ -1,12 +1,13 @@
 # Current checkpoint
 
-Release 7.1.0 is published and verified, 8 November 2026.
+Follow-up release 7.1.1 is prepared on `fix/first-lesson-and-feedback`.
 
-- PR #3 merged five development commits intact into main, merge `e7693758d0d3945f83070ceec2ca6dbd39b1e1a5`.
-- 132 automated tests pass. Module syntax, 30 public pages, Worker packaging, GitHub verification and Pages deployment pass.
-- The public game reports 7.1.0. First-shot play, new Year 5 player/warm-up, Dashboard and the Squad League fallback were verified on the published site.
-- All 13 PDF feedback pages are addressed. [Checklist, scope and browser evidence](NOVEMBER_8_FEEDBACK.md).
-- Existing progress keys and backup version are preserved. QA profiles are not shipped. New imports and styles use 7.1.0 together.
-- Public GitHub Pages uses local learning and Squad League on one device. Online World League needs its separate database service and is omitted from launch navigation.
+- Learning graph appears first in the Trophy room, above XP details, medals and history.
+- First warm-up independent answers earn career XP; helped/unsure answers earn zero. Saved portions retain XP. Existing first warm-ups are corrected once. Backups preserve the correction receipt.
+- App and resource footers link to North Wales Tutoring Group.
+- Local League rules are explained in the UI: same browser only, eligible completed Coach matches, ordered by League XP then accuracy.
+- 138 automated tests, syntax, both builds pass. Browser: 2 independent / 10 helped first-warm-up answers banked 22 XP, 12 total credits and persisted on reload. Graph-first layout and no horizontal overflow confirmed at 320px.
+- Google Form is NOT created or connected. Sign-in request was not completed. Five questions and settings are saved in FEEDBACK_FORM.md; Dashboard integration waits for FEEDBACK_FORM_URL in dist/feedback.mjs. Do not claim the feedback button is live until its verified respondent URL is configured.
+- Release merge, CI and deployment verification still need to be recorded.
 
-Future work should start from current main, retain focused commits and repeat relevant browser checks after behaviour changes. Do not reintroduce white text on light reward panels, hide warm-ups from history or conflate practice accuracy with secure year mastery.
+See [follow-up evidence](FIRST_LESSON_FEEDBACK.md). Existing 7.1.0 remains the last previously verified live release until 7.1.1 publication is confirmed.

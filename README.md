@@ -27,7 +27,7 @@ Use Node 22.13 or later for the local preview and league tests, which use built-
 
 Dashboard, Units, Shop, Tables, League and Trophy room are available during matches. Visiting a tab saves the current round for that player. The shot camera sits above the question on phones. Goalkeepers use their custom player to save incoming shots. Players can aim left, centre or right and complete rotating match objectives with independent answers. Accurate streaks unlock power shots, fireballs and meteor strikes.
 
-Players bank career XP after completing an eligible Coach match or a three-shot recommended Coach drill. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. The first completed game, including warm-up or a written drill, also grants a one-time 10-credit participation bonus. The bonus does not award XP or mastery. Previous XP and owned kit are preserved.
+The first warm-up earns career XP for independent answers, including saved portions. Later rewards come from eligible completed Coach matches and three-shot recommended Coach drills. Existing first warm-ups that missed XP are corrected once. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. The first completed game, including warm-up or a written drill, also grants a one-time 10-credit participation bonus. The bonus does not award XP or mastery. Previous XP and owned kit are preserved.
 
 Starter gear starts at 5 credits. A 10-credit celebration is available at level 1. Footballer Picks includes original shirts, boots, hairstyles and celebrations inspired by favourite players. Players can change shirt number, position, trim, skin tone and clubhouse colour. Levels start at 85 XP and the gaps grow. Club offers require a combination of levels, varied facts, practice days and secure recall. Club offers are fictional game rewards.
 
@@ -41,7 +41,7 @@ Ranked shots send answers for scoring. The database retains the generated alias,
 
 ## Verification
 
-[Browser checks and screenshots](docs/VERIFICATION.md) · [132 automated tests](docs/test-results.txt)
+[Browser checks and screenshots](docs/VERIFICATION.md) · [138 automated tests](docs/test-results.txt)
 
 ## Release discipline
 
@@ -59,3 +59,7 @@ adopts the new full answer requirement.
 ## Release 7.1.0, 8 November 2026
 
 [Feedback checklist and browser evidence](docs/NOVEMBER_8_FEEDBACK.md). Body text and controls are readable on phones; first warm-ups appear in the Trophy room; the coloured learning profile shows recent independent answers separately from secure year skills. Club offers have notifications and direct Join actions. Older open tabs receive newer progress and do not write stale data on exit. The public GitHub Pages release uses Squad League on this device. World League remains available only when its separate database service is configured.
+
+## Release 7.1.1, 8 November 2026
+
+The Trophy room prioritises its learning graph, the first lesson earns independent-answer XP, and old first-lesson rewards are corrected once without changing mastery or League scores. Footers link to North Wales Tutoring Group. See [follow-up verification](docs/FIRST_LESSON_FEEDBACK.md). The five-question feedback form and Dashboard integration are prepared, but the respondent URL is intentionally unconfigured because Google sign-in was not completed. No placeholder feedback link is shown to players.

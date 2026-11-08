@@ -1,4 +1,4 @@
-import {PRIMARY_SKILLS,makePrimaryPool,yearIds} from './primary.mjs?v=7.1.0';
+import {PRIMARY_SKILLS,makePrimaryPool,yearIds} from './primary.mjs?v=7.1.1';
 // Topic families mapped to the England Year 3 and Year 5 programmes of study.
 // Each family has several reproducible question variants; this is not an exhaustive exam bank.
 const topic=(id,title,year,domain,requires=[],priority=60)=>({id,title,year,domain,category:domain,requires,priority,extra:true,kind:'curriculum',icon:({number:'blocks',calculation:'plus',multiplication:'times',fractions:'bond',measure:'clock',geometry:'shape',statistics:'chart'})[domain]||'ball',color:'mint'});
