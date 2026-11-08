@@ -1,6 +1,6 @@
-import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs?v=7.0.0';
-import {validateCareer} from './career.mjs?v=7.0.0';
-import {validateRewards} from './rewards.mjs?v=7.0.0';
+import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs?v=7.1.0';
+import {validateCareer} from './career.mjs?v=7.1.0';
+import {validateRewards} from './rewards.mjs?v=7.1.0';
 export const VERSION = 1;
 export const DAY = 86400000;
 export const INTERVALS = [0, 1, 3, 7, 14, 30, 60];
@@ -34,7 +34,7 @@ export const SKILLS = [
 export const skillById = id => SKILLS.find(s=>s.id===id);
 export const localDay = (now=Date.now()) => {const d=new Date(now);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 export const uid = () => globalThis.crypto?.randomUUID?.() || `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
-export function newProfile(name,year=1,avatar='sprout') {return {id:uid(),name:name.trim().slice(0,24),year:Number(year),avatar,createdAt:Date.now(),facts:{},sessions:[],records:{}};}
+export function newProfile(name,year=1,avatar='sprout') {return {id:uid(),name:name.trim().slice(0,24),year:Number(year),startingYear:Number(year),avatar,createdAt:Date.now(),facts:{},sessions:[],records:{}};}
 export function initialData(){return {version:VERSION,activeId:null,profiles:[],settings:{sound:false,reduceMotion:false,dyslexia:false,autoRead:false,voiceURI:'',speechRate:.9}};}
 
 function seeded(seed){return ()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}

@@ -1,16 +1,16 @@
-import {focusTables} from './tables.mjs?v=7.0.0';
-import {localDay,questionPool,factSecure} from './engine.mjs?v=7.0.0';
-import {competency,probeIds} from './adaptive.mjs?v=7.0.0';
+import {focusTables} from './tables.mjs?v=7.1.0';
+import {localDay,questionPool,factSecure} from './engine.mjs?v=7.1.0';
+import {competency,probeIds} from './adaptive.mjs?v=7.1.0';
 
 // Goals use recorded answers. Supported answers cannot fill an independent-goal target.
 export function dailyTargets(profile,now=Date.now()){
  const matches=(profile.sessions||[]).filter(s=>localDay(s.endedAt)===localDay(now));
  const independent=matches.reduce((n,s)=>n+(s.rows||[]).filter(r=>r.correct&&!r.assisted).length,0);
- const played=matches.filter(s=>s.mode==='timed'&&s.complete&&s.attempts>0).length;
+ const played=matches.filter(s=>s.complete&&s.attempts>=3).length;
  const streak=Math.max(0,...matches.map(s=>s.bestStreak||0));
  return [
-  {id:'match',title:'Play a match',symbol:'ball',value:Math.min(1,played),target:1},
-  {id:'goals',title:'Score 8 on your own',symbol:'trophy',value:Math.min(8,independent),target:8},
+  {id:'match',title:'Finish a game',symbol:'ball',value:Math.min(1,played),target:1},
+  {id:'goals',title:profile.look?.position==='Goalkeeper'?'Make 8 saves on your own':'Score 8 on your own',symbol:'trophy',value:Math.min(8,independent),target:8},
   {id:'streak',title:'Get 3 in a row',symbol:'flame',value:Math.min(3,streak),target:3},
  ].map(t=>({...t,done:t.value>=t.target}));
 }

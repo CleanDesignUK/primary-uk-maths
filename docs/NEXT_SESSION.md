@@ -1,22 +1,7 @@
-# Matchday Maths 7.0.0 checkpoint
+# Current checkpoint
 
-Repository: `CleanDesignUK/primary-uk-maths`. Release branch:
-`launch/november-readiness`. Preserve the incremental commit history when merging.
+Release 7.1.0, 8 November 2026. All changes for the 13-page feedback PDF are implemented and browser checked on desktop and 320/390px phone layouts. See [the feedback checklist](NOVEMBER_8_FEEDBACK.md) for evidence and the online-league hosting scope.
 
-[Launch checklist](LAUNCH_READINESS.md) · [Verification](VERIFICATION.md)
+132 automated tests, syntax, public-page build and Worker packaging pass. Current release branch: `launch/november-8-feedback`. Existing player storage keys and backup version are preserved. No test pupil profiles are shipped.
 
-This release adds responsive written and decimal methods, explicit remainders,
-foundation-first warm-up and error recovery, one-time starter credits, football
-career cards, larger celebrations and parent year profiles with example questions
-and exact mastery rules. Browser storage keys and the backup version are preserved.
-Earlier quotient-only division evidence is separated from full remainder evidence;
-old match history remains available.
-
-The static GitHub Pages entry is `/primary-uk-maths/dist/play/`. Static play includes
-local profiles and the squad league. Public ranked hosting remains a separate
-infrastructure choice. Before moving hosts, export player backups because browser
-storage belongs to the current origin.
-
-Always run `npm run check`, `npm run build`, `npm run build:worker` and `npm test`.
-The GitHub workflow performs these checks on pushes and pull requests. Do not claim
-physical-device verification: current mobile checks are browser viewports.
+Final release step: verify GitHub CI, merge the release PR and check the published 7.1.0 metadata and game in the browser. Do not claim launch completion until those checks are recorded in the feedback checklist.

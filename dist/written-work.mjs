@@ -1,4 +1,4 @@
-import {esc, mathText} from './visuals.mjs?v=7.0.0';
+import {esc, mathText} from './visuals.mjs?v=7.1.0';
 
 const divisionSkills = new Set(['divWritten3', 'divide4', 'division5', 'longDiv6', 'decimalDiv6']);
 const placeName = power => power < 0 ? ['tenths','hundredths','thousandths'][-power-1] : placeNames[power] || `digit ${power+1}`;

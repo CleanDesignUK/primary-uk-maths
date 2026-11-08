@@ -1,5 +1,5 @@
-import {esc} from './visuals.mjs?v=7.0.0';
-import {columnSteps} from './engine.mjs?v=7.0.0';
+import {esc} from './visuals.mjs?v=7.1.0';
+import {columnSteps} from './engine.mjs?v=7.1.0';
 
 const places=['ones','tens','hundreds','thousands','ten-thousands','hundred-thousands'];
 const labels=['O','T','H','Th','TTh','HTh'];
