@@ -2,7 +2,7 @@ import {esc,icon} from './visuals.mjs?v=7.0.0';
 
 export function setMatchDock(pad,{
  touch,typed,done,busy=false,choices=false,symbols=[],caption='',resultLabel=caption,
- nextLabel='Next shot',advance='next',working=false,announce=''
+ nextLabel='Next shot',advance='next',working=false,announce='',actionLabel='Shoot'
 }) {
  const find=selector=>pad.querySelector(selector);
  const guide=touch&&!typed;
@@ -27,5 +27,5 @@ export function setMatchDock(pad,{
  action.dataset.action=done?advance:'key';
  action.dataset.key=done?'':'shoot';
  action.disabled=busy||!done&&choices;
- action.innerHTML=`${done?esc(nextLabel):busy?'Checking…':choices?'Choose':'Shoot'} ${icon('arrow',15)}`;
+ action.innerHTML=`${done?esc(nextLabel):busy?'Checking…':choices?'Choose':esc(actionLabel)} ${icon('arrow',15)}`;
 }

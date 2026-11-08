@@ -22,6 +22,7 @@ import {setMatchDock} from './match-dock.mjs?v=7.0.0';
 import {animatedItem,fullTimeShowcase,cosmeticPreview,playShowcase,levelMoment} from './celebrations.mjs?v=7.0.0';
 
 import {medals,medalsMarkup,historyMarkup} from './match-records.mjs?v=7.0.0';
+import {receiveProgress} from './tab-sync.mjs?v=7.0.0';
 
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
@@ -99,7 +100,7 @@ function header(hasMenu){
  return `<header class="header arcade-topbar ${hasMenu?'has-game-menu':''}">
   ${brand()}${hasMenu?gameNavigation():''}
   <div class="header-tools">
-   ${p&&data.activeId?`<button class="profile-mini" data-action="players" aria-label="Switch player">${profileDot(p)}<span>${esc(p.name)}</span></button>`:''}
+   ${p&&data.activeId?`<button class="profile-mini" data-action="players" aria-label="Switch player, ${esc(p.name)}">${profileDot(p)}<span>${esc(p.name)}</span></button>`:''}
    <button class="parents-top" data-action="nav" data-view="coach" aria-label="Parents and reports">${icon('book',18)}<span>Parents</span></button>
   </div>
  </header>`;
@@ -282,7 +283,7 @@ function updateKeypad(state) {
   const choices=$('.choices',host);
   if(choices)options.append(choices);
  }
- setMatchDock(pad,{...state,touch});
+ setMatchDock(pad,{...state,touch,actionLabel:answerAction()});
  if(touch)for(const field of $$(padFields,host)){
   field.inputMode='none';
   field.readOnly=true;
@@ -524,7 +525,7 @@ function updateLive() {
  const timer=matchTimer();
  const values={'live-goals':session.correct,'live-streak':session.streak,'live-time':timer.display,'timer-caption':timer.caption,'pad-time':timer.display,'pad-time-caption':timer.caption};
  for(const [id,value] of Object.entries(values)){const el=document.getElementById(id);if(el)el.textContent=value;}
- const earns=isCoachChallenge(player(),session);
+ const earns=isRewardRound(player(),session);
  if($('#live-xp'))$('#live-xp').innerHTML=`${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small>`;
  $('#timer-box')?.classList.toggle('low',!session.progressCheck&&!session.coachDrill&&!timer.working&&timer.remaining<16&&session.phase==='question');
  $('#timer-box')?.classList.toggle('work-clock',timer.working);
@@ -821,7 +822,18 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
   if(session&&!session.paused){renderQuestion();updateLive();}
   else if(view==='world'&&world.match)renderWorldMatch();
  });
- window.addEventListener('pagehide',()=>{clearTimeout(goalTimer);if(session){session.paused=true;session.pausedEver=true;saveRound();}save();});
+ window.addEventListener('pagehide',()=>{clearTimeout(goalTimer);if(session){session.paused=true;session.pausedEver=true;saveRound();}});
+ window.addEventListener('storage',event=>{
+  if(event.key!==STORAGE||!event.newValue)return;
+  try{
+   const update=receiveProgress(data,validateImport(JSON.parse(event.newValue)),session);
+   data=update.data;
+   for(const p of data.profiles){initCareer(p);initLearning(p);initRewards(p);initLeague(p);}
+   if(update.roundRemoved){clearInterval(tickId);clearTimeout(goalTimer);session=null;view='players';result=null;render();toast('The squad was updated in another tab. Choose a player to continue.');return;}
+   if(update.roundChanged){clearTimeout(goalTimer);session.paused=true;session.pausedEver=true;saveRound();renderGame();toast('Progress updated in another tab. Your match is paused and saved.');return;}
+   if(!session&&!modalRoot.querySelector('.dialog'))render();
+  }catch{toast('Progress changed in another tab. Reload to use its latest saved results.');}
+ });
 
 function readingButton(){
  return `<button class="btn white reading-preference ${data.settings.dyslexia?'on':''}" data-action="reading" aria-pressed="${!!data.settings.dyslexia}">Reading mode</button>`;

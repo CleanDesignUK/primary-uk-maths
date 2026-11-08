@@ -8,8 +8,19 @@ import {yearJourney} from '../dist/academy-ui.mjs';
 import {initCareer,pendingClubOffers,viewClubOffers,chooseClub,CLUBS} from '../dist/career.mjs';
 import {medals,medalsMarkup,historyMarkup,matchLabel} from '../dist/match-records.mjs';
 import {MATCH_SCHEMA,rewardCandidate,bankCareerXP,revealFact} from '../dist/rewards.mjs';
+import {receiveProgress} from '../dist/tab-sync.mjs';
 
 const now=Date.UTC(2026,10,8,12);
+test('another tab keeps newer rewards, preserves the selected pupil and pauses a conflicting match',()=>{
+ const first=newProfile('First',5),second=newProfile('Second',3);
+ const old={profiles:[first,second],activeId:first.id},latest=structuredClone(old);
+ latest.activeId=second.id;latest.profiles[0].pointsTotal=20;latest.profiles[0].sessions.push({id:'new-drill'});
+ const update=receiveProgress(old,latest,{profileId:first.id});
+ assert.equal(update.data.activeId,first.id);assert.equal(update.data.profiles[0].pointsTotal,20);
+ assert.equal(update.roundChanged,true);assert.equal(update.roundRemoved,false);
+ assert.equal(receiveProgress(old,latest,{profileId:second.id}).roundChanged,false);
+ assert.equal(receiveProgress(old,{profiles:[second],activeId:second.id},{profileId:first.id}).roundRemoved,true);
+});
 test('starting years survive backups and promotions without completing earlier years',()=>{
  const p=newProfile('Year five starter',5);initCareer(p);
  assert.match(yearJourney(p),/0<small> \/ 2 years/);
@@ -94,4 +105,10 @@ test('unavailable online leagues lead to a working local league without a join d
  const html=worldBoardView(newProfile('Test',5),{available:false,unlocked:[0],tier:0});
  assert.match(html,/Open Squad League/);assert.match(html,/data-view="league"/);
  assert.doesNotMatch(html,/hosted academy|world-join|world-start/);
+});
+
+test('24-hour clocks distinguish afternoon from evening and explain the p.m. conversion',()=>{
+ const questions=questionPool('clock3'),pm=questions.filter(q=>/24-hour/.test(q.prompt));
+ assert.ok(pm.some(q=>/evening/.test(q.prompt)));assert.ok(pm.some(q=>/afternoon/.test(q.prompt)));
+ for(const q of pm){const hour=Number(q.answer.split(':')[0]);assert.equal(/evening/.test(q.prompt),hour>=18);assert.match(q.hint.join(' '),/add 12/);}
 });

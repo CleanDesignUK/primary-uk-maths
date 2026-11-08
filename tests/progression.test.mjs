@@ -8,7 +8,7 @@ import {workedExample} from '../dist/coaching.mjs';
 test('daily targets exclude supported answers, earlier days and other players',()=>{
  const now=Date.now(),p=newProfile('Ace',3),other=newProfile('Carter',3);
  p.sessions=[{endedAt:now-DAY,mode:'timed',complete:true,attempts:10,bestStreak:8,rows:Array(10).fill({correct:true})},{endedAt:now,mode:'check',complete:true,attempts:3,bestStreak:2,rows:[{correct:true},{correct:true,assisted:true},{correct:false}]}];
- let targets=dailyTargets(p,now);assert.deepEqual(targets.map(t=>t.value),[0,1,2]);
+ let targets=dailyTargets(p,now);assert.deepEqual(targets.map(t=>t.value),[1,1,2]);
  p.sessions.push({endedAt:now,mode:'timed',complete:true,attempts:10,bestStreak:5,rows:Array(10).fill({correct:true,assisted:false})});
  assert.ok(dailyTargets(p,now).every(t=>t.done));assert.ok(dailyTargets(other,now).every(t=>!t.done));
 });

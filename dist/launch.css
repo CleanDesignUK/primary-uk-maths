@@ -265,3 +265,34 @@ body.arcade {margin:0;min-height:100dvh;font-size:16px;line-height:1.55}
  .arcade .game-item .item-card-top {font-size:14px}
  .arcade .squad-player>.block-player {width:105px;height:155px;min-width:100px}
 }
+
+@media(max-width:680px){.arcade .arcade-nav .nav-btn{font-size:16px;padding:8px 4px;min-height:48px}.arcade .arcade-nav .arcade-nav-icon{display:none}}
+/* Keep the footer and mobile player card inside the visible screen. */
+.arcade .shell.arcade-shell {padding-bottom:0}
+@media(max-width:680px){
+ .arcade .arcade-topbar {grid-template-columns:minmax(0,1fr) auto}
+ .arcade .header-tools .profile-mini {width:42px;min-width:42px;max-width:42px;justify-content:center;padding:6px}
+ .arcade .header-tools .profile-mini>span:last-child {display:none}
+ .arcade .header-tools .profile-dot {display:grid;width:26px;height:28px}
+ .arcade .arcade-nav {min-width:0}
+ .arcade .lobby-banner {grid-template-columns:1fr;gap:24px;padding:24px;min-height:0}
+ .arcade .lobby-copy {padding:0;min-width:0}
+ .arcade .lobby-copy h1 {font-size:36px;max-width:none}
+ .arcade .lobby-copy .lobby-kicker {max-width:none}
+ .arcade .lobby-player {width:100%;max-width:none;align-self:center;align-content:center;padding-bottom:10px}
+ .arcade .lobby-player .career-card {width:225px;max-width:calc(100% - 14px);margin:8px auto 16px}
+ .arcade .lobby-player .career-card>.block-player {width:145px;height:180px}
+ .arcade .lobby-kit-btn {max-width:none;min-width:170px}
+ .arcade .lobby-copy>.kickoff-round-details {gap:12px 20px}
+ .arcade .kickoff-round-details>span {flex-basis:auto}
+}
+
+.arcade :is(.credits-earned,.record-banner,.level-line,.showcase-label,.coach-next>div>span,.security-explainer p,.year-next-step p){font-size:16px;line-height:1.5}
+@media(max-width:680px){
+ .arcade .game-header.arcade-topbar.match-topbar {grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"brand tools" "game game";gap:10px;height:auto;padding:10px 0 12px}
+ .arcade .match-topbar>.brand {display:flex}
+ .arcade .match-topbar .brand-type {display:block;font-size:18px}
+ .arcade .match-topbar .header-tools .profile-mini {display:none}
+ .arcade .match-topbar>.arcade-nav {width:100%;max-width:none;grid-area:game}
+ .arcade .arcade-nav .nav-btn {padding-inline:0}
+}

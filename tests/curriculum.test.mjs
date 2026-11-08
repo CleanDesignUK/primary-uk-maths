@@ -52,9 +52,9 @@ test('fractions of shapes and quantities match the depicted or stated fractions'
  for(const q of questionPool('fracRead3'))assert.equal(parseNumber(q.answer),q.visual.n/q.visual.d);
  for(const q of questionPool('fracOf3')){const [n,d,total]=q.expression.match(/\d+/g).map(Number);assert.equal(q.answer,total*n/d);}
 });
-test('clock questions include Roman dials, minute precision and explicit afternoon context',()=>{
+test('clock questions include Roman dials, minute precision and explicit p.m. context',()=>{
  const pool=questionPool('clock3');assert.ok(pool.some(q=>q.visual.roman));assert.ok(pool.some(q=>q.visual.m%5!==0));assert.ok(pool.some(q=>q.prompt.includes('afternoon')));
- for(const q of pool){const [hour,minute]=q.answer.split(':').map(Number);assert.equal(minute,q.visual.m);assert.equal(hour,q.prompt.includes('afternoon')?q.visual.h+12:q.visual.h);}
+ for(const q of pool){const [hour,minute]=q.answer.split(':').map(Number);assert.equal(minute,q.visual.m);assert.equal(hour,q.prompt.includes('24-hour')?q.visual.h+12:q.visual.h);}
 });
 test('construction requires valid geometry, rather than any collection of clicks',()=>{
  assert.ok(validDrawing([[0,0],[4,0],[2,3]],3));assert.ok(!validDrawing([[0,0],[1,1],[2,2]],3));
