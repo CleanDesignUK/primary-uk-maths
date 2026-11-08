@@ -1,5 +1,5 @@
-import {esc,icon,mathText} from './visuals.mjs?v=7.0.0';
-import {penaltyArena} from './experience.mjs?v=7.0.0';
+import {esc,icon,mathText} from './visuals.mjs?v=7.1.0';
+import {penaltyArena} from './experience.mjs?v=7.1.0';
 
 export const DIVISIONS=['Academy','County','Premier'];
 export const worldClock=expires=>{

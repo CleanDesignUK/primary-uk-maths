@@ -1,6 +1,6 @@
-import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs?v=7.0.0';
-import {validateCareer} from './career.mjs?v=7.0.0';
-import {validateRewards} from './rewards.mjs?v=7.0.0';
+import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs?v=7.1.0';
+import {validateCareer} from './career.mjs?v=7.1.0';
+import {validateRewards} from './rewards.mjs?v=7.1.0';
 export const VERSION = 1;
 export const DAY = 86400000;
 export const INTERVALS = [0, 1, 3, 7, 14, 30, 60];

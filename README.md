@@ -25,9 +25,9 @@ Use Node 22.13 or later for the local preview and league tests, which use built-
 
 ## The football career
 
-Play, Units, Shop, Tables and League are available during matches. Visiting a tab saves the current round for that player. The shot camera stays above the question on phones. Players can aim left, centre or right and complete rotating match objectives with independent answers. Accurate streaks unlock power shots, fireballs and meteor strikes.
+Dashboard, Units, Shop, Tables, League and Trophy room are available during matches. Visiting a tab saves the current round for that player. The shot camera sits above the question on phones. Goalkeepers use their custom player to save incoming shots. Players can aim left, centre or right and complete rotating match objectives with independent answers. Accurate streaks unlock power shots, fireballs and meteor strikes.
 
-Players bank career XP after completing an eligible Coach match. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. The first completed game, including warm-up or a written drill, also grants a one-time 10-credit participation bonus. The bonus does not award XP or mastery. Previous XP and owned kit are preserved.
+Players bank career XP after completing an eligible Coach match or a three-shot recommended Coach drill. New and due facts count when answered independently in the current-year route. Repeated facts, revealed answers and free-choice rounds still give practice feedback and record learning. Every 10 career XP earns one credit. The first completed game, including warm-up or a written drill, also grants a one-time 10-credit participation bonus. The bonus does not award XP or mastery. Previous XP and owned kit are preserved.
 
 Starter gear starts at 5 credits. A 10-credit celebration is available at level 1. Footballer Picks includes original shirts, boots, hairstyles and celebrations inspired by favourite players. Players can change shirt number, position, trim, skin tone and clubhouse colour. Levels start at 85 XP and the gaps grow. Club offers require a combination of levels, varied facts, practice days and secure recall. Club offers are fictional game rewards.
 
@@ -41,11 +41,11 @@ Ranked shots send answers for scoring. The database retains the generated alias,
 
 ## Verification
 
-[Browser checks and screenshots](docs/VERIFICATION.md) · [123 automated tests](docs/test-results.txt)
+[Browser checks and screenshots](docs/VERIFICATION.md) · [132 automated tests](docs/test-results.txt)
 
 ## Release discipline
 
-Development is committed in small groups on `launch/november-readiness`, reviewed
+Development is committed in small groups on `launch/november-8-feedback`, reviewed
 through a pull request and merged with its commit history intact. GitHub verification
 runs syntax checks, both builds, the automated suite and a generated-page consistency
 check. See [the launch checklist](docs/LAUNCH_READINESS.md) and
@@ -55,3 +55,7 @@ Division questions that now require a remainder have new content-derived identit
 Earlier quotient-only attempts remain in match history, while the updated remainder
 skill gathers fresh evidence. A saved unfinished calculation retains its working and
 adopts the new full answer requirement.
+
+## Release 7.1.0, 8 November 2026
+
+[Feedback checklist and browser evidence](docs/NOVEMBER_8_FEEDBACK.md). Body text and controls are readable on phones; first warm-ups appear in the Trophy room; the coloured learning profile shows recent independent answers separately from secure year skills. Club offers have notifications and direct Join actions. Older open tabs receive newer progress and do not write stale data on exit. The public GitHub Pages release uses Squad League on this device. World League remains available only when its separate database service is configured.
