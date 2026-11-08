@@ -14,4 +14,4 @@ Validation so far: 138 automated tests pass, module syntax, public-page generati
 
 ![Learning graph first, with XP from the first lesson](screenshots/7.1.1-graph-first.png)
 
-Release publication is pending GitHub CI and Pages checks. Google Form creation and its live Dashboard button remain pending the owner’s sign-in or a supplied respondent link; no placeholder link is published.
+Release 7.1.1 is published. PR #4 merged commits a32987c and 3c64189 into main as 997bf6b. PR and push verification passed. Main verification run 42525616095 and Pages deployment run 42525615360 both succeeded. The published game reports 7.1.1; a correct first shot, the group footer link and graph-first Trophy room were checked in the live browser. Google Form creation and its live Dashboard button remain pending the owner’s sign-in or a supplied respondent link; no placeholder link is published.
