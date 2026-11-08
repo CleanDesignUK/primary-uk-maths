@@ -21,7 +21,7 @@ Baseline: 7.0.1, main 33a1829. Preserve existing profiles, rewards and learning 
 - [x] Automated logic tests and production builds pass.
 - [x] Real browser checks cover complete warm-up, drill rewards/help, goalkeeper, trophies, reports, shop/offers, league, phone layout and reload persistence.
 - [x] Version/cache references updated together.
-- [ ] GitHub CI and published version verified.
+- [x] GitHub CI and published version verified.
 
 ## Checkpoints
 
@@ -54,3 +54,12 @@ QA profiles and the imported backup are fictional. No sample pupil data is shipp
 The public GitHub Pages site supports the full local learning game and Squad League on one device. Online ranked World League requires its separate database service, which is not configured on GitHub Pages. Its unavailable entry is omitted from the launch screens; existing direct links have a clear explanation and working Squad League action.
 
 Automated verification: 132 tests passed; module syntax, generated public pages and Worker packaging passed. Existing storage keys and backup version remain compatible.
+
+
+## Published verification
+
+PR [#3](https://github.com/CleanDesignUK/primary-uk-maths/pull/3) merged with all five development commits intact. Release source commit: `37f139d31fb622864d605405c7a6d360823e79b1`. Merge commit: `e7693758d0d3945f83070ceec2ca6dbd39b1e1a5`.
+
+Both PR/push verification runs passed. On main, [Verify Matchday](https://github.com/CleanDesignUK/primary-uk-maths/actions/runs/42496025098) and [Pages build and deployment](https://github.com/CleanDesignUK/primary-uk-maths/actions/runs/42496024304) completed successfully for that merge commit.
+
+The published [game](https://cleandesignuk.github.io/primary-uk-maths/dist/play/#home) reports application version 7.1.0. Browser smoke checks confirmed a correct first-shot response, creating a Year 5 player, the untimed foundation warm-up, Dashboard navigation, and the unavailable online-league route leading to Squad League. No QA profiles are included in the published source.
