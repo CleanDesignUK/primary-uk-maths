@@ -33,6 +33,11 @@ export function isCoachChallenge(profile, match) {
     match.curriculumYear === profile.year && profile.year >= (profile.rewardYear || profile.year);
 }
 
+export function isRewardRound(profile,match){
+ return isCoachChallenge(profile,match)||match.schema===MATCH_SCHEMA&&match.mode==='practice'&&!!match.coachDrill&&!!match.manual&&
+  !match.placement&&!match.progressCheck&&!match.promotion&&match.curriculumYear===profile.year&&profile.year>=(profile.rewardYear||profile.year);
+}
+
 export function revealFact(profile, question, now = Date.now()) {
   initRewards(profile);
   profile.revealedFacts[rewardFactKey(question)] = now;
@@ -44,7 +49,7 @@ export function rewardCandidate(profile, question, match, { correct, assisted, n
     return 0;
   }
   initRewards(profile);
-  if (!isCoachChallenge(profile, match) || ['support', 'repair', 'ease'].includes(match.selection?.reason)) return 0;
+  if (!isRewardRound(profile, match) || !match.coachDrill&&['support', 'repair', 'ease'].includes(match.selection?.reason)) return 0;
   const key = rewardFactKey(question);
   const previous = profile.rewardClaims[key];
   const revealedAt = profile.revealedFacts[key];
@@ -60,8 +65,8 @@ export function rewardCandidate(profile, question, match, { correct, assisted, n
 
 export function bankCareerXP(profile, match) {
   initRewards(profile);
-  if (!isCoachChallenge(profile, match) || !match.complete || match.attempts !== match.target ||
-      match.target < 6 || match.rows.length !== match.target || profile.paidRounds.includes(match.id)) return 0;
+  if (!isRewardRound(profile, match) || !match.complete || match.attempts !== match.target ||
+      match.target < (match.coachDrill?3:6) || match.rows.length !== match.target || profile.paidRounds.includes(match.id)) return 0;
   const award = match.rows.reduce((sum, row) => sum + (row.correct && !row.assisted ? row.careerCandidate || 0 : 0), 0);
   if (!award) return 0;
   const priorXP = profile.pointsTotal ?? (profile.sessions || []).reduce((sum, saved) => sum + (saved.points || 0), 0);

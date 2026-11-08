@@ -150,6 +150,8 @@ export const levelProgress=p=>{const level=careerLevel(p),start=xpForLevel(level
 export const itemById=id=>ITEMS.find(item=>item.id===id);
 export const clubById=id=>CLUBS.find(club=>club.id===id)||CLUBS[0];
 export function initCareer(p){
+ const recordedYears=(p.sessions||[]).map(s=>s.curriculumYear).filter(y=>Number.isInteger(y)&&y>=1&&y<=6);
+ p.startingYear=Math.min(p.year||1,p.startingYear||Math.min(p.year||1,...recordedYears,...(p.completedYears||[])));
  p.inventory||=[];p.creditsSpent??=0;p.purchases||=[];p.completedYears||=[];p.practical||={};p.inbox||=[];p.offeredClubs||=['academy'];
  p.look={skin:'warm',hairColour:'brown',kit:'kit-home',shorts:'shorts-dark',boots:'boots-classic',hair:'hair-crop',accessory:'accessory-none',ball:'ball-classic',trail:'trail-none',number:9,position:'Striker',club:'academy',theme:'pitch',trim:'match',pattern:'pattern-classic',celebration:'celebrate-fist',...(p.look||{})};
  return p;
@@ -176,6 +178,8 @@ export function clubProgress(p,club){
  return {eligible:goals.every(g=>g.value>=g.target),goals,remaining:goals.filter(g=>g.value<g.target),percent:Math.floor(100*Math.min(1,...fractions))};
 }
 export function chooseClub(p,id){initCareer(p);const club=CLUBS.find(c=>c.id===id);if(!club||!clubProgress(p,club).eligible)return false;p.look.club=id;return true;}
+export const pendingClubOffers=p=>CLUBS.filter(c=>c.id!==(p.look?.club||'academy')&&c.id!=='academy'&&clubProgress(p,c).eligible&&!p.viewedClubOffers?.includes(c.id));
+export function viewClubOffers(p){p.viewedClubOffers=[...new Set([...(p.viewedClubOffers||[]),...CLUBS.filter(c=>clubProgress(p,c).eligible).map(c=>c.id)])];}
 export function careerNews(p,previousLevel,now=Date.now()){
  initCareer(p);const newClubs=CLUBS.filter(c=>!p.offeredClubs.includes(c.id)&&clubProgress(p,c).eligible);
  if(newClubs.length){newClubs.forEach(c=>p.offeredClubs.push(c.id));p.inbox.push({key:'clubs:'+newClubs.map(c=>c.id).join(':'),kind:'club',title:'You earned a club offer',text:`Your independent practice and recall have earned ${newClubs.map(c=>c.name).join(' or ')} in your game career. Visit Club offers in the Shop.`,at:now,read:false});}
@@ -200,6 +204,8 @@ function validPurchase(t){
  return Number.isSafeInteger(t.cost)&&t.cost===price;
 }
 export function validateCareer(p){
+ if(p.startingYear!==undefined&&(!Number.isInteger(p.startingYear)||p.startingYear<1||p.startingYear>6))throw Error('Invalid starting year.');
+ if(p.viewedClubOffers!==undefined&&(!Array.isArray(p.viewedClubOffers)||p.viewedClubOffers.some(id=>!CLUBS.some(c=>c.id===id))||new Set(p.viewedClubOffers).size!==p.viewedClubOffers.length))throw Error('Invalid viewed club offers.');
  if(p.starterReward!==undefined&&(!p.starterReward||p.starterReward.credits!==10||typeof p.starterReward.roundId!=='string'||p.starterReward.roundId.length>100||!Number.isFinite(p.starterReward.at)))throw Error('Invalid starter reward.');
  if(p.look){const l=p.look;if(!SKIN_TONES[l.skin]||!HAIR_COLOURS[l.hairColour]||!Number.isInteger(l.number)||l.number<1||l.number>99||!POSITIONS.includes(l.position)||!CLUBS.some(c=>c.id===l.club))throw Error('Invalid player customisation.');for(const slot of ['kit','shorts','boots','hair','accessory','ball','trail'])if(!ITEMS.some(i=>i.id===l[slot]&&i.slot===slot))throw Error('Invalid equipped item.');}
  if(p.offeredClubs!==undefined&&(!Array.isArray(p.offeredClubs)||p.offeredClubs.some(id=>!CLUBS.some(c=>c.id===id))||new Set(p.offeredClubs).size!==p.offeredClubs.length))throw Error('Invalid club offers.');

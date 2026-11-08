@@ -86,8 +86,10 @@ export function parentReport(profile,now=Date.now()){
    .sort((a,b)=>Number(b.level==='secure')-Number(a.level==='secure')||
     b.year-a.year||b.independent-a.independent||b.lastAt-a.lastAt)[0];
   const secure=skills.filter(s=>s.level==='secure').length,ready=skills.filter(s=>s.ready&&s.level!=='review').length;
+  const recentSkills=[...skills,...earlier],practiceAttempts=recentSkills.reduce((n,s)=>n+s.attempts,0),practiceIndependent=recentSkills.reduce((n,s)=>n+s.independent,0);
+  const foundationAttempts=earlier.reduce((n,s)=>n+s.attempts,0);
   const status=secure===skills.length&&skills.length?'Meeting year practice expectations':ready===skills.length&&secure>=skills.length*.8?'Nearly secure':skills.some(s=>s.total)?'Building towards year expectations':'Not checked';
-  return {...domain,skills,earlier,shown,counts:counts(skills),securePercent:skills.length?Math.round(100*secure/skills.length):0,readyPercent:skills.length?Math.round(100*ready/skills.length):0,status};
+  return {...domain,skills,earlier,shown,counts:counts(skills),practiceAttempts,practiceIndependent,foundationAttempts,practicePercent:practiceAttempts?Math.round(100*practiceIndependent/practiceAttempts):null,securePercent:skills.length?Math.round(100*secure/skills.length):0,readyPercent:skills.length?Math.round(100*ready/skills.length):0,status};
  }).filter(domain=>domain.skills.length||domain.earlier.length);
  const secure=current.filter(s=>s.level==='secure').length,ready=current.filter(s=>s.ready&&s.level!=='review').length;
  const stage=secure===current.length?'secure':ready===current.length&&secure>=current.length*.8?'nearly':'building';
