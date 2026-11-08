@@ -79,11 +79,12 @@ function brand(){
  return `<a class="brand" href="#home" data-action="home" aria-label="Matchday Maths home"><span class="brand-mark">${icon('ball',26)}</span><span class="brand-type">Matchday <em>Maths</em></span></a>`;
 }
 const gameMenu = [
- ["home","Play","play"],
+ ["home","Dashboard","grid"],
  ["syllabus","Units","grid"],
  ["locker","Shop","shop"],
  ["tables","Tables","times"],
- ["league","League","trophy"]
+ ["league","League","trophy"],
+ ["stats","Trophy room","star"]
 ];
 function gameNavigation(activeView=view){
  return `<nav class="arcade-nav" aria-label="Game navigation">${gameMenu.map(([id,label,symbol])=>{
@@ -99,12 +100,12 @@ function header(hasMenu){
   ${brand()}${hasMenu?gameNavigation():''}
   <div class="header-tools">
    ${p&&data.activeId?`<button class="profile-mini" data-action="players" aria-label="Switch player">${profileDot(p)}<span>${esc(p.name)}</span></button>`:''}
-   <button class="icon-btn coach-top" data-action="nav" data-view="coach" aria-label="Coach and settings">${icon('settings',20)}</button>
+   <button class="parents-top" data-action="nav" data-view="coach" aria-label="Parents and reports">${icon('book',18)}<span>Parents</span></button>
   </div>
  </header>`;
 }
 function footer(){
- return `<footer class="footer arcade-footer"><span>${icon('shield',13)} Saved on this device</span><div><a href="../parents/">Parents</a><a href="../teachers/">Teachers</a><button class="text-btn" data-action="nav" data-view="coach">Grown-ups ${icon('settings',13)}</button></div></footer>`;
+ return `<footer class="footer arcade-footer"><span>${icon('shield',13)} Saved on this device</span><div><a href="../parents/">Parents</a><a href="../teachers/">Teachers</a><button class="text-btn" data-action="nav" data-view="coach">Settings ${icon('settings',16)}</button></div></footer>`;
 }
 function parkMatch(){
  if(!session)return;
@@ -242,9 +243,11 @@ function matchTimer() {
  return {working,remaining,caption,display:untimed?'∞':clock(remaining)};
 }
 function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].unknown?'played':session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
+const isGoalkeeper=()=>player()?.look?.position==='Goalkeeper';
+const answerAction=()=>isGoalkeeper()?'Save':'Shoot';
 function aimMarkup(){
  if(!session.mission)return '';
- return `<div class="aim-controls" role="group" aria-label="Aim your shot">${AIM_ZONES.map((zone,i)=>`<button type="button" data-action="aim" data-zone="${zone}" aria-pressed="false"><span aria-hidden="true">${['‹','·','›'][i]}</span><b>${zone}</b></button>`).join('')}</div><div class="match-mission" id="match-mission"></div>`;
+ return `<div class="aim-controls" role="group" aria-label="${isGoalkeeper()?'Choose your dive':'Aim your shot'}">${AIM_ZONES.map((zone,i)=>`<button type="button" data-action="aim" data-zone="${zone}" aria-pressed="false"><span aria-hidden="true">${['‹','·','›'][i]}</span><b>${zone}</b></button>`).join('')}</div><div class="match-mission" id="match-mission"></div>`;
 }
 function keypadMarkup() {
  const numbers=[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-action="key" data-key="${n}">${n}</button>`).join('');
@@ -258,7 +261,7 @@ function keypadMarkup() {
    <div class="symbol-keys">${padSymbols.map(([key,label])=>`<button type="button" data-action="key" data-key="${key}" aria-label="${label}">${key}</button>`).join('')}</div>
    <div class="pad-feedback-side" hidden><span id="pad-result"></span><button class="btn white" type="button" data-action="show-working" hidden>Working</button></div>
    <span class="pad-clock" hidden><strong id="pad-time"></strong><small id="pad-time-caption"></small></span>
-   <button class="btn lime pad-shoot" type="button" data-action="key" data-key="shoot">Shoot ${icon('arrow',15)}</button>
+   <button class="btn lime pad-shoot" type="button" data-action="key" data-key="shoot">${answerAction()} ${icon('arrow',15)}</button>
   </div>
  </div>`;
 }
@@ -296,12 +299,12 @@ function renderGame() {
  app.innerHTML=`<div class="game-shell">
   <header class="game-header arcade-topbar match-topbar">${brand()}${gameNavigation('home')}<div class="header-tools"><span class="profile-mini">${profileDot(p)}<span>${esc(p.name)}</span></span><button class="icon-btn" data-action="pause" aria-label="Pause match">${icon('pause',17)}</button></div></header>
   <main id="main" class="game-main">
-   <div class="game-title"><div><div class="eyebrow">${label}</div><h1 id="match-skill-title">${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>Goals</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${timer.display}</strong><small id="timer-caption">${timer.caption}</small></div></div></div>
+   <div class="game-title"><div><div class="eyebrow">${label}</div><h1 id="match-skill-title">${esc(title)}</h1></div><div class="game-metrics"><div class="game-metric"><strong id="live-goals">${session.correct}</strong><small>${isGoalkeeper()?'Saves':'Goals'}</small></div><div class="game-metric"><strong id="live-streak">${session.streak}</strong><small>Streak</small></div><div class="game-metric" id="timer-box"><strong id="live-time">${timer.display}</strong><small id="timer-caption">${timer.caption}</small></div></div></div>
    <div class="shot-track" id="shot-track" aria-label="Match progress">${shotTrack()}</div>
    <div class="game-grid match-grid">
-    <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span><i class="live-dot" aria-hidden="true"></i> <span id="match-stage">Kick-off</span></span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p,{aimGuide:!!session.mission})}${aimMarkup()}<div class="pitch-hud"><span id="move-caption" aria-live="polite">Ready to shoot</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div><div class="sideline-note" id="sideline-note" hidden></div></section>
+    <section class="pitch-card match-pitch" aria-label="Shot camera"><div class="match-card-top"><span><i class="live-dot" aria-hidden="true"></i> <span id="match-stage">Kick-off</span></span><button class="pitch-replay" data-action="replay-shot" aria-label="Replay shot" hidden>${icon('reset',15)}</button></div>${penaltyArena(p,{aimGuide:!!session.mission})}${aimMarkup()}<div class="pitch-hud"><span id="move-caption" aria-live="polite">${isGoalkeeper()?'Ready to save':'Ready to shoot'}</span><strong id="live-xp">${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small></strong></div><div class="sideline-note" id="sideline-note" hidden></div></section>
     <section id="question-host" class="question-card" aria-label="Maths question"></section>
-    <aside class="match-controls"><div class="desktop-record">${best?`Personal best · ${best.points} pts`:earns?'Finish the match to bank XP':'Practice goals'}</div>${keypadMarkup()}<button class="text-btn finish-practice" data-action="finish">Save & finish ${icon('arrow',12)}</button></aside>
+    <aside class="match-controls">${keypadMarkup()}<div class="match-save-card"><b>${earns?'Finish to earn your XP':'Your practice counts'}</b><p>${earns?'Complete every shot to bank XP and credits from new or due independent answers.':session.placement?'Your warm-up builds your learning profile. Finish it to earn 10 starter credits.':'Answers are saved in your learning profile and match history.'}</p>${best?`<span>Personal best: ${best.points} points</span>`:''}<button class="btn white finish-practice" data-action="finish">Save and finish ${icon('arrow',16)}</button></div></aside>
    </div>
   </main></div>`;
  renderQuestion();paintPitch();updateLive();
@@ -373,8 +376,8 @@ function renderQuestion(){
   const target=answerLabel(q);
   const nextCheck=!last.correct?nextFoundationCheck(player(),session):null;
   const passed=last.correct&&!last.assisted;
-  const feedback=last.unknown?'See how Coach does it.':last.correct?(isCheck?(passed?'Ready to try the skill again.':'Keep practising this step.'):last.careerCandidate?`+${last.careerCandidate} XP to bank`:`+${last.earned} points${isCoachChallenge(player(),session)?' · Recall practice':''}`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
-  const title=last.unknown?'Coach will help':last.correct?(isCheck?(passed?'Check passed':'With Coach’s help'):'Goal!'):'Let’s build it.';
+  const feedback=last.unknown?'See how Coach does it.':last.correct?(isCheck?(passed?'Ready to try the skill again.':'Keep practising this step.'):last.careerCandidate?`+${last.careerCandidate} XP to bank`:isRewardRound(player(),session)?'Recall practice · no new XP':`+${last.earned} practice points`):q.format==='drawing'?'Check the corners.':q.format==='plot'?'Check each point.':q.format==='bars'?'Match the bar heights.':`Answer ${target}`;
+  const title=last.unknown?'Coach will help':last.correct?(isCheck?(passed?'Check passed':'With Coach’s help'):isGoalkeeper()?'Save!':'Goal!'):'Let’s build it.';
   const nextStep=nextCheck?`Check ${shortTitle(skillById(nextCheck.id)).toLowerCase()} first.`:isCheck&&!passed?`Practise ${shortTitle(skill).toLowerCase()} after the match.`:'';
   dockNext=nextCheck?'Skill check':last.unknown?'Next question':'Next shot';
   dockResult=title;
@@ -382,7 +385,7 @@ function renderQuestion(){
   if(last.correct)dockAnnouncement=dockCaption;
   tail=`${scratch}<div class="feedback ${last.unknown?'coach-stop':last.correct?'':'miss'}" role="status">${icon(last.correct?'ball':'whistle',30)}<div><h3>${title}</h3><p>${mathText(feedback)}</p></div><button class="btn ${last.correct?'lime':'white'}" type="button" data-action="next">${dockNext} ${icon('arrow',15)}</button></div>${nextStep?`<p class="coach-brief">${icon('whistle',16)} ${esc(nextStep)}</p>`:''}${!last.correct||session.assisted?helpMarkup(q):''}`;
  }else{
-  const submitButton=options?'':`<button class="btn big shoot-button" type="submit">Shoot ${icon('arrow',18)}</button>`;
+  const submitButton=options?'':`<button class="btn big shoot-button" type="submit">${answerAction()} ${icon('arrow',18)}</button>`;
   tail=`${submitButton?`<div class="question-actions">${submitButton}</div>`:''}${scratch}${session.assisted?helpMarkup(q):''}`;
  }
  const coachLabel=isCheck?'Skill check':reason==='review'?'Recall':reason==='repair'?'Second chance':session.selection.label;
@@ -489,12 +492,12 @@ function updateAim(){
   const target=button.dataset.zone===zone;
   button.disabled=done;
   button.classList.toggle('spotlight',target);
-  button.setAttribute('aria-label',`Aim ${button.dataset.zone}${target?' at the star':''}`);
+  button.setAttribute('aria-label',`${isGoalkeeper()?'Dive':'Aim'} ${button.dataset.zone}${target?' at the star':''}`);
   button.setAttribute('aria-pressed',String(button.dataset.zone===session.aim));
  }
  const arena=$('.match-pitch .penalty-view');
  arena.dataset.target=zone;arena.dataset.aim=session.aim||'';
- $('#match-mission').innerHTML=`<span>${icon(mission.complete?'check':'star',14)} ${mission.name}</span><span class="mission-pips" aria-label="${mission.value} of ${mission.goal}">${Array.from({length:mission.goal},(_,i)=>`<i class="${i<mission.value?'hit':''}"></i>`).join('')}</span>`;
+ $('#match-mission').innerHTML=`<span>${icon(mission.complete?'check':'star',14)} ${isGoalkeeper()?mission.name.replace('strikes','saves'):mission.name}</span><span class="mission-pips" aria-label="${mission.value} of ${mission.goal}">${Array.from({length:mission.goal},(_,i)=>`<i class="${i<mission.value?'hit':''}"></i>`).join('')}</span>`;
 }
 function paintPitch(replay=false) {
  const arena=$('.penalty-view'),round=session;
@@ -502,7 +505,7 @@ function paintPitch(replay=false) {
  const row=round.phase==='feedback'?round.rows.at(-1):null;
  const callout=row?.reason==='support'&&row.correct?(row.assisted?'PRACTICE!':'CHECK PASSED!'):row?.celebration;
  const move=paintShot(arena,{question:session.q,correct:row?.unknown?undefined:row?.correct,attempt:session.attempts,streak:session.streak,celebration:player()?.look?.celebration,replay,aim:row?.aim,callout});
- $('#move-caption').textContent=row?(row.unknown?'Coach’s turn':row.correct?row.celebration||move.label:'Coach has the replay'):session.mission?'Aim at the star':'Ready to shoot';
+ $('#move-caption').textContent=row?(row.unknown?'Coach’s turn':row.correct?isGoalkeeper()?'Great save!':row.celebration||move.label:'Coach has the replay'):session.mission?(isGoalkeeper()?'Dive towards the star':'Aim at the star'):(isGoalkeeper()?'Ready to save':'Ready to shoot');
  const shot=round.attempts+Number(!row);
  const half=Math.ceil(round.target/2);
  $('#match-stage').textContent=shot===round.target?'Last shot':shot>half?'Second half':shot===half&&row?'Half-time':shot===1?'Kick-off':'First half';
@@ -572,7 +575,7 @@ function finishMatch(complete,showResult=true) {
 
 function renderResult(){const r=result,p=player(),mission=missionProgress(r.mission,r.rows,r.bestStreak),accuracy=r.attempts?Math.round(r.correct/r.attempts*100):0,stars=r.complete&&r.attempts>=3?(accuracy>=95?3:accuracy>=80?2:accuracy>=60?1:0):0,errors=[...new Map(r.rows.filter(x=>!x.correct||x.assisted).map(x=>[x.q.key,x])).values()];
  const next=(r.curriculumYear||p.year)===p.year&&!r.promotionResult?.promoted?roundRecommendation(p,r):null;
- app.innerHTML=`<div class="game-shell">${header(true)}<main id="main" class="results"><div class="eyebrow">${r.progressCheck?'Progress check':r.coachDrill?'Coach drill':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.attempts&&r.correct/r.attempts>=.8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${levelMoment(p,r)}${fullTimeShowcase(p,r.complete)}${r.complete&&mission?.complete?`<div class="mission-won">${icon('star',17)} ${mission.name} complete</div>`:''}${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits${r.starterCredits?' · first-game bonus included':' earned'}</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-clubs">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>goals</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="nav" data-view="stats">${icon('trophy',18)} Trophy room</button><button class="btn white big" data-action="result-home">Dashboard</button></div>${goalsMarkup(p,true)}${r.coachDrill?'<p class="muted reward-explanation">Coach drills earn XP for new or due independent answers. Asking for help, repeating a recently revealed answer or replaying a fact before its review is due earns no XP. 10 XP = 1 credit.</p>':r.manual?'<p class="muted">Free practice saves goals and recall. Your first completed game gives 10 starter credits. Earn more credits in Coach matches and 3-shot Coach drills.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}${coachNextCard(p,next)||`<section class="panel"><h3>Keep your match fitness</h3><p>Facts you know return on later days.</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section>`}</main></div>`;scrollTo({top:0});}
+ app.innerHTML=`<div class="game-shell">${header(true)}<main id="main" class="results"><div class="eyebrow">${r.progressCheck?'Progress check':r.coachDrill?'Coach drill':r.mode==='check'?(r.complete?'Warm-up complete':'Warm-up saved'):'Match report'}</div><h1>${r.promotionResult?.promoted?r.promotionResult.graduated?'Academy graduate!':`Promoted to Year ${r.promotionResult.to}!`:r.newRecord?'New record!':r.complete?'Full time.':'Match saved.'}</h1><p>${r.progressCheck?`${r.rows.filter(row=>row.correct&&!row.assisted).length} on your own · ${r.rows.filter(row=>!row.correct||row.assisted).length} to practise`:r.mode==='check'?(r.complete?'Coach now has a starting point.':'Your warm-up is saved. Keep going next time.'):r.attempts&&r.correct/r.attempts>=.8?'Great play, '+esc(p.name)+'.':'Every shot is training.'}</p>${levelMoment(p,r)}${fullTimeShowcase(p,r.complete)}${r.complete&&mission?.complete?`<div class="mission-won">${icon('star',17)} ${mission.name} complete</div>`:''}${r.creditsEarned?`<div class="credits-earned">● +${r.creditsEarned} credits${r.starterCredits?' · first-game bonus included':' earned'}</div>`:''}${r.newClubs?.length?`<button class="club-offer-banner" data-action="result-clubs">${icon('book',18)}New club offer: ${esc(r.newClubs.map(c=>c.name).join(' / '))}${icon('arrow',15)}</button>`:''}${r.newRecord?`<div class="record-banner">${icon('trophy',17)} ${r.points} pts · ${r.previousBest?(r.points===r.previousBest?`${(r.previousTime-r.elapsed).toFixed(1)}s FASTER`:`+${r.points-r.previousBest} ON YOUR BEST`):'FIRST PERSONAL BEST'}</div>`:''}<div class="stars" aria-label="${stars} out of 3 accuracy stars">${[1,2,3].map(n=>`<span class="${n<=stars?'':'off'}">${icon('star',31).replace('fill="none"',n<=stars?'fill="currentColor"':'fill="none"')}</span>`).join('')}</div><div class="result-metrics"><div><strong>${r.correct}/${r.attempts}</strong><small>${isGoalkeeper()?'saves':'goals'}</small></div><div><strong>${r.careerXP||0}</strong><small>career XP</small></div><div><strong>${accuracy}%</strong><small>accuracy</small></div><div><strong>${r.bestStreak}</strong><small>best streak</small></div></div><div class="level-line" style="max-width:380px;margin:22px auto 0"><strong>LEVEL ${level(p)}</strong><span>${Math.floor(levelProgress(p).current)}/${levelProgress(p).needed} XP</span></div><div class="xp" style="max-width:380px;margin:9px auto"><i style="width:${levelProgress(p).percent}%"></i></div><div class="result-buttons"><button class="btn lime big" data-action="next-match">${r.progressCheck?'Coach match':r.mode==='check'?(p.placementComplete?'Start training':'Continue warm-up'):'Next match'} ${icon('arrow',18)}</button><button class="btn white big" data-action="result-locker">${icon('shop',18)} Shop</button><button class="btn white big" data-action="nav" data-view="stats">${icon('trophy',18)} Trophy room</button><button class="btn white big" data-action="result-home">Dashboard</button></div>${goalsMarkup(p,true)}${r.coachDrill?'<p class="muted reward-explanation">Coach drills earn XP for new or due independent answers. Asking for help, repeating a recently revealed answer or replaying a fact before its review is due earns no XP. 10 XP = 1 credit.</p>':r.manual?'<p class="muted">Free practice saves goals and recall. Your first completed game gives 10 starter credits. Earn more credits in Coach matches and 3-shot Coach drills.</p>':!r.complete&&r.careerPending?'<p class="muted">Progress saved. Finish every shot in a Coach match to bank XP.</p>':''}${r.medals?.length?`<section class="panel"><h3>New medals</h3><div class="badge-grid">${r.medals.map(m=>`<div class="badge"><span class="badge-icon">${icon(m.symbol,24)}</span><b>${esc(m.name)}</b></div>`).join('')}</div></section>`:''}${errors.length?`<section class="panel"><h3>Back on the training ground</h3><div class="result-review">${errors.slice(0,5).map(x=>`<button data-action="review-example" data-key="${esc(x.q.key)}"><span>${mathText(equationLabel(x.q,false))}</span><span>${icon('whistle',18)}</span></button>`).join('')}</div></section>`:''}${coachNextCard(p,next)||`<section class="panel"><h3>Keep your match fitness</h3><p>Facts you know return on later days.</p><button class="text-btn" data-action="how" style="margin-top:10px">How Coach picks ${icon('arrow',13)}</button></section>`}</main></div>`;scrollTo({top:0});}
 function sound(good){if(!data.settings.sound)return;try{audio||=new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.setValueAtTime(good?600:300,audio.currentTime);o.frequency.linearRampToValueAtTime(good?820:340,audio.currentTime+.12);g.gain.setValueAtTime(.03,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.22);o.start();o.stop(audio.currentTime+.24);}catch{}}
 function confetti(){const e=document.createElement('div');e.className='confetti';e.setAttribute('aria-hidden','true');e.innerHTML=Array.from({length:32},(_,i)=>`<i style="left:${Math.random()*100}%;background:${['#d4f36a','#739e5e','#d6b76b','#7a9bdc'][i%4]};animation-delay:${Math.random()*.4}s;--drift:${Math.random()*180-90}px"></i>`).join('');document.body.append(e);setTimeout(()=>e.remove(),2700);}
 function speak(text){if(!('speechSynthesis'in window)){toast('Read-aloud is unavailable on this device.');return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spokenMath(text)),voice=selectBritishVoice(voices,data.settings.voiceURI);if(voice)u.voice=voice;else if(!speak.warned){toast('No British voice is installed. This device will choose the voice.');speak.warned=true;}u.lang='en-GB';u.rate=data.settings.speechRate||.9;speechSynthesis.speak(u);}

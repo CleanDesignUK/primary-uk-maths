@@ -71,3 +71,27 @@ test('new club offers stay visible until viewed and the Join action selects an e
  assert.equal(chooseClub(p,club.id),true);assert.equal(p.look.club,club.id);
  const data=initialData();data.profiles=[p];assert.doesNotThrow(()=>validateImport(structuredClone(data)));
 });
+
+test('goalkeepers catch good answers with their customised player while outfield players shoot',async()=>{
+ const {paintShot}=await import('../dist/shot.mjs');
+ const {penaltyArena}=await import('../dist/experience.mjs');
+ const p=newProfile('Keeper',5);initCareer(p);p.look.position='Goalkeeper';p.look.number=21;
+ assert.match(penaltyArena(p),/goalkeeper-player/);assert.doesNotMatch(penaltyArena(p),/kicker-avatar/);
+ assert.match(penaltyArena(p),/number 21, Goalkeeper/);
+ const styles=new Map(),callout={textContent:''};
+ const arena={dataset:{role:'goalkeeper'},clientWidth:200,clientHeight:100,style:{setProperty:(k,v)=>styles.set(k,v)},querySelector:()=>callout};
+ paintShot(arena,{question:questionPool('add10')[0],correct:true,aim:'left'});
+ assert.equal(arena.dataset.outcome,'save');assert.equal(callout.textContent,'SAVE!');
+ assert.equal(styles.get('--keeper-x'),styles.get('--flight-x'));
+ paintShot(arena,{question:questionPool('add10')[0],correct:false,aim:'left'});
+ assert.equal(arena.dataset.outcome,'concede');assert.notEqual(styles.get('--keeper-x'),styles.get('--flight-x'));
+ p.look.position='Striker';assert.match(penaltyArena(p),/kicker-avatar/);
+ arena.dataset.role='striker';paintShot(arena,{question:questionPool('add10')[0],correct:true,aim:'left'});
+ assert.equal(arena.dataset.outcome,'goal');assert.equal(callout.textContent,'GOAL!');
+});
+test('unavailable online leagues lead to a working local league without a join dead end',async()=>{
+ const {worldBoardView}=await import('../dist/world.mjs');
+ const html=worldBoardView(newProfile('Test',5),{available:false,unlocked:[0],tier:0});
+ assert.match(html,/Open Squad League/);assert.match(html,/data-view="league"/);
+ assert.doesNotMatch(html,/hosted academy|world-join|world-start/);
+});

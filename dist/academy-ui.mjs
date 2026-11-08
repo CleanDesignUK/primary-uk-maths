@@ -100,7 +100,7 @@ export function homeView(p){
     <h1>GG, ${esc(p.name)}!</h1>
     <div class="lobby-kicker">${clubBadge(p)}<span>${esc(club.name)} · Year ${p.year}</span></div>
     <button class="btn lime lobby-play arcade-kickoff" data-action="${progress.eligible?'promotion':'play'}">${icon('play',24)} ${play}</button>
-    <small class="kickoff-round-details">${shots} shots${objective?`<span>${icon('star',13)} ${objective.name}</span>`:''}</small>
+    <small class="kickoff-round-details">${shots} shots${objective?`<span>${icon('star',13)} ${p.look.position==='Goalkeeper'?objective.name.replace('strikes','saves'):objective.name}</span>`:''}</small>
    </div><div class="lobby-player"><span class="lobby-jersey" aria-hidden="true">${p.look.number}</span>${careerCard(p)}<button class="lobby-kit-btn" data-action="appearance" aria-label="Edit my player">${icon('shirt',17)} <span>${esc(p.look.position)} · No. ${p.look.number}</span></button></div></div>
    <div class="lobby-stage-footer">${progressStrip(p)}<button class="wallet-shop" data-action="open-shop" aria-label="Shop, ${credits(p)} credits"><span class="credit-chip" aria-hidden="true">C</span><span><b>${credits(p)} credits</b></span>${icon('arrow',16)}</button></div>
   </section>${coachNextCard(p,next)}${modeCards()}

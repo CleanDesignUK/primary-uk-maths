@@ -1,0 +1,267 @@
+/* Launch readability and consistent surfaces. Arithmetic digit grids retain their own scale. */
+html {min-height:100%;background:#0b1423}
+body.arcade {margin:0;min-height:100dvh;font-size:16px;line-height:1.55}
+.arcade #app {min-height:100dvh}
+.arcade .arcade-shell {min-height:100dvh;display:flex;flex-direction:column}
+.arcade .arcade-page {flex:1}
+.arcade .arcade-footer {margin-top:auto;padding:22px 0 26px;gap:16px;flex-wrap:wrap}
+.arcade .arcade-footer,.arcade .arcade-footer :is(a,button,span) {font-size:14px!important;line-height:1.5}
+.arcade .arcade-footer>div {display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.arcade .arcade-footer :is(a,button) {min-height:44px;display:inline-flex;align-items:center;gap:7px}
+.arcade :is(.panel,.dialog,.question-card,.coach-rules,.league-explainer,.world-entry,.world-ranks) p,
+.arcade :is(.muted,.coach-note,.small-print,.parent-report-intro,.parent-report-key,.practical-list,.setting-check,.voice-field),
+.arcade .results>p {font-size:16px;line-height:1.65}
+.arcade :is(.btn,.text-btn,.field,.search,.unit-choice,.gym-modes b,.game-shop-tabs>button,.year-toggle>button,.gym-length>button) {font-size:16px!important;line-height:1.35}
+.arcade :is(.btn,.text-btn) {min-height:44px}
+.arcade small {font-size:14px!important;line-height:1.5}
+.arcade :is(.eyebrow,.field-label,.coach-selection,.worksheet-caption,.written-caption,.status,.shot-count,.first-shot-tag,.item-card-top,.shop-title>span,.radar-legend) {font-size:14px!important;line-height:1.5}
+.arcade :is(.profile-builder label,.appearance-fields>label,.field-row label,.clock-controls>label,.parent-skill-details .security-checklist li,.topic-expectation) {font-size:16px}
+.arcade :is(.parent-question-example summary,.security-checklist summary,.parent-question-example p,.security-checklist p,.practical-list b,.coach-rules li,.record b,.game-item h3,.curriculum-card h3,.evidence-row,.gym-length>span) {font-size:16px}
+.arcade :is(.game-metric small,.result-metrics small,.pitch-hud small) {font-size:14px!important;letter-spacing:0;text-transform:none}
+.arcade .results .compact-goals .quest b,.arcade .quest b {font-size:16px}
+.arcade :is(.scout-card b,.scout-card small,.coach-news-btn,.coach-locker-heading>div>span,.coach-next p,.career-progress>div:first-child,.career-progress>div:first-child>span,.wallet-shop b,.league-name small,.club-route small) {font-size:16px!important}
+.arcade .coach-selection {color:#425d70}
+.arcade .results>.panel :is(h2,h3,h4,.badge b) {color:#19364d}
+.arcade .arcade-topbar {gap:14px;padding:14px 0}
+.arcade-topbar>.arcade-nav {display:flex;max-width:none;gap:7px;padding:6px;border-radius:20px;justify-content:center}
+.arcade .arcade-nav .nav-btn {flex:1;flex-direction:row;gap:8px;min-height:48px;padding:10px 12px;border-radius:14px;font-size:16px;white-space:nowrap;color:#edf5ff;transition:background .16s,color .16s}
+.arcade .arcade-nav .nav-btn:hover,.arcade .arcade-nav .nav-btn:focus-visible {background:#e4efcf;color:#17392f;border-color:#d4ee9e}
+.arcade .arcade-nav .nav-btn:hover .arcade-nav-icon,.arcade .arcade-nav .nav-btn:focus-visible .arcade-nav-icon {background:#c6df9b;color:#17392f}
+.arcade .arcade-nav .nav-btn.active {background:#d4ef9f;color:#18382c;border-color:#c1e085}
+.arcade .arcade-nav-icon {width:27px;height:27px;border-radius:8px}
+.arcade .parents-top {display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 13px;border:1px solid #698b68;border-radius:13px;background:#e7efdb;color:#173b30;font-size:16px;font-weight:800}
+.arcade .parents-top:hover {background:#d4ef9f}
+.arcade .header-tools .profile-mini {min-height:44px;padding:8px 10px;border-radius:13px;font-size:16px}
+.arcade .header-tools .profile-dot {font-size:14px;flex:none}
+.arcade .squad-cards {grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px}
+.arcade .squad-player {min-height:260px;padding:28px;border-radius:24px;text-align:left;align-items:center;box-shadow:0 10px 25px #0002}
+.arcade .squad-player>.block-player {width:145px;min-width:110px;height:200px;flex:none}
+.arcade .squad-info {min-width:0}
+.arcade .squad-info h2 {font-size:28px;overflow-wrap:anywhere;margin:10px 0}
+.arcade .squad-info>span:not(.club-badge),.arcade .squad-info small {font-size:16px!important}
+.arcade .squad-info>.club-badge {font-size:12px;width:48px;height:54px}
+.arcade .squad-play {display:inline-flex;align-items:center;gap:7px;margin-top:20px;padding:9px 14px;background:#d4ef9f;border-radius:12px;color:#18382c!important}
+.arcade .lobby-copy .lobby-kicker {font-size:16px;line-height:1.5}
+.arcade .lobby-copy>.kickoff-round-details {display:flex;align-items:center;gap:10px 20px;flex-wrap:wrap;font-size:16px!important;line-height:1.5;margin-top:18px}
+.arcade .kickoff-round-details>span {display:inline-flex;align-items:center;gap:8px;vertical-align:middle}
+.arcade .kickoff-round-details svg {width:18px;height:18px;flex:none}
+.arcade .lobby-kit-btn {font-size:14px;min-height:44px;white-space:normal}
+.arcade .league-stat {display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-width:96px;gap:4px}
+.arcade .league-stat>b,.arcade .league-stat>small {width:100%;text-align:center}
+.arcade .league-stat>b {font-size:28px;line-height:1.2;font-variant-numeric:tabular-nums}
+.arcade .league-name h2 {font-size:22px}
+.arcade .league-name h2>span {font-size:14px}
+.arcade .year-path {grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px}
+.arcade .year-stop {border-radius:18px;min-height:142px;padding:18px 12px}
+.arcade .year-stop b {font-size:18px}
+.arcade .year-journey .section-head {gap:16px;align-items:start}
+.arcade .year-journey h2 {font-size:24px;line-height:1.3}
+.arcade .year-count {white-space:nowrap}
+.arcade .year-count small {display:block}
+.arcade .year-progress-detail>div:first-child,.arcade .promotion-summary {font-size:16px;gap:10px;flex-wrap:wrap}
+.arcade .match-save-card {padding:20px;border:1px solid #c3d3de;background:#f5f8fa;border-radius:18px;color:#19364d}
+.arcade .match-save-card>b {font-size:18px;display:block}
+.arcade .match-save-card p {font-size:16px;line-height:1.6;margin:8px 0 16px;color:#3f596c}
+.arcade .match-save-card>span {display:block;font-size:14px;margin-bottom:12px}
+.arcade .match-save-card .finish-practice {width:100%;justify-content:center;border:1px solid #9fb5c6;color:#19364d;margin:0}
+.arcade .match-pitch .match-card-top,.arcade .pitch-hud>span {font-size:14px;line-height:1.4}
+.arcade .pitch-hud {min-height:32px}
+.arcade .pitch-hud>strong {font-size:20px}
+.arcade .aim-controls button {font-size:16px;min-height:44px}
+.arcade .match-mission {font-size:14px;line-height:1.5;gap:8px;flex-wrap:wrap}
+.arcade .shoot-button,.arcade .coach-assist {font-size:16px;min-height:48px}
+.arcade .scratch-paper>summary {font-size:16px;min-height:44px}
+.arcade .game-title .eyebrow {font-size:14px!important}
+.arcade .match-grid .q-prompt {font-size:18px;line-height:1.5}
+.arcade .feedback p {font-size:16px}
+.arcade .question-actions {gap:12px;flex-wrap:wrap}
+.arcade .club-offer-banner,.arcade .shop-offer-notice {display:flex;align-items:center;justify-content:center;gap:14px;width:100%;padding:20px 24px;border:1px solid #bad099;border-radius:18px;background:#e5efcf;color:#1b3a30;font-size:18px;font-weight:800;line-height:1.5;text-align:left}
+.arcade .club-offer-banner:hover,.arcade .shop-offer-notice:hover {background:#d6eaa9;color:#15372b}
+.arcade .shop-offer-notice {justify-content:space-between;margin:20px 0}
+.arcade .shop-offer-notice>span {flex:1}
+.arcade .shop-offer-notice>span>span {display:block;font-size:16px;font-weight:500;margin-top:4px}
+.arcade .offer-count {display:inline-flex;padding:3px 9px;background:#d4ef9f;color:#17392f;border-radius:20px;font-size:14px;font-weight:900}
+.arcade .shop-banner-actions {flex-wrap:wrap}
+.arcade .shop-earn-note {font-size:16px;color:#c8d6e7;line-height:1.65}
+.arcade .shop-title {align-items:start;gap:12px;flex-wrap:wrap}
+.arcade .trophy-medals,.arcade .match-history {margin-bottom:24px;color:#19364d}
+.arcade .trophy-medals .badge-grid {grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.arcade .trophy-medals .badge {display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 16px;min-height:220px;background:#f5f8fa;border-radius:18px;color:#19364d}
+.arcade .trophy-medals .badge.earned {background:#f1f6e8;border-color:#aac483}
+.arcade .trophy-medals .badge.locked {opacity:1}
+.arcade .trophy-medals .badge.locked .badge-icon {background:#e3eaf0;color:#566d80}
+.arcade .trophy-medals .badge b {font-size:18px;color:#19364d}
+.arcade .trophy-medals .badge p {font-size:16px;line-height:1.5;margin:0}
+.arcade .medal-state {font-size:14px;font-weight:800;color:#395e25}
+.arcade .badge.locked .medal-state {color:#526376}
+.arcade .history-list {display:grid;gap:0;margin:12px 0}
+.arcade .history-list article {display:grid;grid-template-columns:44px minmax(0,1fr) 74px 60px;align-items:center;gap:16px;padding:20px 0;border-bottom:1px solid #dbe4eb}
+.arcade .history-list h3 {font-size:18px;margin:0;color:#19364d}
+.arcade .history-list p {margin:5px 0 0;color:#425d70;font-size:16px}
+.arcade .history-icon {display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#e9f1dc;color:#365b28}
+.arcade .history-score {display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px;color:#425d70}
+.arcade .history-score b {font-size:24px;line-height:1.3;color:#19364d}
+.arcade .history-note {color:#425d70}
+.arcade .year-profile {padding:28px;border:1px solid #c4d6e4;background:linear-gradient(135deg,#f3f8fb,#fff);border-radius:24px;color:#19364d;margin:24px 0}
+.arcade .year-profile-heading {align-items:start;gap:16px;margin-bottom:20px}
+.arcade .year-profile-heading h3 {font-size:26px;line-height:1.3;margin:5px 0;color:#19364d}
+.arcade .year-profile-heading .eyebrow {color:#427374}
+.arcade .year-profile-total {font-size:28px;color:#19364d;white-space:nowrap;line-height:1.2}
+.arcade .year-profile-total small {display:block;font-size:14px;color:#425d70}
+.arcade .learning-profile-layout {display:grid;grid-template-columns:minmax(260px,.9fr) minmax(0,1.5fr);gap:24px;align-items:center}
+.arcade .practice-chart {min-width:0;text-align:center;padding:20px 8px;background:#fff;border:1px solid #d4e2eb;border-radius:20px}
+.arcade .practice-chart h4 {font-size:22px;margin:0;color:#19364d}
+.arcade .practice-chart>p {font-size:16px;margin:6px 0 0;color:#425d70}
+.arcade .practice-radar {display:block;width:100%;max-width:450px;margin:0 auto}
+.arcade .practice-radar .radar-grid {fill:none;stroke:#cfdae4;stroke-width:1.2}
+.arcade .practice-radar .radar-grid path {stroke:#dce4eb}
+.arcade .radar-topic-index {font:800 18px system-ui,sans-serif;fill:#425d70}
+.arcade .radar-topic-index.has-evidence {fill:#fff}
+.arcade .radar-scale {font:14px system-ui,sans-serif;fill:#425d70}
+.arcade .radar-legend {gap:12px;flex-wrap:wrap;justify-content:center;color:#425d70}
+.arcade .radar-legend .practice {background:#147d7a}
+.arcade .radar-legend .unseen {background:#e8edf2;border:1px solid #bacbd8}
+.arcade .year-topic-standards {grid-template-columns:repeat(2,minmax(0,1fr));margin:0;gap:12px}
+.arcade .year-topic-standards article {padding:16px;border:1px solid #d4e2eb;background:#fff;border-radius:16px;min-width:0;border-top:4px solid var(--topic-colour)}
+.arcade .topic-title {display:flex;gap:8px;align-items:center}
+.arcade .topic-title h4 {font-size:16px;line-height:1.4;margin:0;color:#19364d}
+.arcade .topic-number {display:grid;place-items:center;flex:none;width:25px;height:25px;border-radius:50%;background:var(--topic-colour);color:#fff;font-size:14px;font-weight:800}
+.arcade .year-topic-standards .topic-practice {font-size:16px;color:#19364d;margin:12px 0 8px}
+.arcade .topic-practice-bar {height:7px;background:#e8edf2;border-radius:5px;overflow:hidden}
+.arcade .topic-practice-bar>i {display:block;height:100%;background:var(--topic-colour);border-radius:5px}
+.arcade .year-topic-standards .topic-status {font-size:14px;color:#425d70;margin:12px 0 4px;line-height:1.5}
+.arcade .year-topic-standards .topic-security {font-size:14px;color:#425d70;line-height:1.5}
+.arcade .year-topic-standards .foundation-evidence {font-size:14px;color:#425d70;margin:10px 0;line-height:1.5}
+.arcade .radar-explainer,.arcade .year-evidence-note {font-size:16px!important;color:#425d70;line-height:1.65}
+.arcade .world-unavailable {max-width:720px;margin:32px auto;padding:32px;color:#19364d}
+.arcade.reading-mode .parents-top {background:#e7efdb;color:#173b30}
+
+/* The player's selected goalkeeper is in the goal. A good answer catches the incoming ball. */
+.penalty-view[data-role="goalkeeper"] .goalkeeper-player {height:60%;width:26%;left:37%;top:12%;transform-origin:50% 65%}
+.penalty-view .goalkeeper-player .block-player {width:100%;height:100%;overflow:visible}
+.goalkeeper-player .arm-left {transform:rotate(60deg);transform-origin:60px 94px}
+.goalkeeper-player .arm-right {transform:rotate(-60deg);transform-origin:120px 94px}
+.penalty-view[data-outcome="save"] .goalkeeper-player,.penalty-view[data-outcome="concede"] .goalkeeper-player {animation:keeper-catch .85s ease-out forwards}
+.penalty-view[data-outcome="save"] .mini-ball {animation:ball-save .85s cubic-bezier(.16,.68,.38,1) forwards}
+.penalty-view[data-outcome="concede"] .mini-ball {animation:match-shot .85s cubic-bezier(.16,.68,.38,1) forwards}
+.penalty-view[data-outcome="save"] .goal-callout,.penalty-view[data-outcome="concede"] .goal-callout {animation:match-callout .26s .45s ease-out forwards}
+.penalty-view[data-outcome="concede"] .goal-callout {color:#ffdea9}
+@keyframes keeper-catch {0%,16%{transform:none}80%,100%{transform:translate(var(--keeper-x),4px) rotate(-18deg)}}
+@keyframes ball-save {0%,15%{transform:none}78%,100%{transform:translate(var(--flight-x),calc(var(--flight-y)*.89)) scale(.5) rotate(170deg)}}
+.reduce-motion .penalty-view[data-role="goalkeeper"]:not([data-outcome="ready"]) .goal-callout {opacity:1;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-reduced-motion:reduce){.penalty-view[data-role="goalkeeper"]:not([data-outcome="ready"]) .goal-callout{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@media(max-width:1550px){
+ .arcade .arcade-topbar {grid-template-columns:1fr auto;grid-template-areas:"brand tools" "game game";gap:10px}
+ .arcade-topbar>.arcade-nav {justify-self:stretch}
+}
+@media(max-width:900px){
+ .arcade .learning-profile-layout {grid-template-columns:1fr}
+ .arcade .practice-chart {max-width:480px;width:100%;justify-self:center}
+ .arcade .league-row {grid-template-columns:32px 48px minmax(0,1fr) 85px 85px;gap:12px}
+ .arcade .league-stat {min-width:0}
+ .arcade .squad-player {padding:22px}
+}
+@media(max-width:680px){
+ .arcade .arcade-topbar {position:relative;gap:10px;padding:10px 0 12px}
+ .arcade .brand {gap:7px}
+ .arcade .brand-type {font-size:20px}
+ .arcade .brand-mark {width:31px;height:34px}
+ .arcade .brand-mark svg {width:23px;height:23px}
+ .arcade .header-tools {gap:7px}
+ .arcade .header-tools .profile-mini {max-width:100px;font-size:14px;padding:6px 8px;gap:5px}
+ .arcade .profile-dot {width:24px;height:26px}
+ .arcade .parents-top {padding:8px 9px;font-size:14px;gap:5px}
+ .arcade .parents-top svg {width:16px;height:16px}
+ .arcade-topbar>.arcade-nav {width:100%;justify-content:stretch;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;border-radius:18px}
+ .arcade .arcade-nav .nav-btn {font-size:14px;min-height:46px;padding:7px 6px;gap:5px;white-space:normal;line-height:1.25}
+ .arcade .arcade-nav-icon {width:24px;height:24px;flex:none}
+ .arcade .arcade-nav-icon svg {height:17px;width:17px}
+ .arcade .arcade-footer {display:flex;align-items:start;padding:16px 0 24px;margin-top:auto}
+ .arcade .arcade-footer>div {gap:16px}
+ .arcade .squad-player {min-height:245px;padding:22px 18px}
+ .arcade .squad-player>.block-player {width:125px;height:180px}
+ .arcade .squad-info h2 {font-size:26px}
+ .arcade .lobby-copy>.kickoff-round-details {gap:8px 14px;margin-top:14px}
+ .arcade .kickoff-round-details>span {flex-basis:100%}
+ .arcade .lobby-copy .lobby-kicker {font-size:16px;line-height:1.4;max-width:230px}
+ .arcade .lobby-banner {min-height:360px}
+ .arcade .lobby-copy {padding:24px 18px}
+ .arcade .lobby-copy h1 {font-size:34px}
+ .arcade .lobby-player {min-width:0}
+ .arcade .lobby-kit-btn {font-size:14px;padding:8px;max-width:155px}
+ .arcade .lobby-stage-footer {flex-wrap:wrap;gap:14px;padding:18px}
+ .arcade .career-progress {min-width:140px}
+ .arcade .mode-copy b {font-size:16px}
+ .arcade .coach-locker {padding:20px}
+ .arcade .coach-locker-heading {gap:12px}
+ .arcade .shop-banner-actions {gap:10px}
+ .arcade .shop-player {max-width:120px}
+ .arcade .shop-banner {gap:12px;padding:24px 18px}
+ .arcade .game-shop-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .arcade .game-item {padding:14px 10px}
+ .arcade .game-item>.btn {padding:10px 6px;min-height:55px;white-space:normal}
+ .arcade .game-item .item-card-top {flex-wrap:wrap;gap:6px;font-size:14px}
+ .arcade .league-row {grid-template-columns:28px 40px minmax(0,1fr);gap:12px;padding:20px 16px;align-items:center}
+ .arcade .league-name {min-width:0}
+ .arcade .league-name h2 {font-size:20px;overflow-wrap:anywhere}
+ .arcade .league-stat {grid-column:2;min-width:80px;align-self:start}
+ .arcade .league-stat.accuracy {grid-column:3;justify-self:center;min-width:80px}
+ .arcade .league-stat>b {font-size:26px}
+ .arcade .league-world-callout {align-items:start;gap:12px;flex-wrap:wrap}
+ .arcade .league-toolbar {gap:12px;flex-wrap:wrap}
+ .arcade .league-toolbar .year-toggle {display:flex;flex:1;min-width:200px}
+ .arcade .league-toolbar .year-toggle button {flex:1;min-height:44px}
+ .arcade .league-toolbar>.field {min-width:100%}
+ .arcade .year-journey {padding:20px 16px}
+ .arcade .year-journey .section-head {flex-wrap:wrap}
+ .arcade .year-path {grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px}
+ .arcade .year-stop {min-height:135px}
+ .arcade .year-profile {padding:20px 14px;border-radius:20px}
+ .arcade .year-profile-heading {flex-wrap:wrap}
+ .arcade .year-profile-heading h3 {font-size:23px}
+ .arcade .year-profile-total {font-size:26px}
+ .arcade .year-topic-standards {grid-template-columns:1fr}
+ .arcade .topic-title h4 {font-size:18px}
+ .arcade .trophy-medals .badge-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .arcade .trophy-medals .badge {padding:18px 10px;min-height:220px}
+ .arcade .trophy-medals .badge b {font-size:16px}
+ .arcade .history-list article {grid-template-columns:36px minmax(0,1fr) 56px;gap:10px}
+ .arcade .history-list article>.history-score:last-child {grid-column:3;grid-row:auto}
+ .arcade .history-score {min-width:0}
+ .arcade .history-score b {font-size:22px}
+ .arcade .history-icon {width:34px;height:38px}
+ .arcade .history-list article>div:nth-child(2) {grid-row:span 2}
+ .arcade .history-list article>.history-icon {grid-row:span 2}
+ .arcade .match-save-card {padding:18px}
+ .arcade .game-title {align-items:start;gap:12px;flex-wrap:wrap}
+ .arcade .game-title h1 {max-width:none;font-size:24px;line-height:1.2}
+ .arcade .game-metrics {width:100%;display:flex;justify-content:space-between;gap:12px}
+ .arcade .game-metric strong {font-size:28px}
+ .arcade .match-pitch {position:relative;top:auto;padding:10px}
+ .arcade .match-pitch .penalty-view {height:130px}
+ .arcade .match-pitch .match-card-top svg {width:14px;height:14px}
+ .arcade .pitch-hud>strong {font-size:18px}
+ .arcade .match-grid .q-prompt {font-size:18px;margin:8px 0 12px}
+ .arcade .result-buttons {gap:12px}
+ .arcade .result-buttons .btn {min-width:130px;flex:1}
+ .arcade .club-offer-banner {font-size:18px;padding:18px;flex-wrap:wrap}
+ .arcade .profile-row {flex-wrap:wrap;gap:10px;padding:18px 0}
+ .arcade .profile-row>div {min-width:170px;flex:1}
+ .arcade .profile-row .text-btn {flex:1;justify-content:center;border:1px solid #c4d4dc;border-radius:10px}
+ .arcade .coach-grid {grid-template-columns:1fr}
+ .arcade .parent-report-stats {flex-wrap:wrap}
+ .arcade .parent-report-actions {flex-wrap:wrap}
+ .arcade .parent-topics {grid-template-columns:1fr}
+}
+@media(max-width:370px){
+ .arcade .header-tools .profile-mini {max-width:75px;padding:6px}
+ .arcade .header-tools .profile-dot {display:none}
+ .arcade .parents-top svg {display:none}
+ .arcade .brand-type {font-size:18px}
+ .arcade .lobby-banner {min-height:410px}
+ .arcade .lobby-player {max-width:125px}
+ .arcade .lobby-copy h1 {font-size:30px}
+ .arcade .lobby-play {padding:12px!important;max-width:175px;white-space:normal}
+ .arcade .game-item .item-card-top {font-size:14px}
+ .arcade .squad-player>.block-player {width:105px;height:155px;min-width:100px}
+}
