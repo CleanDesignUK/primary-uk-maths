@@ -326,3 +326,8 @@ body.arcade {margin:0;min-height:100dvh;font-size:16px;line-height:1.55}
  .arcade .progress-top>div:last-child {grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
  .arcade .progress-top>div:last-child .btn {width:100%;justify-content:center}
 }
+
+/* Paid colour previews stay distinct from the player’s equipped look. */
+.shop-theme-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:140px;padding:12px;border-radius:16px;background:var(--theme-dark);color:var(--theme-accent);border:2px solid var(--theme-accent)}
+.shop-theme-preview span{font-size:.7rem;font-weight:800;color:var(--theme-accent)}
+.appearance-shop-note{color:#415c50;font-size:.85rem;line-height:1.5}

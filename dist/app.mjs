@@ -1,29 +1,29 @@
-import {migrateWrittenDraft} from './question-compat.mjs?v=7.1.1';
-import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=7.1.1';
-import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs?v=7.1.1';
-import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=7.1.1';
-import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=7.1.1';
-import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,isRewardRound,rewardCandidate,revealFact,bankCareerXP,grantStarterCredits,migrateFirstWarmupXP} from './rewards.mjs?v=7.1.1';
-import {isWrittenSkill,writtenAllowance,writtenTask,writtenSubmission,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=7.1.1';
-import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=7.1.1';
-import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=7.1.1';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=7.1.1';
-import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,owns,chooseClub,careerNews,clubProgress,viewClubOffers,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=7.1.1';
-import {avatarSVG} from './avatar.mjs?v=7.1.1';
-import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=7.1.1';
-import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=7.1.1';
-import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs?v=7.1.1';
-import {focusTables} from './tables.mjs?v=7.1.1';
-import {workingText} from './coaching.mjs?v=7.1.1';
-import {spokenMath,selectBritishVoice} from './speech.mjs?v=7.1.1';
-import {columnWorkspace} from './column-method.mjs?v=7.1.1';
-import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} from './fraction-answer.mjs?v=7.1.1';
-import {setMatchDock} from './match-dock.mjs?v=7.1.1';
-import {animatedItem,fullTimeShowcase,cosmeticPreview,playShowcase,levelMoment} from './celebrations.mjs?v=7.1.1';
+import {migrateWrittenDraft} from './question-compat.mjs?v=7.1.2';
+import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=7.1.2';
+import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs?v=7.1.2';
+import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=7.1.2';
+import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=7.1.2';
+import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,isRewardRound,rewardCandidate,revealFact,bankCareerXP,grantStarterCredits,migrateFirstWarmupXP} from './rewards.mjs?v=7.1.2';
+import {isWrittenSkill,writtenAllowance,writtenTask,writtenSubmission,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=7.1.2';
+import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=7.1.2';
+import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=7.1.2';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=7.1.2';
+import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,setAppearanceChoice,owns,chooseClub,careerNews,clubProgress,viewClubOffers,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=7.1.2';
+import {avatarSVG} from './avatar.mjs?v=7.1.2';
+import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=7.1.2';
+import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=7.1.2';
+import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs?v=7.1.2';
+import {focusTables} from './tables.mjs?v=7.1.2';
+import {workingText} from './coaching.mjs?v=7.1.2';
+import {spokenMath,selectBritishVoice} from './speech.mjs?v=7.1.2';
+import {columnWorkspace} from './column-method.mjs?v=7.1.2';
+import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} from './fraction-answer.mjs?v=7.1.2';
+import {setMatchDock} from './match-dock.mjs?v=7.1.2';
+import {animatedItem,fullTimeShowcase,cosmeticPreview,playShowcase,levelMoment} from './celebrations.mjs?v=7.1.2';
 
-import {medals,medalsMarkup,historyMarkup} from './match-records.mjs?v=7.1.1';
-import {receiveProgress} from './tab-sync.mjs?v=7.1.1';
-import {groupBrandMarkup} from './branding.mjs?v=7.1.1';
+import {medals,medalsMarkup,historyMarkup} from './match-records.mjs?v=7.1.2';
+import {receiveProgress} from './tab-sync.mjs?v=7.1.2';
+import {groupBrandMarkup} from './branding.mjs?v=7.1.2';
 
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
@@ -708,7 +708,8 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'world-board':clearTimeout(goalTimer);clearInterval(worldTimer);world.match=null;world.feedback=null;world.loaded=false;render();scrollTo({top:0});break;
  case 'open-written':if(view!=='syllabus')year=player().year;domain='calculation';search='';navigate('written');break;
  case 'appearance':openDialog(appearanceView(player()),{wide:true});break;
- case 'shop-hair':shopSlot='hair';navigate('locker');break;
+ case 'shop-hair':shopSlot='hair';closeDialog();navigate('locker');break;
+ case 'shop-colours':shopSlot='colours';closeDialog();navigate('locker');break;
  case 'club-path':{const p=player();viewClubOffers(p);save();openDialog(clubJourneyView(p));break;}
  case 'example':showSkillExample(b.dataset.skill);break;
  case 'support-practice':{
@@ -758,7 +759,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
   break;
  }
  case 'skin':if(SKIN_TONES[b.dataset.value]){player().look.skin=b.dataset.value;save();render();}break;
- case 'hair-colour':if(HAIR_COLOURS[b.dataset.value]){player().look.hairColour=b.dataset.value;save();render();}break;
+ case 'hair-colour':if(setAppearanceChoice(player(),'hairColour',b.dataset.value)){save();render();}else toast('Buy this colour in the Shop first.');break;
  case 'club':if(chooseClub(player(),b.dataset.club)){save();closeDialog();render();toast('Your new club is ready.');}break;
  case 'league-period':leaguePeriod=b.dataset.period;render();break;
  case 'gym-table':gym.table=b.dataset.table==='all'?'all':Number(b.dataset.table);render();break;
@@ -818,7 +819,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
   }
   if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)+($('.division-board')?1:-1)}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus({preventScroll:true});next.select();}else if($('.division-board'))$('#division-remainder')?.focus({preventScroll:true});}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank(data.activeId?player():null,year,domain,search);}});
  document.addEventListener('focusin',event=>{if(event.target.matches?.(padFields))lastPadField=event.target;if(event.target.classList?.contains('bar-input')&&session)session.lastBar=Number(event.target.dataset.bar);if(event.target.classList?.contains('column-digit')&&session){session.lastDigit=Number(event.target.dataset.digit);event.target.select();}});
- document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value;if(el.id==='kit-hair'||el.id==='kit-pattern')equipItem(p,value);else{const [slot,choices]=({'kit-hair-colour':['hairColour',HAIR_COLOURS],'kit-skin':['skin',SKIN_TONES],'kit-trim':['trim',KIT_TRIMS],'kit-theme':['theme',PLAYER_THEMES]})[el.id];if(Object.hasOwn(choices,value))p.look[slot]=value;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='unit-year'){year=Number(el.value);domain='all';search='';render();$('#unit-year')?.focus({preventScroll:true});return;}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
+ document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value,slot=({'kit-hair':'hair','kit-pattern':'pattern','kit-hair-colour':'hairColour','kit-skin':'skin','kit-trim':'trim','kit-theme':'theme'})[el.id];if(slot==='skin'&&Object.hasOwn(SKIN_TONES,value))p.look.skin=value;else if(!setAppearanceChoice(p,slot,value)){el.value=p.look[slot];toast('Buy this item in the Shop first.');return;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='unit-year'){year=Number(el.value);domain='all';search='';render();$('#unit-year')?.focus({preventScroll:true});return;}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
  document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(handleTouchAnswerKey(event))return;if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&session&&!session.paused)pause();});
  touchMatch.addEventListener('change',()=>{

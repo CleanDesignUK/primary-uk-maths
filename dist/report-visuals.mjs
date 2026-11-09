@@ -1,4 +1,4 @@
-import {esc} from './visuals.mjs?v=7.1.1';
+import {esc} from './visuals.mjs?v=7.1.2';
 
 const colours=['#147d7a','#346dc1','#8751b5','#9e5712','#ba4964','#487e35','#396c9c','#a65228'];
 // Recent accuracy and year-level security are deliberately separate measures.

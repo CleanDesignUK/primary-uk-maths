@@ -2,7 +2,7 @@ name: Verify Matchday
 
 on:
   push:
-    branches: [main, launch/november-readiness, launch/november-8-feedback, fix/first-lesson-and-feedback]
+    branches: [main, launch/november-readiness, launch/november-8-feedback, fix/first-lesson-and-feedback, fix/paid-customisation]
   pull_request:
   workflow_dispatch:
 

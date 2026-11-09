@@ -1,8 +1,8 @@
-import {esc} from './visuals.mjs?v=7.1.1';
-import {initCareer,itemById,SKIN_TONES,HAIR_COLOURS,KIT_TRIMS,clubById} from './career.mjs?v=7.1.1';
+import {esc} from './visuals.mjs?v=7.1.2';
+import {initCareer,itemById,itemValue,SKIN_TONES,HAIR_COLOURS,KIT_TRIMS,clubById} from './career.mjs?v=7.1.2';
 
 export function avatarSVG(profile,{size=200,pose='stand',preview=null}={}){
- const p=profile?{...profile,look:{...(profile.look||{})}}:{look:{}};initCareer(p);if(preview){const item=itemById(preview);if(item)p.look[item.slot]=item.id;}
+ const p=profile?{...profile,look:{...(profile.look||{})}}:{look:{}};initCareer(p);if(preview){const item=itemById(preview);if(item)p.look[item.slot]=itemValue(item);}
  const l=p.look,kit=itemById(l.kit),shorts=itemById(l.shorts),boots=itemById(l.boots),skin=SKIN_TONES[l.skin],hair=HAIR_COLOURS[l.hairColour];
  const trim=l.trim==='match'?kit.accent:KIT_TRIMS[l.trim];
  const pattern=l.pattern==='pattern-classic'?kit.pattern:l.pattern.slice(8);
