@@ -1,4 +1,4 @@
-import {questionPool} from './engine.mjs?v=7.1.1';
+import {questionPool} from './engine.mjs?v=7.1.2';
 
 // Resume the same calculation and working when a quotient-only draft predates
 // the new remainder requirement. Feedback already earned keeps its old meaning.

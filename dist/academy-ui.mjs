@@ -1,18 +1,18 @@
-import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs?v=7.1.1';
-import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs?v=7.1.1';
-import {competency,planSummary,probeIds,progressCheckPlan,roundRecommendation} from './adaptive.mjs?v=7.1.1';
-import {esc,icon,mathText,diagram} from './visuals.mjs?v=7.1.1';
-import {avatarSVG,clubBadge} from './avatar.mjs?v=7.1.1';
-import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,itemValue,PLAYER_THEMES,KIT_TRIMS,pendingClubOffers} from './career.mjs?v=7.1.1';
-import {yearProgress,leagueTable} from './promotion.mjs?v=7.1.1';
-import {focusTables,tableEvidence} from './tables.mjs?v=7.1.1';
-import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=7.1.1';
-import {matchMission,missionProgress} from './shot.mjs?v=7.1.1';
-import {britishVoices} from './speech.mjs?v=7.1.1';
-import {yearProfileMarkup} from './report-visuals.mjs?v=7.1.1';
-import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=7.1.1';
-import {animatedItem,careerCard} from './celebrations.mjs?v=7.1.1';
-import {feedbackMarkup} from './feedback.mjs?v=7.1.1';
+import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs?v=7.1.2';
+import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs?v=7.1.2';
+import {competency,planSummary,probeIds,progressCheckPlan,roundRecommendation} from './adaptive.mjs?v=7.1.2';
+import {esc,icon,mathText,diagram} from './visuals.mjs?v=7.1.2';
+import {avatarSVG,clubBadge} from './avatar.mjs?v=7.1.2';
+import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,itemValue,PLAYER_THEMES,KIT_TRIMS,pendingClubOffers} from './career.mjs?v=7.1.2';
+import {yearProgress,leagueTable} from './promotion.mjs?v=7.1.2';
+import {focusTables,tableEvidence} from './tables.mjs?v=7.1.2';
+import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=7.1.2';
+import {matchMission,missionProgress} from './shot.mjs?v=7.1.2';
+import {britishVoices} from './speech.mjs?v=7.1.2';
+import {yearProfileMarkup} from './report-visuals.mjs?v=7.1.2';
+import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=7.1.2';
+import {animatedItem,careerCard} from './celebrations.mjs?v=7.1.2';
+import {feedbackMarkup} from './feedback.mjs?v=7.1.2';
 
 const nav=(view,label,symbol='arrow',className='btn white')=>`<button class="${className}" data-action="nav" data-view="${view}">${icon(symbol,17)}${label}</button>`;
 const heading=(eyebrow,title,aside='')=>`<div class="heading academy-page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1></div>${aside}</div>`;
@@ -150,7 +150,7 @@ export function lockerView(p,slot='starter') {
 export function appearanceView(p){
  initCareer(p);
  const look=p.look;
- const ownedOptions=slot=>ITEMS.filter(item=>item.slot===slot&&owns(p,item)).map(item=>[itemValue(item),item.name]);
+ const ownedOptions=slot=>ITEMS.filter(item=>item.slot===slot&&owns(p,item)).map(item=>[itemValue(item),slot==='hairColour'?item.value[0].toUpperCase()+item.value.slice(1):slot==='trim'&&item.value!=='match'?item.value[0].toUpperCase()+item.value.slice(1):slot==='theme'?PLAYER_THEMES[item.value].name:item.name]);
  const select=(id,options,chosen)=>`<select class="field" id="${id}">${options.map(([value,label])=>`<option value="${esc(value)}" ${chosen===value?'selected':''}>${esc(label)}</option>`).join('')}</select>`;
  return `<span class="eyebrow">My player</span><h2 id="dialog-title">Edit your look</h2><div class="appearance-layout"><div id="appearance-preview">${avatarSVG(p,{size:155})}</div><div class="appearance-fields"><label>Kit number<input class="field" id="kit-number" type="number" min="1" max="99" inputmode="numeric" value="${look.number}"></label><label>Position${select('kit-position',POSITIONS.map(value=>[value,value]),look.position)}</label><label>Hair style${select('kit-hair',ownedOptions('hair'),look.hair)}</label><label>Hair colour${select('kit-hair-colour',ownedOptions('hairColour'),look.hairColour)}</label><label>Skin tone${select('kit-skin',Object.keys(SKIN_TONES).map(value=>[value,value]),look.skin)}</label><label>Shirt trim${select('kit-trim',ownedOptions('trim'),look.trim)}</label><label>Shirt pattern${select('kit-pattern',ownedOptions('pattern'),look.pattern)}</label><label>Lobby colours${select('kit-theme',ownedOptions('theme'),look.theme)}</label></div></div><p class="appearance-shop-note">Buy styles and colours with credits in the Shop to add them here.</p><div class="dialog-actions"><button class="btn white" data-action="shop-hair">More hairstyles</button><button class="btn white" data-action="shop-colours">Shop colours</button><button class="btn lime" data-action="close-dialog">Done ${icon('check',16)}</button></div>`;
 }

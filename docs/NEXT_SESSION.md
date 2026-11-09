@@ -1,5 +1,15 @@
 # Current checkpoint
 
+Release 7.1.2 fixes unpaid customisation. Core change committed as `28416f92c3930c425e29de1da8d16ab5fb641378` on `fix/paid-customisation`; release assets and QA are in the following commit. Fetch GitHub before continuing to confirm merge/deployment status.
+
+- Customise lists starter and purchased styles/colours only; all paid equip paths require a valid purchase receipt. Colours are individually priced in the Shop.
+- Previously unpaid looks return to starter defaults on upgrade without charging or losing learning progress or real purchases.
+- All 144 tests, syntax checks and both builds pass. Desktop and 320px browser QA confirms actual credit debits, unlocks, equipped state after reload and no horizontal overflow.
+- See [paid customisation evidence](PAID_CUSTOMISATION.md) and screenshots.
+- Google Form remains pending. The previous sign-in request was cancelled. Do not restart it unless the user asks.
+
+## Previous release checkpoint
+
 Release 7.1.1 is published and verified. PR #4 merged two development commits as `997bf6bae974cdc8d43bffc738ca51ce3735e7c2`. Main verification and GitHub Pages deployment succeeded.
 
 - Learning graph appears first in the Trophy room, above XP details, medals and history.

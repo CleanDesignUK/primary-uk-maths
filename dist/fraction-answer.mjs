@@ -1,4 +1,4 @@
-import {esc} from './visuals.mjs?v=7.1.1';
+import {esc} from './visuals.mjs?v=7.1.2';
 
 export const takesFraction = question => question.format === 'fraction' || question.format === 'mixed';
 

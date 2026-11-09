@@ -1,5 +1,5 @@
-import {questionPool,selectQuestion,DAY} from './engine.mjs?v=7.1.1';
-import {writtenTask} from './written-work.mjs?v=7.1.1';
+import {questionPool,selectQuestion,DAY} from './engine.mjs?v=7.1.2';
+import {writtenTask} from './written-work.mjs?v=7.1.2';
 
 export const METHOD_LADDERS=[
  ['colAdd0','colAdd1','colAdd2','colAdd3','colAdd4'],
