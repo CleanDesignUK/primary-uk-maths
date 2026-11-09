@@ -3,7 +3,7 @@ import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs?v=7.1.1';
 import {competency,planSummary,probeIds,progressCheckPlan,roundRecommendation} from './adaptive.mjs?v=7.1.1';
 import {esc,icon,mathText,diagram} from './visuals.mjs?v=7.1.1';
 import {avatarSVG,clubBadge} from './avatar.mjs?v=7.1.1';
-import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,PLAYER_THEMES,KIT_TRIMS,pendingClubOffers} from './career.mjs?v=7.1.1';
+import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,itemValue,PLAYER_THEMES,KIT_TRIMS,pendingClubOffers} from './career.mjs?v=7.1.1';
 import {yearProgress,leagueTable} from './promotion.mjs?v=7.1.1';
 import {focusTables,tableEvidence} from './tables.mjs?v=7.1.1';
 import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=7.1.1';
@@ -113,9 +113,10 @@ export function homeView(p){
  <details class="lobby-year-progress"><summary>Year ${p.year} progress <b>${progress.secure}/${progress.total} match fit</b></summary>${yearJourney(p)}</details>`;
 }
 
-const shopCategories=[['starter','Starter','bolt'],['footballers','Footballers','star'],['kit','Kits','shirt'],['hair','Hair','coach'],['boots','Boots','bolt'],['shorts','Shorts','grid'],['accessory','Extras','star'],['pattern','Designs','edit'],['ball','Balls','ball'],['trail','Trails','bolt'],['celebration','Moves','trophy']];
+const shopCategories=[['starter','Starter','bolt'],['footballers','Footballers','star'],['kit','Kits','shirt'],['hair','Hair','coach'],['colours','Colours','edit'],['boots','Boots','bolt'],['shorts','Shorts','grid'],['accessory','Extras','star'],['pattern','Designs','edit'],['ball','Balls','ball'],['trail','Trails','bolt'],['celebration','Moves','trophy']];
 
 function itemArt(p,item){
+ if(item.slot==='theme'){const theme=PLAYER_THEMES[item.value];return `<div class="shop-theme-preview" style="--theme-dark:${theme.dark};--theme-accent:${theme.accent}">${avatarSVG(p,{size:96})}<span>${esc(theme.name)}</span></div>`;}
  if(item.slot==='ball'||item.slot==='trail'){
   const ball=item.slot==='ball'?item:itemById(p.look.ball);
   return `<div class="shop-ball-art" style="--preview-ball:${ball.colour};--preview-trail:${item.slot==='trail'?item.colour:'transparent'}">${icon('ball',61)}</div>`;
@@ -129,7 +130,7 @@ export function lockerView(p,slot='starter') {
  initCareer(p);
  const balance=credits(p),level=careerLevel(p),club=clubById(p.look.club),offers=pendingClubOffers(p);
  const title=slot==='starter'?'Starter gear':slot==='footballers'?'Footballer Picks':shopCategories.find(([id])=>id===slot)?.[1]||'Kits';
- const items=ITEMS.filter(item=>slot==='starter'?item.level===1&&item.price>0:slot==='footballers'?item.player:item.slot===slot)
+ const items=ITEMS.filter(item=>slot==='starter'?item.level===1&&item.price>0:slot==='footballers'?item.player:slot==='colours'?['hairColour','trim','theme'].includes(item.slot):item.slot===slot)
   .sort((a,b)=>a.level-b.level||a.price-b.price);
  const subtitle=slot==='starter'?`From ${items[0].price} credits`:slot==='footballers'?'Original player-inspired gear':
   ['celebration','ball','trail'].includes(slot)?'Watch a preview before buying':'Earn credits in Coach matches';
@@ -139,7 +140,7 @@ export function lockerView(p,slot='starter') {
  <div class="shop-title"><h2>${title}</h2><span>${icon('ball',16)} ${subtitle}</span></div>
  <p class="shop-earn-note">First completed game: 10 starter credits. Your first warm-up earns XP for independent answers too. Earn 1 credit per 10 career XP in Coach matches and 3-shot Coach drills. New or due independent answers earn XP; asking Coach for help earns none.</p>
  <div class="shop-grid game-shop-grid">${items.map(item=>{
-  const owned=owns(p,item),equipped=p.look[item.slot]===item.id,locked=level<item.level,short=Math.max(0,item.price-balance);
+  const owned=owns(p,item),equipped=p.look[item.slot]===itemValue(item),locked=level<item.level,short=Math.max(0,item.price-balance);
   const grade=item.level>=13?'elite':item.level>=7?'rare':item.level>1?'pro':'starter';
   const label=equipped?'Wearing':owned?'Equip':locked?`Unlocks at level ${item.level}`:short?`Need ${short} more credits`:`Buy · ${item.price}`;
   return `<article class="shop-item game-item ${grade} ${equipped?'equipped':''}"><div class="item-card-top"><span>${grade==='elite'?'Elite':grade==='rare'?'Rare':grade==='pro'?'Pro':'Starter'}</span><b>${owned?(equipped?'Equipped':'Owned'):`<span class="credit-chip" aria-hidden="true">C</span> ${item.price}`}</b></div><div class="item-preview">${itemArt(p,item)}</div><h3>${esc(item.name)}</h3>${animatedItem(item)?`<button class="text-btn item-play-preview" type="button" data-action="preview-item" data-item="${item.id}" aria-label="Preview ${esc(item.name)}">${icon('play',15)} Preview</button>`:''}${item.player?`<p class="player-inspiration"><span>Inspired by</span> <b>${esc(item.player)}</b></p>`:''}<button class="btn ${owned?'white':'lime'}" data-action="${owned?'equip':'buy'}" data-item="${item.id}" ${equipped||!owned&&(locked||short)?'disabled':''}>${label}</button>${owned&&item.number&&p.look.number!==item.number?`<button class="text-btn wear-number" data-action="wear-number" data-item="${item.id}">Wear No. ${item.number}</button>`:''}</article>`;
@@ -147,9 +148,11 @@ export function lockerView(p,slot='starter') {
 }
 
 export function appearanceView(p){
+ initCareer(p);
  const look=p.look;
+ const ownedOptions=slot=>ITEMS.filter(item=>item.slot===slot&&owns(p,item)).map(item=>[itemValue(item),item.name]);
  const select=(id,options,chosen)=>`<select class="field" id="${id}">${options.map(([value,label])=>`<option value="${esc(value)}" ${chosen===value?'selected':''}>${esc(label)}</option>`).join('')}</select>`;
- return `<span class="eyebrow">My player</span><h2 id="dialog-title">Edit your look</h2><div class="appearance-layout"><div id="appearance-preview">${avatarSVG(p,{size:155})}</div><div class="appearance-fields"><label>Kit number<input class="field" id="kit-number" type="number" min="1" max="99" inputmode="numeric" value="${look.number}"></label><label>Position${select('kit-position',POSITIONS.map(value=>[value,value]),look.position)}</label><label>Hair style${select('kit-hair',ITEMS.filter(item=>item.slot==='hair'&&owns(p,item)).map(item=>[item.id,item.name]),look.hair)}</label><label>Hair colour${select('kit-hair-colour',Object.keys(HAIR_COLOURS).map(value=>[value,value]),look.hairColour)}</label><label>Skin tone${select('kit-skin',Object.keys(SKIN_TONES).map(value=>[value,value]),look.skin)}</label><label>Shirt trim${select('kit-trim',Object.keys(KIT_TRIMS).map(value=>[value,value==='match'?'Match the kit':value]),look.trim)}</label><label>Shirt pattern${select('kit-pattern',ITEMS.filter(item=>item.slot==='pattern'&&owns(p,item)).map(item=>[item.id,item.name]),look.pattern)}</label><label>Lobby colours${select('kit-theme',Object.entries(PLAYER_THEMES).map(([id,theme])=>[id,theme.name]),look.theme)}</label></div></div><div class="dialog-actions"><button class="btn white" data-action="shop-hair">More hairstyles</button><button class="btn lime" data-action="close-dialog">Done ${icon('check',16)}</button></div>`;
+ return `<span class="eyebrow">My player</span><h2 id="dialog-title">Edit your look</h2><div class="appearance-layout"><div id="appearance-preview">${avatarSVG(p,{size:155})}</div><div class="appearance-fields"><label>Kit number<input class="field" id="kit-number" type="number" min="1" max="99" inputmode="numeric" value="${look.number}"></label><label>Position${select('kit-position',POSITIONS.map(value=>[value,value]),look.position)}</label><label>Hair style${select('kit-hair',ownedOptions('hair'),look.hair)}</label><label>Hair colour${select('kit-hair-colour',ownedOptions('hairColour'),look.hairColour)}</label><label>Skin tone${select('kit-skin',Object.keys(SKIN_TONES).map(value=>[value,value]),look.skin)}</label><label>Shirt trim${select('kit-trim',ownedOptions('trim'),look.trim)}</label><label>Shirt pattern${select('kit-pattern',ownedOptions('pattern'),look.pattern)}</label><label>Lobby colours${select('kit-theme',ownedOptions('theme'),look.theme)}</label></div></div><p class="appearance-shop-note">Buy styles and colours with credits in the Shop to add them here.</p><div class="dialog-actions"><button class="btn white" data-action="shop-hair">More hairstyles</button><button class="btn white" data-action="shop-colours">Shop colours</button><button class="btn lime" data-action="close-dialog">Done ${icon('check',16)}</button></div>`;
 }
 
 export function clubJourneyView(p){

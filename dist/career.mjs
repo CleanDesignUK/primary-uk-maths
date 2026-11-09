@@ -101,7 +101,7 @@ const CATALOGUE_3 = [
  newItem('celebrate-open-arms','celebration','Open Arms',34,3,'#a3cdf7',{player:'Jude Bellingham',number:5})
 ];
 const CATALOGUE_3_PRICE=Object.fromEntries(CATALOGUE_3.map(item=>[item.id,item.price]));
-const SHOP_CATALOGUE=4;
+const SHOP_CATALOGUE=5;
 
 // A short Coach match can bank single-digit credits even with several correct answers.
 // Keep a first purchase within reach and give later unlocks a useful saving target.
@@ -128,7 +128,32 @@ const SHOP_LEVELS={
  'pattern-sash':4, 'pattern-halves':5, 'pattern-chevron':7,
  'celebrate-jump':1, 'celebrate-slide':5, 'celebrate-spin':8
 };
-export const ITEMS=CATALOGUE_3.map(item=>({...item,price:SHOP_PRICES[item.id]??item.price,level:SHOP_LEVELS[item.id]??item.level}));
+const CATALOGUE_4=CATALOGUE_3.map(item=>({...item,price:SHOP_PRICES[item.id]??item.price,level:SHOP_LEVELS[item.id]??item.level}));
+const CATALOGUE_4_PRICE=Object.fromEntries(CATALOGUE_4.map(item=>[item.id,item.price]));
+const FORMERLY_FREE={'hair-curls':5,'hair-wave':5,'pattern-stripes':8};
+export const ITEMS=[
+ ...CATALOGUE_4.map(item=>({...item,price:FORMERLY_FREE[item.id]??item.price})),
+ ...Object.entries(HAIR_COLOURS).map(([value,colour])=>newItem(`hair-colour-${value}`,'hairColour',`${value[0].toUpperCase()+value.slice(1)} hair colour`,value==='brown'?0:5,1,colour,{value})),
+ ...Object.entries(KIT_TRIMS).map(([value,colour])=>newItem(`trim-${value}`,'trim',value==='match'?'Match the kit':`${value[0].toUpperCase()+value.slice(1)} shirt trim`,value==='match'?0:8,1,colour,{value})),
+ ...Object.entries(PLAYER_THEMES).map(([value,theme])=>newItem(`theme-${value}`,'theme',`${theme.name} clubhouse`,value==='pitch'?0:12,1,theme.accent,{value}))
+];
+const DEFAULT_LOOK={skin:'warm',hairColour:'brown',kit:'kit-home',shorts:'shorts-dark',boots:'boots-classic',hair:'hair-crop',accessory:'accessory-none',ball:'ball-classic',trail:'trail-none',number:9,position:'Striker',club:'academy',theme:'pitch',trim:'match',pattern:'pattern-classic',celebration:'celebrate-fist'};
+const COLOUR_SLOTS=['hairColour','trim','theme'];
+const EQUIPMENT_SLOTS=['kit','shorts','boots','hair','accessory','ball','trail','pattern','celebration',...COLOUR_SLOTS];
+export const itemValue=item=>item.value??item.id;
+export const appearanceItem=(slot,value)=>ITEMS.find(item=>item.slot===slot&&itemValue(item)===value);
+// Previously unrestricted colours/styles return to the starter look. Never charge
+// for an upgrade or discard a real credit purchase when loading an older squad.
+function migrateWardrobe(p){
+ if(p.wardrobeVersion!==undefined)return;
+ if(Array.isArray(p.purchases))p.purchases=p.purchases.filter(t=>!(Object.hasOwn(FORMERLY_FREE,t?.id)&&t.cost===0&&validPurchase(t)));
+ if(Array.isArray(p.inventory))p.inventory=p.inventory.filter(id=>!Object.hasOwn(FORMERLY_FREE,id)||p.purchases?.some(t=>t.id===id&&t.cost>0&&validPurchase(t)));
+ if(p.look)for(const slot of [...COLOUR_SLOTS,'hair','pattern']){
+  const item=appearanceItem(slot,p.look[slot]);
+  if(item&&(COLOUR_SLOTS.includes(slot)||Object.hasOwn(FORMERLY_FREE,item.id))&&!owns(p,item))p.look[slot]=DEFAULT_LOOK[slot];
+ }
+ p.wardrobeVersion=1;
+}
 export const CLUBS=[
  {id:'academy',name:'Academy XI',level:1,colour:'#2d704c',short:'AXI'},
  {id:'local',name:'Town Rovers',level:2,colour:'#53719a',short:'TR'},
@@ -153,10 +178,11 @@ export function initCareer(p){
  const recordedYears=(p.sessions||[]).map(s=>s.curriculumYear).filter(y=>Number.isInteger(y)&&y>=1&&y<=6);
  p.startingYear=Math.min(p.year||1,p.startingYear||Math.min(p.year||1,...recordedYears,...(p.completedYears||[])));
  p.inventory||=[];p.creditsSpent??=0;p.purchases||=[];p.completedYears||=[];p.practical||={};p.inbox||=[];p.offeredClubs||=['academy'];
- p.look={skin:'warm',hairColour:'brown',kit:'kit-home',shorts:'shorts-dark',boots:'boots-classic',hair:'hair-crop',accessory:'accessory-none',ball:'ball-classic',trail:'trail-none',number:9,position:'Striker',club:'academy',theme:'pitch',trim:'match',pattern:'pattern-classic',celebration:'celebrate-fist',...(p.look||{})};
+ p.look={...DEFAULT_LOOK,...(p.look||{})};
+ migrateWardrobe(p);
  return p;
 }
-export const owns=(p,item)=>item.price===0||(p.inventory||[]).includes(item.id);
+export const owns=(p,item)=>!!item&&(item.price===0||((p.inventory||[]).includes(item.id)&&(p.purchases||[]).some(t=>t.id===item.id&&t.cost>0&&validPurchase(t))));
 export const credits=p=>Math.max(0,Math.floor(careerXP(p)/10)+(p.starterReward?.credits||0)-(p.creditsSpent||0));
 export function buyItem(p,id){
  initCareer(p);const item=itemById(id);if(!item)return {ok:false,message:'Choose an item from the shop.'};
@@ -165,7 +191,8 @@ export function buyItem(p,id){
  if(credits(p)<item.price)return {ok:false,message:`Earn ${item.price-credits(p)} more credits.`};
  p.creditsSpent+=item.price;p.inventory.push(id);p.purchases.push({id,cost:item.price,catalogue:SHOP_CATALOGUE,at:Date.now()});return {ok:true,message:`${item.name} is yours.`};
 }
-export function equipItem(p,id){initCareer(p);const item=itemById(id);if(!item||!owns(p,item))return false;p.look[item.slot]=id;return true;}
+export function equipItem(p,id){initCareer(p);const item=itemById(id);if(!item||!owns(p,item))return false;p.look[item.slot]=itemValue(item);return true;}
+export function setAppearanceChoice(p,slot,value){const item=appearanceItem(slot,value);return !!item&&equipItem(p,item.id);}
 // Club offers require breadth and later-day recall as well as XP.
 export function clubProgress(p,club){
  const facts=Object.values(p.facts||{}),unique=facts.filter(f=>f.history?.some(h=>h.correct)).length;
@@ -199,27 +226,29 @@ export function careerNews(p,previousLevel,now=Date.now()){
 function validPurchase(t){
  const item=itemById(t?.id);
  if(!item||!Number.isFinite(t.at))return false;
- const price=t.catalogue===SHOP_CATALOGUE?item.price:t.catalogue===3?CATALOGUE_3_PRICE[t.id]:
+ const price=t.catalogue===SHOP_CATALOGUE?item.price:t.catalogue===4?CATALOGUE_4_PRICE[t.id]:t.catalogue===3?CATALOGUE_3_PRICE[t.id]:
   t.catalogue===2?CATALOGUE_2_PRICE[t.id]:LEGACY_PRICE[t.id]??CATALOGUE_2_PRICE[t.id];
  return Number.isSafeInteger(t.cost)&&t.cost===price;
 }
 export function validateCareer(p){
+ if(p.wardrobeVersion!==undefined&&p.wardrobeVersion!==1)throw Error('Invalid wardrobe version.');
  if(p.startingYear!==undefined&&(!Number.isInteger(p.startingYear)||p.startingYear<1||p.startingYear>6))throw Error('Invalid starting year.');
  if(p.viewedClubOffers!==undefined&&(!Array.isArray(p.viewedClubOffers)||p.viewedClubOffers.some(id=>!CLUBS.some(c=>c.id===id))||new Set(p.viewedClubOffers).size!==p.viewedClubOffers.length))throw Error('Invalid viewed club offers.');
  if(p.starterReward!==undefined&&(!p.starterReward||p.starterReward.credits!==10||typeof p.starterReward.roundId!=='string'||p.starterReward.roundId.length>100||!Number.isFinite(p.starterReward.at)))throw Error('Invalid starter reward.');
  if(p.look){const l=p.look;if(!SKIN_TONES[l.skin]||!HAIR_COLOURS[l.hairColour]||!Number.isInteger(l.number)||l.number<1||l.number>99||!POSITIONS.includes(l.position)||!CLUBS.some(c=>c.id===l.club))throw Error('Invalid player customisation.');for(const slot of ['kit','shorts','boots','hair','accessory','ball','trail'])if(!ITEMS.some(i=>i.id===l[slot]&&i.slot===slot))throw Error('Invalid equipped item.');}
  if(p.offeredClubs!==undefined&&(!Array.isArray(p.offeredClubs)||p.offeredClubs.some(id=>!CLUBS.some(c=>c.id===id))||new Set(p.offeredClubs).size!==p.offeredClubs.length))throw Error('Invalid club offers.');
  if(p.look&&((p.look.theme!==undefined&&!Object.hasOwn(PLAYER_THEMES,p.look.theme))||(p.look.trim!==undefined&&!Object.hasOwn(KIT_TRIMS,p.look.trim))))throw Error('Invalid player colours.');
- for(const slot of ['pattern','celebration'])if(p.look?.[slot]!==undefined&&(!ITEMS.some(item=>item.id===p.look[slot]&&item.slot===slot)||!owns(p,itemById(p.look[slot]))))throw Error('Invalid player equipment.');
+ for(const slot of ['pattern','celebration'])if(p.look?.[slot]!==undefined&&!ITEMS.some(item=>item.id===p.look[slot]&&item.slot===slot))throw Error('Invalid player equipment.');
  if(p.inventory!==undefined&&(!Array.isArray(p.inventory)||new Set(p.inventory).size!==p.inventory.length||p.inventory.some(id=>!itemById(id))))throw Error('Invalid player inventory.');
  if(p.creditsSpent!==undefined&&(!Number.isSafeInteger(p.creditsSpent)||p.creditsSpent<0||p.creditsSpent>Math.floor(careerXP(p)/10)+(p.starterReward?.credits||0)))throw Error('Invalid credit balance.');
  if(p.purchases!==undefined&&(!Array.isArray(p.purchases)||p.purchases.length>ITEMS.length||p.purchases.some(t=>!validPurchase(t))))throw Error('Invalid shop history.');
  if(p.purchases&&new Set(p.purchases.map(t=>t.id)).size!==p.purchases.length)throw Error('Duplicate shop purchases.');
  if(p.purchases&&p.purchases.reduce((n,t)=>n+t.cost,0)!==(p.creditsSpent||0))throw Error('Shop balance does not match purchases.');
- if(p.inventory?.some(id=>itemById(id).price>0&&!p.purchases?.some(t=>t.id===id)))throw Error('Inventory has an unpurchased item.');
+ migrateWardrobe(p);
+ if(p.inventory?.some(id=>!owns(p,itemById(id))))throw Error('Inventory has an unpurchased item.');
  if(p.leagueTotals){const totals=[p.leagueTotals.all,...Object.values(p.leagueTotals.years||{})];if(!p.leagueTotals.all||totals.some(t=>!t||['points','correct','attempts','matches'].some(k=>!Number.isSafeInteger(t[k])||t[k]<0)||t.correct>t.attempts)||p.leagueTotals.all.points>careerXP(p))throw Error('Invalid league totals.');}
  if(p.leagueTracked!==undefined&&(!Array.isArray(p.leagueTracked)||p.leagueTracked.length>500||p.leagueTracked.some(id=>typeof id!=='string')))throw Error('Invalid league history.');
- if(p.look)for(const slot of ['kit','shorts','boots','hair','accessory','ball','trail'])if(!owns(p,itemById(p.look[slot])))throw Error('Equipped item is not owned.');
+ if(p.look)for(const slot of EQUIPMENT_SLOTS)if(p.look[slot]!==undefined&&!owns(p,appearanceItem(slot,p.look[slot])))throw Error('Equipped item is not owned.');
  if(p.practical!==undefined&&(!p.practical||typeof p.practical!=='object'||Array.isArray(p.practical)||Object.entries(p.practical).some(([key,value])=>!/^y[1-6]:[a-z]+$/.test(key)||typeof value!=='boolean')))throw Error('Invalid practical checklist.');
  if(p.completedYears!==undefined&&(!Array.isArray(p.completedYears)||new Set(p.completedYears).size!==p.completedYears.length||p.completedYears.some(y=>!Number.isInteger(y)||y<1||y>6)))throw Error('Invalid year history.');
  if(p.inbox!==undefined&&(!Array.isArray(p.inbox)||p.inbox.length>100||p.inbox.some(n=>!n||typeof n.key!=='string'||typeof n.title!=='string'||n.title.length>100||typeof n.text!=='string'||n.text.length>1500||!Number.isFinite(n.at))))throw Error('Invalid academy news.');

@@ -44,9 +44,9 @@ test('switching the profile to an easier year keeps practice and blocks a second
  const p=newProfile('Test',6);initRewards(p);p.year=1;initRewards(p);
  assert.equal(p.rewardYear,6);assert.equal(attempt(p,questionPool('add10')[5],challenge(p)),0);
 });
-test('the new catalogue accepts receipts from all three earlier price lists and charges once',()=>{
+test('the new catalogue accepts receipts from all four earlier price lists and charges once',()=>{
  const backup=initialData();
- for(const [catalogue,cost] of [[undefined,25],[2,125],[3,16]]){
+ for(const [catalogue,cost] of [[undefined,25],[2,125],[3,16],[4,16]]){
   const player=newProfile(`Previous ${cost}`,3);initCareer(player);player.pointsTotal=1500;
   player.inventory=['kit-blue'];player.look.kit='kit-blue';player.creditsSpent=cost;
   player.purchases=[{id:'kit-blue',cost,at:now,catalogue}];
@@ -58,9 +58,9 @@ test('the new catalogue accepts receipts from all three earlier price lists and 
  assert.equal(buyItem(starter,'boots-power-7').ok,true);
  assert.equal(buyItem(starter,'boots-power-7').alreadyOwned,true);
  assert.equal(credits(starter),1);
- assert.deepEqual(starter.purchases.map(({catalogue,cost})=>[catalogue,cost]),[[4,14]]);
+ assert.deepEqual(starter.purchases.map(({catalogue,cost})=>[catalogue,cost]),[[5,14]]);
  backup.profiles.push(starter);
- assert.deepEqual(validateImport(structuredClone(backup)).profiles.map(credits),[125,25,134,1]);
+ assert.deepEqual(validateImport(structuredClone(backup)).profiles.map(credits),[125,25,134,134,1]);
  assert.ok(ITEMS.length>=60);assert.ok(ITEMS.filter(item=>item.slot==='hair').length>=10);
 });
 test('a repriced move restores at its original cost and cannot be charged again',()=>{
