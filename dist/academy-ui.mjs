@@ -1,18 +1,19 @@
-import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs?v=7.1.2';
-import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs?v=7.1.2';
-import {competency,planSummary,probeIds,progressCheckPlan,roundRecommendation} from './adaptive.mjs?v=7.1.2';
-import {esc,icon,mathText,diagram} from './visuals.mjs?v=7.1.2';
-import {avatarSVG,clubBadge} from './avatar.mjs?v=7.1.2';
-import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,itemValue,PLAYER_THEMES,KIT_TRIMS,pendingClubOffers} from './career.mjs?v=7.1.2';
-import {yearProgress,leagueTable} from './promotion.mjs?v=7.1.2';
-import {focusTables,tableEvidence} from './tables.mjs?v=7.1.2';
-import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=7.1.2';
-import {matchMission,missionProgress} from './shot.mjs?v=7.1.2';
-import {britishVoices} from './speech.mjs?v=7.1.2';
-import {yearProfileMarkup} from './report-visuals.mjs?v=7.1.2';
-import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=7.1.2';
-import {animatedItem,careerCard} from './celebrations.mjs?v=7.1.2';
-import {feedbackMarkup} from './feedback.mjs?v=7.1.2';
+import {timerOptions} from './training-timer.mjs?v=7.1.3';
+import {SKILLS,skillById,profileSummary,localDay} from './engine.mjs?v=7.1.3';
+import {DOMAINS,syllabusIds,domainFor} from './curriculum.mjs?v=7.1.3';
+import {competency,planSummary,probeIds,progressCheckPlan,roundRecommendation} from './adaptive.mjs?v=7.1.3';
+import {esc,icon,mathText,diagram} from './visuals.mjs?v=7.1.3';
+import {avatarSVG,clubBadge} from './avatar.mjs?v=7.1.3';
+import {ITEMS,CLUBS,POSITIONS,SKIN_TONES,HAIR_COLOURS,credits,careerLevel,careerXP,levelProgress,xpForLevel,owns,clubById,initCareer,clubProgress,itemById,itemValue,PLAYER_THEMES,KIT_TRIMS,pendingClubOffers} from './career.mjs?v=7.1.3';
+import {yearProgress,leagueTable} from './promotion.mjs?v=7.1.3';
+import {focusTables,tableEvidence} from './tables.mjs?v=7.1.3';
+import {goalsMarkup,factMapMarkup,penaltyArena} from './experience.mjs?v=7.1.3';
+import {matchMission,missionProgress} from './shot.mjs?v=7.1.3';
+import {britishVoices} from './speech.mjs?v=7.1.3';
+import {yearProfileMarkup} from './report-visuals.mjs?v=7.1.3';
+import {parentReport,KNOWLEDGE_LEVELS} from './parent-report.mjs?v=7.1.3';
+import {animatedItem,careerCard} from './celebrations.mjs?v=7.1.3';
+import {feedbackMarkup} from './feedback.mjs?v=7.1.3';
 
 const nav=(view,label,symbol='arrow',className='btn white')=>`<button class="${className}" data-action="nav" data-view="${view}">${icon(symbol,17)}${label}</button>`;
 const heading=(eyebrow,title,aside='')=>`<div class="heading academy-page-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1></div>${aside}</div>`;
@@ -104,7 +105,7 @@ export function homeView(p){
     <small class="kickoff-round-details">${shots} shots${objective?`<span>${icon('star',13)} ${p.look.position==='Goalkeeper'?objective.name.replace('strikes','saves'):objective.name}</span>`:''}</small>
    </div><div class="lobby-player"><span class="lobby-jersey" aria-hidden="true">${p.look.number}</span>${careerCard(p)}<button class="lobby-kit-btn" data-action="appearance" aria-label="Edit my player">${icon('shirt',17)} <span>${esc(p.look.position)} · No. ${p.look.number}</span></button></div></div>
    <div class="lobby-stage-footer">${progressStrip(p)}<button class="wallet-shop" data-action="open-shop" aria-label="Shop, ${credits(p)} credits"><span class="credit-chip" aria-hidden="true">C</span><span><b>${credits(p)} credits</b></span>${icon('arrow',16)}</button></div>
-  </section>${coachNextCard(p,next)}${modeCards()}
+  </section><section class="match-timer-settings" aria-label="Match timer settings"><div><label for="match-timer">Match timer</label><p>Saved for this player. Warm-ups, progress checks and Coach drills have no countdown.</p></div><select class="field" id="match-timer" data-training-timer>${timerOptions(p.trainingSeconds)}</select><span class="sr-only" data-timer-status role="status"></span></section>${coachNextCard(p,next)}${modeCards()}
  </div><aside class="lobby-rail">
   <section class="coach-locker"><div class="coach-locker-heading"><div><span>${icon('whistle',17)} Coach</span><h2>Club scout</h2></div><button class="coach-news-btn" data-action="news" aria-label="Coach messages${news?', '+news+' unread':''}">${icon('book',18)}<span>Messages</span>${news?`<b>${news}</b>`:''}</button></div>
    ${scoutCard(p)}<div class="coach-lobby-actions">${checkReady?`<button class="btn white" data-action="progress-check">${icon('check',17)} Progress check</button>`:''}<button class="btn white" data-action="nav" data-view="stats">${icon('trophy',17)} Trophy room</button></div></section>

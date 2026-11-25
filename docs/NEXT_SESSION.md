@@ -1,5 +1,15 @@
 # Current checkpoint
 
+Release 7.1.3 adds per-player 3-minute, 5-minute and Unlimited match timers. See TIMER_OPTIONS.md. Publishing uses a checked PR to main, followed by the existing GitHub Pages deployment.
+
+- Choose Match timer under the dashboard player card or in the new/edit player form. New players default to 3 minutes; missing, 60-second and 120-second legacy settings migrate to 180. Existing 180, 300 and 0 selections are retained.
+- The timer applies to Coach matches, tables challenges, written/manual practice and promotion. Warm-ups, progress checks and Coach drills remain untimed.
+- Changing the choice updates that player's saved draft while keeping answers and active time already used. Completed history stays unchanged. Backups and numbergrove storage keys remain compatible.
+- All 151 tests, syntax, public-page generation and Worker packaging pass. Desktop and 320px browser QA covered setup, Edit player, 5-minute and 3-minute countdowns, Unlimited reload/resume and saved answer retention. See timer screenshots.
+- Branding, read-aloud, the North Wales Tutoring footer and the original game's other features are retained. The cancelled Google Form setup is still out of scope.
+
+## Previous release 7.1.2
+
 Release 7.1.2 fixes unpaid customisation. Core change committed as `28416f92c3930c425e29de1da8d16ab5fb641378` on `fix/paid-customisation`; release assets and QA are in the following commit. Fetch GitHub before continuing to confirm merge/deployment status.
 
 - Customise lists starter and purchased styles/colours only; all paid equip paths require a valid purchase receipt. Colours are individually priced in the Shop.

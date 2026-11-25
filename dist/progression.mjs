@@ -1,6 +1,6 @@
-import {focusTables} from './tables.mjs?v=7.1.2';
-import {localDay,questionPool,factSecure} from './engine.mjs?v=7.1.2';
-import {competency,probeIds} from './adaptive.mjs?v=7.1.2';
+import {focusTables} from './tables.mjs?v=7.1.3';
+import {localDay,questionPool,factSecure} from './engine.mjs?v=7.1.3';
+import {competency,probeIds} from './adaptive.mjs?v=7.1.3';
 
 // Goals use recorded answers. Supported answers cannot fill an independent-goal target.
 export function dailyTargets(profile,now=Date.now()){
@@ -54,11 +54,18 @@ export function clockDelta(session,seconds){
 }
 
 export function matchTimeLeft(round) {
+ if(round.duration===0)return Infinity;
  return Math.max(0,round.duration-(round.clockElapsed??round.elapsed));
 }
 
 export function tickMatchClock(round,seconds) {
  const active=clockDelta(round,seconds);
+ if(round.duration===0){
+  round.clockElapsed=(round.clockElapsed??round.elapsed)+active;
+  round.elapsed+=active;
+  round.workTimeLeft=0;
+  return Infinity;
+ }
  const available=round.workTimeLeft??0;
  const working=Math.min(active,available);
  const timed=Math.min(active-working,matchTimeLeft(round));

@@ -63,3 +63,7 @@ adopts the new full answer requirement.
 ## Release 7.1.1, 8 November 2026
 
 The Trophy room prioritises its learning graph, the first lesson earns independent-answer XP, and old first-lesson rewards are corrected once without changing mastery or League scores. Footers link to North Wales Tutoring Group. See [follow-up verification](docs/FIRST_LESSON_FEEDBACK.md). The five-question feedback form and Dashboard integration are prepared, but the respondent URL is intentionally unconfigured because Google sign-in was not completed. No placeholder feedback link is shown to players.
+
+## Player timers (7.1.3)
+
+Choose 3 minutes, 5 minutes or Unlimited under Match timer on the dashboard or in the new/edit player form. Existing 1- and 2-minute choices become 3 minutes when progress loads; choices save per player and update saved drafts without losing answers. Warm-ups, progress checks and Coach drills stay untimed. See docs/TIMER_OPTIONS.md for migration and verification details.

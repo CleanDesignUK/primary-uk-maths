@@ -1,3 +1,8 @@
+.arcade .match-timer-settings {display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:18px 0;padding:18px 20px;border:1px solid #c3d3de;border-radius:18px;background:#f5f8fa;color:#19364d}
+.arcade .match-timer-settings>div {flex:1 1 240px;min-width:0}
+.arcade .match-timer-settings label {display:block;font-size:18px;font-weight:800}
+.arcade .match-timer-settings p,.arcade .timer-help {font-size:16px;line-height:1.5;margin:6px 0 0;color:#3f596c}
+.arcade .match-timer-settings select {flex:0 1 180px;width:180px;max-width:100%;min-height:48px;background-color:white;color:#19364d}
 /* Launch readability and consistent surfaces. Arithmetic digit grids retain their own scale. */
 html {min-height:100%;background:#0b1423}
 body.arcade {margin:0;min-height:100dvh;font-size:16px;line-height:1.55}

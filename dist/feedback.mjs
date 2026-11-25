@@ -1,4 +1,4 @@
-import {esc,icon} from './visuals.mjs?v=7.1.2';
+import {esc,icon} from './visuals.mjs?v=7.1.3';
 
 // Set only after the owner's Google Form has been published and checked.
 export const FEEDBACK_FORM_URL='';
