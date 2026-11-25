@@ -1,6 +1,7 @@
-import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs?v=7.1.2';
-import {validateCareer} from './career.mjs?v=7.1.2';
-import {validateRewards} from './rewards.mjs?v=7.1.2';
+import {EXTRA_SKILLS,makeExtraPool} from './curriculum.mjs?v=7.1.3';
+import {validateCareer} from './career.mjs?v=7.1.3';
+import {validateRewards} from './rewards.mjs?v=7.1.3';
+import {trainingSeconds} from './training-timer.mjs?v=7.1.3';
 export const VERSION = 1;
 export const DAY = 86400000;
 export const INTERVALS = [0, 1, 3, 7, 14, 30, 60];
@@ -34,7 +35,7 @@ export const SKILLS = [
 export const skillById = id => SKILLS.find(s=>s.id===id);
 export const localDay = (now=Date.now()) => {const d=new Date(now);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 export const uid = () => globalThis.crypto?.randomUUID?.() || `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
-export function newProfile(name,year=1,avatar='sprout') {return {id:uid(),name:name.trim().slice(0,24),year:Number(year),startingYear:Number(year),avatar,createdAt:Date.now(),facts:{},sessions:[],records:{}};}
+export function newProfile(name,year=1,avatar='sprout') {return {id:uid(),name:name.trim().slice(0,24),year:Number(year),startingYear:Number(year),avatar,createdAt:Date.now(),trainingSeconds:180,facts:{},sessions:[],records:{}};}
 export function initialData(){return {version:VERSION,activeId:null,profiles:[],settings:{sound:false,reduceMotion:false,dyslexia:false,autoRead:false,voiceURI:'',speechRate:.9}};}
 
 function seeded(seed){return ()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};}
@@ -151,7 +152,7 @@ export function validateImport(raw){
   if(!raw||raw.version!==VERSION||!Array.isArray(raw.profiles)||raw.profiles.length>100)throw new Error('Choose a Matchday Maths backup file (version 1).');
   const seen=new Set();
   for(const p of raw.profiles){if(!p||typeof p.id!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(p.id)||seen.has(p.id)||typeof p.name!=='string'||!p.name.trim()||p.name.length>24||![0,1,2,3,4,5,6].includes(p.year)||!['sprout','flower','tree','sun'].includes(p.avatar)||!Array.isArray(p.sessions)||p.sessions.length>500||!p.facts||Array.isArray(p.facts)||typeof p.facts!=='object')throw new Error('This backup has an invalid pupil profile.');seen.add(p.id);if(p.goalsTotal!==undefined&&(!Number.isFinite(p.goalsTotal)||p.goalsTotal<0))throw new Error('This backup contains invalid goals.');if(p.pointsTotal!==undefined&&(!Number.isFinite(p.pointsTotal)||p.pointsTotal<0))throw new Error('This backup contains invalid points.');
-    if(p.trainingSeconds!==undefined&&![60,120,180].includes(p.trainingSeconds))throw new Error('This backup contains an invalid training clock.');
+    if(p.trainingSeconds!==undefined&&![0,60,120,180,300].includes(p.trainingSeconds))throw new Error('This backup contains an invalid training clock.');
     if(p.placementProgress!==undefined&&(!Number.isInteger(p.placementProgress)||p.placementProgress<0||p.placementProgress>24))throw new Error('This backup contains invalid warm-up progress.');
     validateCareer(p);
     validateRewards(p);
@@ -163,5 +164,6 @@ export function validateImport(raw){
     if(p.records&&(typeof p.records!=='object'||Array.isArray(p.records)||Object.keys(p.records).length>500))throw new Error('This backup contains invalid records.');
     for(const s of [...p.sessions,...Object.values(p.records||{})])if(!s||(s.manual!==undefined&&s.manual!==null&&!skillById(s.manual))||typeof s.id!=='string'||!Array.isArray(s.skillIds)||!s.skillIds.length||s.skillIds.some(id=>!skillById(id))||!Number.isInteger(s.attempts)||s.attempts<0||!Number.isInteger(s.correct)||s.correct<0||s.correct>s.attempts||!Number.isFinite(s.points)||s.points<0||!Number.isFinite(s.duration)||!Number.isFinite(s.elapsed)||s.elapsed<0||!Number.isFinite(s.endedAt)||typeof s.complete!=='boolean'||!['timed','practice','check','review'].includes(s.mode))throw new Error('This backup contains invalid sessions.');
   }
+  for(const p of raw.profiles)p.trainingSeconds=trainingSeconds(p.trainingSeconds);
   return {version:VERSION,profiles:raw.profiles,activeId:seen.has(raw.activeId)?raw.activeId:null,settings:{sound:!!raw.settings?.sound,reduceMotion:!!raw.settings?.reduceMotion,dyslexia:!!raw.settings?.dyslexia,autoRead:!!raw.settings?.autoRead,voiceURI:typeof raw.settings?.voiceURI==='string'?raw.settings.voiceURI.slice(0,300):'',speechRate:[.75,.9,1].includes(raw.settings?.speechRate)?raw.settings.speechRate:.9}};
 }

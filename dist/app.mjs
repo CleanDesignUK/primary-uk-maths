@@ -1,29 +1,30 @@
-import {migrateWrittenDraft} from './question-compat.mjs?v=7.1.2';
-import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=7.1.2';
-import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs?v=7.1.2';
-import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=7.1.2';
-import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=7.1.2';
-import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,isRewardRound,rewardCandidate,revealFact,bankCareerXP,grantStarterCredits,migrateFirstWarmupXP} from './rewards.mjs?v=7.1.2';
-import {isWrittenSkill,writtenAllowance,writtenTask,writtenSubmission,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=7.1.2';
-import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=7.1.2';
-import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=7.1.2';
-import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=7.1.2';
-import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,setAppearanceChoice,owns,chooseClub,careerNews,clubProgress,viewClubOffers,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=7.1.2';
-import {avatarSVG} from './avatar.mjs?v=7.1.2';
-import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=7.1.2';
-import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=7.1.2';
-import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs?v=7.1.2';
-import {focusTables} from './tables.mjs?v=7.1.2';
-import {workingText} from './coaching.mjs?v=7.1.2';
-import {spokenMath,selectBritishVoice} from './speech.mjs?v=7.1.2';
-import {columnWorkspace} from './column-method.mjs?v=7.1.2';
-import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} from './fraction-answer.mjs?v=7.1.2';
-import {setMatchDock} from './match-dock.mjs?v=7.1.2';
-import {animatedItem,fullTimeShowcase,cosmeticPreview,playShowcase,levelMoment} from './celebrations.mjs?v=7.1.2';
+import {migrateWrittenDraft} from './question-compat.mjs?v=7.1.3';
+import {trainingSeconds as normaliseTrainingSeconds,timerOptions,timerLabel,isUntimedMatch,applyTrainingTimer} from './training-timer.mjs?v=7.1.3';
+import {VERSION,DAY,SKILLS,skillById,questionPool,initialData,newProfile,validateImport,profileSummary,skillStats,factSecure,explain,columnSteps,localDay,uid} from './engine.mjs?v=7.1.3';
+import {DOMAINS,syllabusIds,domainFor,answerMatches,validDrawing,parseNumber} from './curriculum.mjs?v=7.1.3';
+import {initLearning,competency,planSummary,nextAdaptive,recordLearning,probeIds,laneFocus,progressCheckPlan,progressCheckQuestions,nextFoundationCheck,roundRecommendation,coachPathFor} from './adaptive.mjs?v=7.1.3';
+import {esc,icon,kit,stadium,diagram,mathText} from './visuals.mjs?v=7.1.3';
+import {earnedXP,eligibleRecord,newPersonalBest,MATCH_SCHEMA,initRewards,isCoachChallenge,isRewardRound,rewardCandidate,revealFact,bankCareerXP,grantStarterCredits,migrateFirstWarmupXP} from './rewards.mjs?v=7.1.3';
+import {isWrittenSkill,writtenAllowance,writtenTask,writtenSubmission,multiplicationWorkspace,divisionWorkspace} from './written-work.mjs?v=7.1.3';
+import {goalsMarkup,pathMarkup,factMapMarkup,workedMarkup,penaltyArena} from './experience.mjs?v=7.1.3';
+import {warmupProgress,matchTimeLeft,tickMatchClock,academyPath} from './progression.mjs?v=7.1.3';
+import {pickerView,firstShots,firstShotView,homeView,lockerView,leagueView,tablesView,syllabusView,syllabusBank,syllabusCards,progressView,reportContent,coachView,appearanceView,clubJourneyView,coachNextCard,drillTitle as shortTitle} from './academy-ui.mjs?v=7.1.3';
+import {initCareer,careerLevel,careerXP,levelProgress,credits,buyItem,equipItem,setAppearanceChoice,owns,chooseClub,careerNews,clubProgress,viewClubOffers,CLUBS,SKIN_TONES,HAIR_COLOURS,POSITIONS,itemById,PLAYER_THEMES,KIT_TRIMS,ITEMS} from './career.mjs?v=7.1.3';
+import {avatarSVG} from './avatar.mjs?v=7.1.3';
+import {AIM_ZONES,matchMission,missionProgress,paintShot,spotlightZone} from './shot.mjs?v=7.1.3';
+import {leagueApi,worldBoardView,worldMatchView,worldClock} from './world.mjs?v=7.1.3';
+import {yearProgress,checkPromotion,initLeague,recordLeague} from './promotion.mjs?v=7.1.3';
+import {focusTables} from './tables.mjs?v=7.1.3';
+import {workingText} from './coaching.mjs?v=7.1.3';
+import {spokenMath,selectBritishVoice} from './speech.mjs?v=7.1.3';
+import {columnWorkspace} from './column-method.mjs?v=7.1.3';
+import {takesFraction,fractionParts,fractionSubmission,fractionAnswerMarkup} from './fraction-answer.mjs?v=7.1.3';
+import {setMatchDock} from './match-dock.mjs?v=7.1.3';
+import {animatedItem,fullTimeShowcase,cosmeticPreview,playShowcase,levelMoment} from './celebrations.mjs?v=7.1.3';
 
-import {medals,medalsMarkup,historyMarkup} from './match-records.mjs?v=7.1.2';
-import {receiveProgress} from './tab-sync.mjs?v=7.1.2';
-import {groupBrandMarkup} from './branding.mjs?v=7.1.2';
+import {medals,medalsMarkup,historyMarkup} from './match-records.mjs?v=7.1.3';
+import {receiveProgress} from './tab-sync.mjs?v=7.1.3';
+import {groupBrandMarkup} from './branding.mjs?v=7.1.3';
 
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const STORAGE='numbergrove.data.v1',DRAFT='numbergrove.round.v1';
@@ -40,12 +41,12 @@ if(data.profiles.length===3&&data.profiles.every(p=>['Ace','Carter','Cruz'].incl
 try{const reading=localStorage.getItem('matchday.reading');if(reading!==null)data.settings.dyslexia=reading==='true';}catch{}
 let warmupProgressAdjusted=false;
 for(const p of data.profiles){initCareer(p);if(p.year===0)p.year=1;initLearning(p);initRewards(p);const receipt=JSON.stringify(p.warmupXP);migrateFirstWarmupXP(p);if(receipt!==JSON.stringify(p.warmupXP))warmupProgressAdjusted=true;initLeague(p);}
-if(warmupProgressAdjusted)save();
+if(warmupProgressAdjusted||data.profiles.length)save();
 const routeMap={today:'home',skills:'syllabus',progress:'stats',grownups:'coach'};
 const GOAL_FEEDBACK_MS=1200;
 let goalTimer;
 function newWorkTime(round) {
- return round.placement||round.progressCheck||round.coachDrill||isWrittenSkill(round.manual)?0:writtenAllowance(round.q);
+ return isUntimedMatch(round)||isWrittenSkill(round.manual)?0:writtenAllowance(round.q);
 }
 let initialRoute=location.hash.slice(1);view=routeMap[initialRoute]||(['home','tables','syllabus','stats','coach','players','locker','league','written','world'].includes(initialRoute)?initialRoute:'home');
 try{
@@ -54,6 +55,7 @@ try{
  for(const round of rounds){
   if(!['football-v2','football-v3','football-v4',MATCH_SCHEMA].includes(round?.schema)||!data.profiles.some(p=>p.id===round.profileId)||!Number.isFinite(round.elapsed)||!round.q||!Array.isArray(round.skillIds)||!round.skillIds.every(skillById))continue;
   migrateWrittenDraft(round);
+  applyTrainingTimer(round,data.profiles.find(p=>p.id===round.profileId).trainingSeconds);
   round.paused=true;round.pausedEver=true;
   if(round.phase==='question'&&!Number.isFinite(round.workTimeLeft))round.workTimeLeft=newWorkTime(round);
   draftRounds.set(round.profileId,round);
@@ -61,6 +63,7 @@ try{
  session=draftRounds.get(saved?.schema==='rounds-v1'?saved.active:saved?.profileId)||null;
  if(session)data.activeId=session.profileId;
 }catch{}
+if(draftRounds.size)saveRound();
 const player=()=>data.profiles.find(p=>p.id===(session?.profileId||data.activeId));
 const savedRound=()=>draftRounds.get(data.activeId);
 const colours=['#326443','#4c70be','#c0874e','#7179a8'];
@@ -190,23 +193,22 @@ function startMatch(manual=null,options={}) {
  const written=isWrittenSkill(manual);
  const coachDrill=!!(manual&&options.coachDrill);
  const seen=coachDrill?(p.learning[manual]?.recent||[]).slice(-3).map(row=>row.key):[];
- const pace=[60,120,180].includes(p.trainingSeconds)?p.trainingSeconds:120;
- const duration=options.promotion||written?600:placement?300:options.length===25?180:manual?(skill.extra?180:60):p.year>=5&&!options.tableChallenge?420:pace;
+ const duration=normaliseTrainingSeconds(p.trainingSeconds);
  const target=options.promotion?12:progressCheck?Math.min(6,checkQuestions.length):placement?probeIds(p).length-probeStart:coachDrill?3:written?4:options.length||10;
- const matchType=manual?`practice:${manual}:${options.tableMode||'auto'}`:options.tableChallenge?'table-challenge':options.promotion?'promotion':`coach:${league}`;
  session={
   schema:MATCH_SCHEMA, curriculumYear:p.year, promotion:!!options.promotion,
   progressCheck, checkPlan, checkQuestions, coachDrill, coachTarget:coachDrill?options.coachTarget:null,
   coachPath:coachDrill?coachPathFor(manual,options.coachTarget,options.coachPath):null, tableChallenge:!!options.tableChallenge, tableMode:options.tableMode||'auto',
   focusTable:laneFocus(p,'tables'), clockHour:12,clockMinute:0,id:uid(),profileId:p.id,
   skillIds:[],manual,league,placement,probeIndex:probeStart,mode:placement||progressCheck?'check':coachDrill?'practice':'timed',duration,target,
-  recordKey:`v5:${matchType}:y${p.year}:${target}:${duration}`, startedAt:Date.now(),
+  startedAt:Date.now(),
   mission:progressCheck||options.promotion?null:matchMission(p.sessions.filter(match=>match.complete).length),
   aimSeed:p.sessions.length%3,aim:null,
   elapsed:0,clockElapsed:0,currentMs:0,attempts:0,correct:0,points:0,careerPending:0,streak:0,bestStreak:0,
   rows:[],seen,retries:[],paused:false,pausedEver:false,hintsUsed:0,assisted:false,phase:'question',q:null,selection:null,
   answer:'',digits:[],notes:[],drawing:[],bars:[],angle:30,work:{},scratch:'',remainder:''
  };
+ applyTrainingTimer(session,p.trainingSeconds);
  nextQuestion(false);renderGame();startTick();saveRound();scrollTo({top:0});
 }
 
@@ -242,9 +244,9 @@ const clock=s=>`${Math.floor(Math.max(0,Math.ceil(s))/60)}:${String(Math.max(0,M
 function matchTimer() {
  const working=session.phase==='question'&&session.workTimeLeft>0;
  const remaining=working?session.workTimeLeft:matchTimeLeft(session);
- const untimed=session.placement||session.progressCheck||session.coachDrill;
+ const untimed=isUntimedMatch(session);
  const caption=untimed?'No timer':working?'Work time':session.phase==='feedback'?'Coach time':'Time';
- return {working,remaining,caption,display:untimed?'∞':clock(remaining)};
+ return {working:working&&!untimed,remaining,untimed,caption,display:untimed?'∞':clock(remaining)};
 }
 function shotTrack(){return `${Array.from({length:session.target},(_,i)=>`<i class="${session.rows[i]?(session.rows[i].unknown?'played':session.rows[i].correct?'goal':'miss'):i===session.attempts?'active':''}" aria-hidden="true"></i>`).join('')}<span class="shot-count">${Math.min(session.target,session.attempts+(session.phase==='question'?1:0))}/${session.target}</span>`;}
 const isGoalkeeper=()=>player()?.look?.position==='Goalkeeper';
@@ -530,7 +532,7 @@ function updateLive() {
  for(const [id,value] of Object.entries(values)){const el=document.getElementById(id);if(el)el.textContent=value;}
  const earns=isRewardRound(player(),session);
  if($('#live-xp'))$('#live-xp').innerHTML=`${earns?session.careerPending||0:session.points}<small> ${earns?'XP to bank':'pts'}</small>`;
- $('#timer-box')?.classList.toggle('low',!session.progressCheck&&!session.coachDrill&&!timer.working&&timer.remaining<16&&session.phase==='question');
+ $('#timer-box')?.classList.toggle('low',!timer.untimed&&!timer.working&&timer.remaining<16&&session.phase==='question');
  $('#timer-box')?.classList.toggle('work-clock',timer.working);
  $('#timer-box')?.classList.toggle('clock-rest',session.phase==='feedback');
  if($('#shot-track'))$('#shot-track').innerHTML=shotTrack();
@@ -542,6 +544,7 @@ function resume(){session.paused=false;$('.paused')?.remove();$('.game-main').in
 function resumeSaved(){
  const saved=savedRound();
  if(!saved)return;
+ applyTrainingTimer(saved,data.profiles.find(p=>p.id===saved.profileId).trainingSeconds);
  closeDialog();pendingMatch=null;result=null;session=saved;session.paused=false;
  renderGame();startTick();saveRound();scrollTo({top:0});
 }
@@ -593,7 +596,13 @@ function showCosmeticPreview(item,justEquipped=false){
  openDialog(cosmeticPreview(p,item,{justEquipped}),{focus:'.showcase-replay'});
  playShowcase($('[data-showcase]',modalRoot));
 }
-function profileForm(id=null){const p=data.profiles.find(x=>x.id===id),y=p?.year||year||1;openDialog(`<span class="eyebrow">${p?'Your player':'Join the academy'}</span><h2 id="dialog-title">${p?'Edit player':'Build your player'}</h2><form id="profile-form" data-id="${p?.id||''}"><div class="profile-builder"><div id="profile-preview">${avatarSVG(p||{look:{}},{size:145})}</div><div><div class="field-row"><label for="player-name">Nickname</label><input class="field" id="player-name" maxlength="24" required autocomplete="off" value="${esc(p?.name||'')}" placeholder="Your nickname"></div><div class="field-row"><label for="player-year">Practice year</label><select class="field" id="player-year">${Array.from({length:6},(_,i)=>i+1).map(n=>`<option value="${n}" ${y===n?'selected':''}>Year ${n}</option>`).join('')}</select></div><details class="profile-options" ${p?'open':''}><summary>Kit and style</summary><div class="custom-fields"><label>Kit number<input class="field" id="player-number" inputmode="numeric" type="number" min="1" max="99" value="${p?.look?.number||9}" required></label><label>Position<select class="field" id="player-position">${POSITIONS.map(n=>`<option ${p?.look?.position===n?'selected':''}>${n}</option>`).join('')}</select></label></div><label class="voice-field" for="player-skin">Skin tone<select class="field" id="player-skin">${Object.keys(SKIN_TONES).map(n=>`<option value="${n}" ${(p?.look?.skin||'warm')===n?'selected':''}>${n}</option>`).join('')}</select></label><div class="field-row"><label for="training-clock">Match pace</label><select class="field" id="training-clock"><option value="120" ${!p||!p.trainingSeconds||p.trainingSeconds===120?'selected':''}>Match pace · 2 minutes</option><option value="180" ${p?.trainingSeconds===180?'selected':''}>Steady pace · 3 minutes</option><option value="60" ${p?.trainingSeconds===60?'selected':''}>Sprint pace · 1 minute</option></select></div></details></div></div><div class="field-error" id="profile-error" role="alert"></div><div class="dialog-actions">${p?`<button type="button" class="text-btn text-danger" data-action="delete-player" data-id="${p.id}" style="margin-right:auto">Delete player</button>`:''}<button class="btn lime" type="submit">${p?'Save':'Create & play'}${icon('arrow',17)}</button></div></form>`,{focus:'#player-name'});}
+function setTrainingTimer(profile,value){
+ profile.trainingSeconds=normaliseTrainingSeconds(value);
+ const round=draftRounds.get(profile.id);
+ if(round)applyTrainingTimer(round,profile.trainingSeconds);
+ save();saveRound();
+}
+function profileForm(id=null){const p=data.profiles.find(x=>x.id===id),y=p?.year||year||1;openDialog(`<span class="eyebrow">${p?'Your player':'Join the academy'}</span><h2 id="dialog-title">${p?'Edit player':'Build your player'}</h2><form id="profile-form" data-id="${p?.id||''}"><div class="profile-builder"><div id="profile-preview">${avatarSVG(p||{look:{}},{size:145})}</div><div><div class="field-row"><label for="player-name">Nickname</label><input class="field" id="player-name" maxlength="24" required autocomplete="off" value="${esc(p?.name||'')}" placeholder="Your nickname"></div><div class="field-row"><label for="player-year">Practice year</label><select class="field" id="player-year">${Array.from({length:6},(_,i)=>i+1).map(n=>`<option value="${n}" ${y===n?'selected':''}>Year ${n}</option>`).join('')}</select></div><div class="field-row"><label for="training-clock">Match timer</label><select class="field" id="training-clock" aria-describedby="timer-help">${timerOptions(p?.trainingSeconds)}</select><p class="timer-help" id="timer-help">Warm-ups, progress checks and Coach drills have no countdown.</p></div><details class="profile-options" ${p?'open':''}><summary>Kit and style</summary><div class="custom-fields"><label>Kit number<input class="field" id="player-number" inputmode="numeric" type="number" min="1" max="99" value="${p?.look?.number||9}" required></label><label>Position<select class="field" id="player-position">${POSITIONS.map(n=>`<option ${p?.look?.position===n?'selected':''}>${n}</option>`).join('')}</select></label></div><label class="voice-field" for="player-skin">Skin tone<select class="field" id="player-skin">${Object.keys(SKIN_TONES).map(n=>`<option value="${n}" ${(p?.look?.skin||'warm')===n?'selected':''}>${n}</option>`).join('')}</select></label></details></div></div><div class="field-error" id="profile-error" role="alert"></div><div class="dialog-actions">${p?`<button type="button" class="text-btn text-danger" data-action="delete-player" data-id="${p.id}" style="margin-right:auto">Delete player</button>`:''}<button class="btn lime" type="submit">${p?'Save':'Create & play'}${icon('arrow',17)}</button></div></form>`,{focus:'#player-name'});}
 function showHow(){const plan=planSummary(player());openDialog(`<div class="eyebrow" style="color:var(--muted);margin-bottom:10px">YOUR TRAINING PLAN</div><h2 id="dialog-title">Coach picks the next shot.</h2><div class="records">${plan.map((x,i)=>`<div class="record"><span class="domain-number">${i+1}</span><div><b>${esc(shortTitle(skillById(x.id)))}</b><small>${esc(x.why)}</small></div></div>`).join('')}</div><div class="coach-note">Use “Ask Coach for help” to see the working. Coach records that question as unsure. Coach may check a smaller skill or give you a fresh question to try. Facts you know return on later days.</div><div class="dialog-actions"><button class="btn" data-action="close-dialog">Got it ${icon('check',16)}</button></div>`);}
 function showReport(id){
  const p=data.profiles.find(profile=>profile.id===id);
@@ -808,7 +817,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
  case 'export-csv':{const p=b.dataset.id?data.profiles.find(x=>x.id===b.dataset.id):player();download(csv(p),`Matchday_${p.name.replace(/[^a-z0-9]/gi,'_')}_Scores.csv`,'text/csv;charset=utf-8');break;}
  }}
  document.addEventListener('click',handleClick);
- document.addEventListener('submit',event=>{if(event.target.id==='world-answer-form'){event.preventDefault();submitWorld(new FormData(event.target).get('answer'));return;}if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){const saved=draftRounds.get(p.id);if(saved){session=saved;finishMatch(false,false);}initRewards(p);p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;initRewards(p);p.trainingSeconds=trainingSeconds;initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);initRewards(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=trainingSeconds;data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
+ document.addEventListener('submit',event=>{if(event.target.id==='world-answer-form'){event.preventDefault();submitWorld(new FormData(event.target).get('answer'));return;}if(event.target.id==='answer-form'){event.preventDefault();submit();}if(event.target.id==='profile-form'){event.preventDefault();const id=event.target.dataset.id,name=$('#player-name').value.trim(),y=Number($('#player-year').value),number=Number($('#player-number').value),position=$('#player-position').value,skin=$('#player-skin').value;if(!name)return $('#profile-error').textContent='Add a nickname.';if(!Number.isInteger(number)||number<1||number>99)return $('#profile-error').textContent='Choose a kit number from 1 to 99.';if(data.profiles.some(p=>p.id!==id&&p.name.toLowerCase()===name.toLowerCase()))return $('#profile-error').textContent='That nickname is already in the squad.';const trainingSeconds=Number($('#training-clock').value);if(id){const p=data.profiles.find(p=>p.id===id);if(p.year!==y){const saved=draftRounds.get(p.id);if(saved){session=saved;finishMatch(false,false);}initRewards(p);p.placementComplete=false;p.placementProgress=0;}p.name=name;p.year=y;initRewards(p);setTrainingTimer(p,trainingSeconds);initCareer(p);Object.assign(p.look,{number,position,skin});save();closeDialog();render();}else{const p=newProfile(name,y,'sprout');initLearning(p);initCareer(p);initRewards(p);Object.assign(p.look,{number,position,skin});p.trainingSeconds=normaliseTrainingSeconds(trainingSeconds);data.profiles.push(p);data.activeId=p.id;year=y;save();closeDialog();startMatch(pendingSkill);pendingSkill=null;}}});
  document.addEventListener('input',event=>{const el=event.target;
   if(el.matches('#world-answer-form input')){world.answer=el.value;return;}
   if(el.id==='world-scratch-work'){world.scratch=el.value.slice(0,1000);return;}
@@ -819,7 +828,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
   }
   if(['player-number','player-position','player-skin'].includes(el.id)){profilePreview();}if(el.id==='answer'&&session){el.value=el.value.replace(/[^0-9.,/:()r\s−-]/g,'').slice(0,24);session.answer=el.value;saveRound();}if(el.classList?.contains('column-digit')&&session){el.value=el.value.replace(/\D/g,'').slice(-1);session.digits=$$('.column-digit').map(x=>x.value);if(el.value){const next=$(`#digit-${Number(el.dataset.digit)+($('.division-board')?1:-1)}`);if(next){session.lastDigit=Number(next.dataset.digit);next.focus({preventScroll:true});next.select();}else if($('.division-board'))$('#division-remainder')?.focus({preventScroll:true});}saveRound();}if(el.classList?.contains('column-note')&&session){const i=Number(el.dataset.note);el.value=el.value.replace(/\D/g,'').slice(0,session.q.op==='+'?1:2);session.notes[i]=el.value;document.querySelector(`[data-original="${i}"]`)?.classList.toggle('crossed',session.q.op==='−'&&el.value!=='');saveRound();}if(session&&el.matches('.work-note')){el.value=el.value.replace(/\D/g,'').slice(0,el.maxLength);session.work||={};if(el.dataset.work)session.work[el.dataset.work]=el.value;else session.remainder=el.value;saveRound();}if(session&&el.id==='scratch-work'){session.scratch=el.value.slice(0,1000);saveRound();}if(el.classList?.contains('bar-input')&&session){session.bars[Number(el.dataset.bar)]=el.value;const bar=$(`#bar-view-${el.dataset.bar}`);if(bar)bar.style.height=`${Math.min(20,Math.max(0,Number(el.value)))*5}px`;saveRound();}if(el.id==='angle-control'&&session){session.angle=Number(el.value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{angle:session.angle});current.replaceWith(holder.firstElementChild);}saveRound();}if(el.id==='skill-search'){search=el.value;$('#syllabus-bank').innerHTML=syllabusBank(data.activeId?player():null,year,domain,search);}});
  document.addEventListener('focusin',event=>{if(event.target.matches?.(padFields))lastPadField=event.target;if(event.target.classList?.contains('bar-input')&&session)session.lastBar=Number(event.target.dataset.bar);if(event.target.classList?.contains('column-digit')&&session){session.lastDigit=Number(event.target.dataset.digit);event.target.select();}});
- document.addEventListener('change',event=>{const el=event.target;if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value,slot=({'kit-hair':'hair','kit-pattern':'pattern','kit-hair-colour':'hairColour','kit-skin':'skin','kit-trim':'trim','kit-theme':'theme'})[el.id];if(slot==='skin'&&Object.hasOwn(SKIN_TONES,value))p.look.skin=value;else if(!setAppearanceChoice(p,slot,value)){el.value=p.look[slot];toast('Buy this item in the Shop first.');return;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='unit-year'){year=Number(el.value);domain='all';search='';render();$('#unit-year')?.focus({preventScroll:true});return;}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
+ document.addEventListener('change',event=>{const el=event.target;if(el.matches('[data-training-timer]')){const p=player();if(!p)return;setTrainingTimer(p,Number(el.value));const status=$('[data-timer-status]');if(status)status.textContent=`Match timer saved: ${timerLabel(p.trainingSeconds)}.`;toast(`Match timer: ${timerLabel(p.trainingSeconds)}${draftRounds.has(p.id)?'. Your saved match is updated too.':'.'}`);return;}if(el.dataset.practical){const p=data.profiles.find(p=>p.id===el.dataset.profile);if(p){p.practical[el.dataset.practical]=el.checked;save();}return;}if(['kit-hair','kit-pattern','kit-hair-colour','kit-skin','kit-trim','kit-theme'].includes(el.id)){const p=player();if(!p)return;const value=el.value,slot=({'kit-hair':'hair','kit-pattern':'pattern','kit-hair-colour':'hairColour','kit-skin':'skin','kit-trim':'trim','kit-theme':'theme'})[el.id];if(slot==='skin'&&Object.hasOwn(SKIN_TONES,value))p.look.skin=value;else if(!setAppearanceChoice(p,slot,value)){el.value=p.look[slot];toast('Buy this item in the Shop first.');return;}save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(p,{size:155});}if(el.id==='kit-number'){const n=Number(el.value);if(Number.isInteger(n)&&n>=1&&n<=99){player().look.number=n;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}else{el.value=player().look.number;toast('Choose a number from 1 to 99.');}}if(el.id==='kit-position'&&POSITIONS.includes(el.value)){player().look.position=el.value;save();render();if($('#appearance-preview'))$('#appearance-preview').innerHTML=avatarSVG(player(),{size:155});}if(el.id==='unit-year'){year=Number(el.value);domain='all';search='';render();$('#unit-year')?.focus({preventScroll:true});return;}if(el.id==='league-year'){leagueYear=Number(el.value);render();}if(el.id==='dyslexia-setting'){data.settings.dyslexia=el.checked;save();applyAccessPreferences();}if(el.id==='auto-read'){data.settings.autoRead=el.checked;save();}if(el.id==='british-voice'){data.settings.voiceURI=el.value;save();}if(el.id==='speech-rate'){data.settings.speechRate=Number(el.value);save();}if(['player-position','player-skin'].includes(el.id))profilePreview();if(session&&['clock-hour','clock-minute'].includes(el.id)){session.clockHour=Number($('#clock-hour').value);session.clockMinute=Number($('#clock-minute').value);const current=$('.math-visual',$('#question-host'));if(current){const holder=document.createElement('div');holder.innerHTML=diagram(session.q.visual,{hour:session.clockHour,minute:session.clockMinute});current.replaceWith(holder.firstElementChild);}saveRound();}if(event.target.id==='reduce-motion'){data.settings.reduceMotion=event.target.checked;document.body.classList.toggle('reduce-motion',event.target.checked);save();}if(event.target.id==='import-file'){const file=event.target.files?.[0];if(file)restoreFile(file);event.target.value='';}});
  document.addEventListener('keydown',event=>{const container=modalRoot.firstChild?modalRoot:session?.paused?$('.paused'):null;if(container){if(event.key==='Escape'&&container===modalRoot){event.preventDefault();closeDialog();return;}if(event.key==='Tab'){const controls=$$('button:not([disabled]),input:not([hidden]):not([disabled]),select,a[href],[tabindex="0"]',container).filter(e=>e.offsetParent!==null);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}return;}if(handleTouchAnswerKey(event))return;if(session&&!session.paused){if(event.key==='Escape'){event.preventDefault();pause();return;}if(event.key==='Enter'&&session.phase==='feedback'){event.preventDefault();nextQuestion();}if(event.target.classList?.contains('column-digit')){const i=Number(event.target.dataset.digit);if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();$(`#digit-${i+(event.key==='ArrowLeft'?-1:1)}`)?.focus();}if(event.key==='Backspace'&&event.target.value===''){event.preventDefault();$(`#digit-${i+1}`)?.focus();}}}});
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&session&&!session.paused)pause();});
  touchMatch.addEventListener('change',()=>{
@@ -834,7 +843,7 @@ function handleClick(event){const b=event.target.closest('[data-action]');if(!b|
    data=update.data;
    for(const p of data.profiles){initCareer(p);initLearning(p);initRewards(p);migrateFirstWarmupXP(p);initLeague(p);}
    if(update.roundRemoved){clearInterval(tickId);clearTimeout(goalTimer);session=null;view='players';result=null;render();toast('The squad was updated in another tab. Choose a player to continue.');return;}
-   if(update.roundChanged){clearTimeout(goalTimer);session.paused=true;session.pausedEver=true;saveRound();renderGame();toast('Progress updated in another tab. Your match is paused and saved.');return;}
+   if(update.roundChanged){applyTrainingTimer(session,player().trainingSeconds);clearTimeout(goalTimer);session.paused=true;session.pausedEver=true;saveRound();renderGame();toast('Progress updated in another tab. Your match is paused and saved.');return;}
    if(!session&&!modalRoot.querySelector('.dialog'))render();
   }catch{toast('Progress changed in another tab. Reload to use its latest saved results.');}
  });
